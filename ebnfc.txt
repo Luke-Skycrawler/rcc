@@ -9,21 +9,21 @@
                           | <type_specifier>
                           | <type_qualifier>
 
-<storage_class_specifier> ::= auto
-                            | register
-                            | static
-                            | extern
-                            | typedef
+<storage_class_specifier> ::= AUTO
+                            | REGISTER
+                            | STATIC
+                            | EXTERN
+                            | TYPEDEF
 
-<type_specifier> ::= void
-                   | char
-                   | short
-                   | int
-                   | long
-                   | float
-                   | double
-                   | signed
-                   | unsigned
+<type_specifier> ::= VOID
+                   | CHAR
+                   | SHORT
+                   | INT
+                   | LONG
+                   | FLOAT
+                   | DOUBLE
+                   | SIGNED
+                   | UNSIGNED
                    | <struct_or_union_specifier>
                    | <enum_specifier>
                    | <typedef_name>
@@ -32,8 +32,8 @@
                               | <struct_or_union> { {<struct_declaration>}+ }
                               | <struct_or_union> <identifier>
 
-<struct_or_union> ::= struct
-                    | union
+<struct_or_union> ::= STRUCT
+                    | UNION
 
 <struct_declaration> ::= {<specifier_qualifier>}* <struct_declarator_list>
 
@@ -51,8 +51,8 @@
 
 <pointer> ::= * {<type_qualifier>}* {<pointer>}?
 
-<type_qualifier> ::= const
-                   | volatile
+<type_qualifier> ::= CONST
+                   | VOLATILE
 
 <direct_declarator> ::= <identifier>
                       | ( <declarator> )
@@ -110,8 +110,8 @@
                      | ++ <unary_expression>
                      | -- <unary_expression>
                      | <unary_operator> <cast_expression>
-                     | sizeof <unary_expression>
-                     | sizeof <type_name>
+                     | SIZEOF <unary_expression>
+                     | SIZEOF <type_name>
 
 <postfix_expression> ::= <primary_expression>
                        | <postfix_expression> [ <expression> ]
@@ -176,9 +176,9 @@
                                | {<direct_abstract_declarator>}? [ {<constant_expression>}? ]
                                | {<direct_abstract_declarator>}? ( {<parameter_type_list>}? )
 
-<enum_specifier> ::= enum <identifier> { <enumerator_list> }
-                   | enum { <enumerator_list> }
-                   | enum <identifier>
+<enum_specifier> ::= ENUM <identifier> { <enumerator_list> }
+                   | ENUM { <enumerator_list> }
+                   | ENUM <identifier>
 
 <enumerator_list> ::= <enumerator>
                     | <enumerator_list> , <enumerator>
@@ -210,20 +210,20 @@
               | <jump_statement>
 
 <labeled_statement> ::= <identifier> : <statement>
-                      | case <constant_expression> : <statement>
-                      | default : <statement>
+                      | CASE <constant_expression> : <statement>
+                      | DEFAULT : <statement>
 
 <expression_statement> ::= {<expression>}? ;
 
-<selection_statement> ::= if ( <expression> ) <statement>
-                        | if ( <expression> ) <statement> else <statement>
-                        | switch ( <expression> ) <statement>
+<selection_statement> ::= IF ( <expression> ) <statement>
+                        | IF ( <expression> ) <statement> ELSE <statement>
+                        | SWITCH ( <expression> ) <statement>
 
-<iteration_statement> ::= while ( <expression> ) <statement>
-                        | do <statement> while ( <expression> ) ;
-                        | for ( {<expression>}? ; {<expression>}? ; {<expression>}? ) <statement>
+<iteration_statement> ::= WHILE ( <expression> ) <statement>
+                        | DO <statement> WHILE ( <expression> ) ;
+                        | FOR ( {<expression>}? ; {<expression>}? ; {<expression>}? ) <statement>
 
-<jump_statement> ::= goto <identifier> ;
-                   | continue ;
-                   | break ;
-                   | return {<expression>}? ;
+<jump_statement> ::= GOTO <identifier> ;
+                   | CONTINUE ;
+                   | BREAK ;
+                   | RETURN {<expression>}? ;
