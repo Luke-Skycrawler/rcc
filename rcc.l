@@ -8,8 +8,8 @@ IS			(u|U|l|L)*
 
 %{
 #include <stdio.h>
-#include "y.tab.h"
-
+#include "rcc.tab.h"
+#define YY_DECL int yylex()
 void count();
 %}
 

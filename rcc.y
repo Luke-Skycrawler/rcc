@@ -1,7 +1,9 @@
 %{
 #include <stdio.h>
 #include <ctype.h>
-#indluce <ctype.h>
+#include <ctype.h>
+extern int yylex();
+extern int yyparse();
 %}
 %token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
@@ -425,9 +427,13 @@ function_definition
 extern char yytext[];
 extern int column;
 
-yyerror(s)
+void yyerror(s)
 char *s;
 {
 	fflush(stdout);
 	printf("\n%*s\n%*s\n", column, "^", column, s);
+}
+int main(void){
+	yyparse();
+	return 0;
 }
