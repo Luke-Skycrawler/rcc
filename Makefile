@@ -1,9 +1,9 @@
 # win_flex.exe --bison-bridge rcc.l
 # --header-file=lex.yy.h --winconmpact
-all: rcc.y rcc.l 
-	bison -d rcc.y
+all: rcc.ypp rcc.l 
+	bison -d rcc.ypp
 	flex rcc.l
-	gcc rcc.tab.c lex.yy.c -o rcc -lm
+	g++ rcc.tab.cpp lex.yy.c -o rcc -lm
 	# ./rcc
 clean:
-	rm rcc rcc.tab.c rcc.tab.h lex.yy.c
+	rm rcc rcc.tab.cpp rcc.tab.hpp lex.yy.c

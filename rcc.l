@@ -1,4 +1,4 @@
-
+%option noyywrap
 D			[0-9]
 L			[a-zA-Z_]
 H			[a-fA-F0-9]
@@ -7,83 +7,90 @@ FS			(f|F|l|L)
 IS			(u|U|l|L)*
 
 %{
-#include <stdio.h>
-#include "rcc.tab.h"
-#define YY_DECL int yylex()
+#include <cstdio>
+#include <cstdlib>
+#include "global.hpp"
+#include "rcc.tab.hpp"
+#define YY_DECL int yylex(yy::rcc::semantic_type *yylval,yy::rcc::location_type *yylloc, rccGlobal &global)
+// make location include the current token
+# define YY_USER_ACTION yylloc->columns (yyleng);
+typedef yy::rcc::token token;
 void count();
+int check_type();
+void comment();
 %}
 
 %%
 "/*"			{ comment(); }
 
-"auto"			{ count(); return(AUTO); }
-"break"			{ count(); return(BREAK); }
-"case"			{ count(); return(CASE); }
-"char"			{ count(); return(CHAR); }
-"const"			{ count(); return(CONST); }
-"continue"		{ count(); return(CONTINUE); }
-"default"		{ count(); return(DEFAULT); }
-"do"			{ count(); return(DO); }
-"double"		{ count(); return(DOUBLE); }
-"else"			{ count(); return(ELSE); }
-"enum"			{ count(); return(ENUM); }
-"extern"		{ count(); return(EXTERN); }
-"float"			{ count(); return(FLOAT); }
-"for"			{ count(); return(FOR); }
-"goto"			{ count(); return(GOTO); }
-"if"			{ count(); return(IF); }
-"int"			{ count(); return(INT); }
-"long"			{ count(); return(LONG); }
-"register"		{ count(); return(REGISTER); }
-"return"		{ count(); return(RETURN); }
-"short"			{ count(); return(SHORT); }
-"signed"		{ count(); return(SIGNED); }
-"sizeof"		{ count(); return(SIZEOF); }
-"static"		{ count(); return(STATIC); }
-"struct"		{ count(); return(STRUCT); }
-"switch"		{ count(); return(SWITCH); }
-"typedef"		{ count(); return(TYPEDEF); }
-"union"			{ count(); return(UNION); }
-"unsigned"		{ count(); return(UNSIGNED); }
-"void"			{ count(); return(VOID); }
-"volatile"		{ count(); return(VOLATILE); }
-"while"			{ count(); return(WHILE); }
+"auto"			{ count(); return(token::AUTO); }
+"break"			{ count(); return(token::BREAK); }
+"case"			{ count(); return(token::CASE); }
+"char"			{ count(); return(token::CHAR); }
+"const"			{ count(); return(token::CONST); }
+"continue"		{ count(); return(token::CONTINUE); }
+"default"		{ count(); return(token::DEFAULT); }
+"do"			{ count(); return(token::DO); }
+"double"		{ count(); return(token::DOUBLE); }
+"else"			{ count(); return(token::ELSE); }
+"enum"			{ count(); return(token::ENUM); }
+"extern"		{ count(); return(token::EXTERN); }
+"float"			{ count(); return(token::FLOAT); }
+"for"			{ count(); return(token::FOR); }
+"goto"			{ count(); return(token::GOTO); }
+"if"			{ count(); return(token::IF); }
+"int"			{ count(); return(token::INT); }
+"long"			{ count(); return(token::LONG); }
+"register"		{ count(); return(token::REGISTER); }
+"return"		{ count(); return(token::RETURN); }
+"short"			{ count(); return(token::SHORT); }
+"signed"		{ count(); return(token::SIGNED); }
+"sizeof"		{ count(); return(token::SIZEOF); }
+"static"		{ count(); return(token::STATIC); }
+"struct"		{ count(); return(token::STRUCT); }
+"switch"		{ count(); return(token::SWITCH); }
+"typedef"		{ count(); return(token::TYPEDEF); }
+"union"			{ count(); return(token::UNION); }
+"unsigned"		{ count(); return(token::UNSIGNED); }
+"void"			{ count(); return(token::VOID); }
+"volatile"		{ count(); return(token::VOLATILE); }
+"while"			{ count(); return(token::WHILE); }
 
 {L}({L}|{D})*		{ count(); return(check_type()); }
 
-0[xX]{H}+{IS}?		{ count(); return(CONSTANT); }
-0{D}+{IS}?		{ count(); return(CONSTANT); }
-{D}+{IS}?		{ count(); return(CONSTANT); }
-L?'(\\.|[^\\'])+'	{ count(); return(CONSTANT); }
+0[xX]{H}+{IS}?		{ count(); return(token::CONSTANT); }
+0{D}+{IS}?		{ count(); return(token::CONSTANT); }
+{D}+{IS}?		{ count(); return(token::CONSTANT); }
+L?'(\\.|[^\\'])+'	{ count(); return(token::CONSTANT); }
 
-{D}+{E}{FS}?		{ count(); return(CONSTANT); }
-{D}*"."{D}+({E})?{FS}?	{ count(); return(CONSTANT); }
-{D}+"."{D}*({E})?{FS}?	{ count(); return(CONSTANT); }
+{D}+{E}{FS}?		{ count(); return(token::CONSTANT); }
+{D}*"."{D}+({E})?{FS}?	{ count(); return(token::CONSTANT); }
+{D}+"."{D}*({E})?{FS}?	{ count(); return(token::CONSTANT); }
 
-L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
+L?\"(\\.|[^\\"])*\"	{ count(); return(token::STRING_LITERAL); }
 
-"..."			{ count(); return(ELLIPSIS); }
-">>="			{ count(); return(RIGHT_ASSIGN); }
-"<<="			{ count(); return(LEFT_ASSIGN); }
-"+="			{ count(); return(ADD_ASSIGN); }
-"-="			{ count(); return(SUB_ASSIGN); }
-"*="			{ count(); return(MUL_ASSIGN); }
-"/="			{ count(); return(DIV_ASSIGN); }
-"%="			{ count(); return(MOD_ASSIGN); }
-"&="			{ count(); return(AND_ASSIGN); }
-"^="			{ count(); return(XOR_ASSIGN); }
-"|="			{ count(); return(OR_ASSIGN); }
-">>"			{ count(); return(RIGHT_OP); }
-"<<"			{ count(); return(LEFT_OP); }
-"++"			{ count(); return(INC_OP); }
-"--"			{ count(); return(DEC_OP); }
-"->"			{ count(); return(PTR_OP); }
-"&&"			{ count(); return(AND_OP); }
-"||"			{ count(); return(OR_OP); }
-"<="			{ count(); return(LE_OP); }
-">="			{ count(); return(GE_OP); }
-"=="			{ count(); return(EQ_OP); }
-"!="			{ count(); return(NE_OP); }
+"..."			{ count(); return(token::ELLIPSIS); }
+">>="			{ count(); return(token::RIGHT_ASSIGN); }
+"<<="			{ count(); return(token::LEFT_ASSIGN); }
+"+="			{ count(); return(token::ADD_ASSIGN); }
+"-="			{ count(); return(token::SUB_ASSIGN); }
+"*="			{ count(); return(token::MUL_ASSIGN); }
+"/="			{ count(); return(token::DIV_ASSIGN); }
+"%="			{ count(); return(token::MOD_ASSIGN); }
+"&="			{ count(); return(token::AND_ASSIGN); }
+"^="			{ count(); return(token::XOR_ASSIGN); }
+"|="			{ count(); return(token::OR_ASSIGN); }
+">>"			{ count(); return(token::RIGHT_OP); }
+"<<"			{ count(); return(token::LEFT_OP); }
+"++"			{ count(); return(token::INC_OP); }
+"--"			{ count(); return(token::DEC_OP); }
+"->"			{ count(); return(token::PTR_OP); }
+"&&"			{ count(); return(token::AND_OP); }
+"||"			{ count(); return(token::OR_OP); }
+"<="			{ count(); return(token::LE_OP); }
+">="			{ count(); return(token::GE_OP); }
+"=="			{ count(); return(token::EQ_OP); }
+"!="			{ count(); return(token::NE_OP); }
 ";"			{ count(); return(';'); }
 ("{"|"<%")		{ count(); return('{'); }
 ("}"|"%>")		{ count(); return('}'); }
@@ -113,24 +120,17 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(STRING_LITERAL); }
 .			{ /* ignore bad characters */ }
 
 %%
-
-yywrap()
-{
-	return(1);
-}
-
-
-comment()
+void comment()
 {
 	char c, c1;
 
 loop:
-	while ((c = input()) != '*' && c != 0)
+	while ((c = getchar()) != '*' && c != 0)
 		putchar(c);
 
-	if ((c1 = input()) != '/' && c != 0)
+	if ((c1 = getchar()) != '/' && c != 0)
 	{
-		unput(c1);
+		ungetc(c1,stdin);
 		goto loop;
 	}
 
@@ -172,5 +172,5 @@ int check_type()
 *	it actually will only return IDENTIFIER
 */
 
-	return(IDENTIFIER);
+	return(token::IDENTIFIER);
 }
