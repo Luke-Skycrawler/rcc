@@ -1,0 +1,290 @@
+
+%language "C++"
+%defines
+%locations
+%define parser_class_name "rcc"
+%{
+#include <iostream>
+#include <cctype>
+#include <string>
+#include "global.hpp"
+#include "rcc.tab.hpp"
+using namespace std;
+extern int yylex(yy::rcc::semantic_type *yylval,yy::rcc::location_type *yylloc,rccGlobal &global);
+%}
+%parse-param {rccGlobal &global}
+%lex-param {rccGlobal &global}
+%initial-action {
+	@$.begin.filename=@$.end.filename=new std::string("stdin");
+}
+
+%token MAIN
+%token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
+%token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
+%token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
+%token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
+%token XOR_ASSIGN OR_ASSIGN TYPE_NAME
+%token CHAR INT DOUBLE
+
+%start program
+%%
+
+program
+    : program_head program_body
+    ;
+
+program_head
+    : declaration_list
+    |
+    ;
+
+program_body
+    : MAIN compound_statement
+    ;
+
+
+
+
+
+declaration_list
+	: declaration
+	| declaration_list declaration
+	;
+
+declaration
+	: declaration_specifiers ';'
+	| declaration_specifiers init_declarator_list ';'
+	;
+
+declaration_specifiers
+    : type_specifier
+    ;
+
+init_declarator_list
+    : init_declarator
+	| init_declarator_list ',' init_declarator
+	;
+
+init_declarator
+	: declarator
+	| declarator '=' initializer
+	;
+
+declarator
+    : direct_declarator
+    ;
+
+direct_declarator
+	: IDENTIFIER
+	| '(' declarator ')'
+	| direct_declarator '[' constant ']'
+	;
+
+initializer
+	: assign_expr
+	| '{' initializer_list '}'
+	| '{' initializer_list ',' '}'
+	;
+
+initializer_list
+	: initializer
+	| initializer_list ',' initializer
+	;
+
+
+
+
+compound_statement
+	: '{' '}'
+	| '{' statement_list '}'
+	| '{' declaration_list '}'
+	| '{' declaration_list statement_list '}'
+	;
+
+statement_list
+	: statement
+	| statement_list statement
+	;
+
+statement
+	: expr_statement
+	| compound_statement
+	;
+
+expr_statement
+    : ';'
+    | expr ';'
+    ;
+
+
+
+
+type_specifier
+    : CHAR
+    | INT
+    | DOUBLE
+    ;
+
+
+
+
+expr
+    : assign_expr
+    | expr ',' assign_expr
+    ;
+
+assign_expr
+    : cond_expr
+    | unary_expr assign_op assign_expr
+    ;
+
+assign_op
+	: '='
+	| MUL_ASSIGN
+	| DIV_ASSIGN
+	| MOD_ASSIGN
+	| ADD_ASSIGN
+	| SUB_ASSIGN
+	| LEFT_ASSIGN
+	| RIGHT_ASSIGN
+	| AND_ASSIGN
+	| XOR_ASSIGN
+	| OR_ASSIGN
+	;
+
+cond_expr
+	: logical_or_expr
+	| logical_or_expr '?' expr ':' cond_expr
+	;
+
+logical_or_expr
+	: logical_and_expr
+	| logical_or_expr OR_OP logical_and_expr
+	;
+
+logical_and_expr
+	: inclusive_or_expr
+	| logical_and_expr AND_OP inclusive_or_expr
+	;
+
+inclusive_or_expr
+    : exclusive_or_expr
+	| inclusive_or_expr '|' exclusive_or_expr
+	;
+
+exclusive_or_expr
+	: and_expr
+	| exclusive_or_expr '^' and_expr
+	;
+
+and_expr
+	: equality_expr
+	| and_expr '&' equality_expr
+	;
+
+equality_expr
+	: relational_expr
+	| equality_expr EQ_OP relational_expr
+	| equality_expr NE_OP relational_expr
+	;
+
+relational_expr
+	: shift_expr
+	| relational_expr '<' shift_expr
+	| relational_expr '>' shift_expr
+	| relational_expr LE_OP shift_expr
+	| relational_expr GE_OP shift_expr
+	;
+
+shift_expr
+	: additive_expr
+	| shift_expr LEFT_OP additive_expr
+	| shift_expr RIGHT_OP additive_expr
+	;
+
+additive_expr
+    : multiplicative_expr
+	| additive_expr '+' multiplicative_expr
+	| additive_expr '-' multiplicative_expr
+	;
+
+multiplicative_expr
+    : cast_expr
+	| multiplicative_expr '*' cast_expr
+	| multiplicative_expr '/' cast_expr
+	| multiplicative_expr '%' cast_expr
+	;
+
+cast_expr
+    : unary_expr
+	| '(' type_specifier ')' cast_expr
+	;
+
+unary_expr
+	: postfix_expr
+	| INC_OP unary_expr
+	| DEC_OP unary_expr
+	| unary_expr cast_expr
+	| SIZEOF unary_expr
+	| SIZEOF '(' type_specifier ')'
+	;
+
+unary_op
+	: '&'
+	| '*'
+	| '+'
+	| '-'
+	| '~'
+	| '!'
+	;
+
+postfix_expr
+	: primary_expr
+	| postfix_expr '[' expr ']'
+	| postfix_expr '(' ')'
+	| postfix_expr '(' argument_expr_list ')'
+	| postfix_expr '.' IDENTIFIER
+	| postfix_expr PTR_OP IDENTIFIER
+	| postfix_expr INC_OP
+	| postfix_expr DEC_OP
+	;
+
+argument_expr_list
+	: assignment_expr
+	| argument_expr_list ',' assignment_expr
+	;
+
+primary_expr
+	: IDENTIFIER
+	| CONSTANT
+	| STRING_LITERAL
+	| '(' expr ')'
+	;
+
+%%
+using namespace std;
+extern char yytext[];
+extern int column;
+
+/* void yyerror(s)
+char *s;
+{
+	fflush(stdout);
+	printf("\n%*s\n%*s\n", column, "^", column, s);
+} */
+
+int main(int argc, char **argv)
+{
+	rccGlobal global(argv[1]);
+	yy::rcc parser(global);
+	int v = parser.parse();
+	return v;
+}
+
+namespace yy
+{
+	void rcc::error(location const &loc, const string &s){
+		cerr << "error at " << loc << ": " << s << endl;
+		
+	}
+}
