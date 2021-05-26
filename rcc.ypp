@@ -7,7 +7,7 @@
 #include <iostream>
 #include <cctype>
 #include <string>
-#include "global.hpp"
+#include "rcc_global.hpp"
 #include "rcc.tab.hpp"
 using namespace std;
 extern int yylex(yy::rcc::semantic_type *yylval,yy::rcc::location_type *yylloc,rccGlobal &global);
@@ -77,7 +77,7 @@ declarator
 direct_declarator
 	: IDENTIFIER
 	| '(' declarator ')'
-	| direct_declarator '[' constant ']'
+	| direct_declarator '[' CONSTANT ']'
 	;
 
 initializer
@@ -250,8 +250,8 @@ postfix_expr
 	;
 
 argument_expr_list
-	: assignment_expr
-	| argument_expr_list ',' assignment_expr
+	: assign_expr
+	| argument_expr_list ',' assign_expr
 	;
 
 primary_expr
@@ -275,7 +275,11 @@ char *s;
 
 int main(int argc, char **argv)
 {
-	rccGlobal global(argv[1]);
+	rccGlobal global;
+	if(argc == 2)
+		global.in = argv[1];
+	else if(argc != 1)
+		cout << "Usage: rcc [FILE_NAME]\nor\nrcc" << endl;
 	yy::rcc parser(global);
 	int v = parser.parse();
 	return v;

@@ -4,6 +4,7 @@
 class rccGlobal{
     public:
     rccGlobal(std::string filename):in(filename){}
+    rccGlobal():in(""){}
     std::string in;
 };
 
