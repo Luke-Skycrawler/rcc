@@ -9,9 +9,9 @@ IS			(u|U|l|L)*
 %{
 #include <cstdio>
 #include <cstdlib>
-#include "rcc_global.hpp"
+#include "RccGlobal.hpp"
 #include "rcc.tab.hpp"
-#define YY_DECL int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, rccGlobal &global)
+#define YY_DECL int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global)
 // make location include the current token
 # define YY_USER_ACTION yylloc->columns (yyleng);
 typedef yy::rcc::token token;

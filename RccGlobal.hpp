@@ -1,10 +1,11 @@
 #ifndef _RCC_GLOBAL_HPP
 #define _RCC_GLOBAL_HPP
 #include <string>
-class rccGlobal{
+
+class RccGlobal {
     public:
-    rccGlobal(std::string filename):in(filename){}
-    rccGlobal():in(""){}
+    RccGlobal(std::string filename):in(filename) {}
+    RccGlobal():in("") {}
     std::string in;
 };
 

@@ -7,13 +7,13 @@
 #include <iostream>
 #include <cctype>
 #include <string>
-#include "rcc_global.hpp"
+#include "RccGlobal.hpp"
 #include "rcc.tab.hpp"
 using namespace std;
-extern int yylex(yy::rcc::semantic_type *yylval,yy::rcc::location_type *yylloc,rccGlobal &global);
+extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global);
 %}
-%parse-param {rccGlobal &global}
-%lex-param {rccGlobal &global}
+%parse-param {RccGlobal &global}
+%lex-param {RccGlobal &global}
 %initial-action {
 	@$.begin.filename=@$.end.filename=new std::string("stdin");
 }
@@ -279,7 +279,7 @@ char *s;
 
 int main(int argc, char **argv)
 {
-	rccGlobal global;
+	RccGlobal global;
 	if(argc == 2)
 		global.in = argv[1];
 	else if(argc != 1)
