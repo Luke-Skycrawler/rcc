@@ -2,7 +2,7 @@
 %language "C++"
 %defines
 %locations
-%define parser_class_name "rcc"
+%define parser_class_name {rcc}
 %{
 #include <iostream>
 #include <cctype>
@@ -39,7 +39,11 @@ program_head
     ;
 
 program_body
-    : MAIN compound_statement
+    : MAIN compound_statement 
+		{
+			cout << endl << "Finished." << endl;
+			return 0;
+		}
     ;
 
 
@@ -224,7 +228,7 @@ unary_expr
 	: postfix_expr
 	| INC_OP unary_expr
 	| DEC_OP unary_expr
-	| unary_expr cast_expr
+	| unary_op cast_expr
 	| SIZEOF unary_expr
 	| SIZEOF '(' type_specifier ')'
 	;
@@ -288,7 +292,6 @@ int main(int argc, char **argv)
 namespace yy
 {
 	void rcc::error(location const &loc, const string &s){
-		cerr << "error at " << loc << ": " << s << endl;
-		
+		cerr << "error at " << loc << ": " << s << endl;	
 	}
 }
