@@ -56,7 +56,7 @@ declaration_list
 	;
 
 declaration
-	: declaration_specifiers ';'
+	: declaration_specifiers ';'  {// saved for struct declaration}
 	| declaration_specifiers init_declarator_list ';'
 	;
 
@@ -80,14 +80,14 @@ declarator
 
 direct_declarator
 	: IDENTIFIER
-	| '(' declarator ')'
-	| direct_declarator '[' CONSTANT ']'
+	| '(' declarator ')' {// Not implemented now}
+	| direct_declarator '[' CONSTANT ']' {// Not implemented now}
 	;
 
 initializer
-	: assign_expr
-	| '{' initializer_list '}'
-	| '{' initializer_list ',' '}'
+	: assign_expr {// Replaced with IDENTIFIER now}
+	| '{' initializer_list '}' {// Not implemented now}
+	| '{' initializer_list ',' '}' {// Not implemented now}
 	;
 
 initializer_list
