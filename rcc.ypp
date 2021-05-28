@@ -447,7 +447,6 @@ char *s;
 int main(int argc,char **argv){
 	rccGlobal global(argv[1]);
 	yy::rcc parser(global);
-	topModule = llvm::make_unique<Module>("retarded",context);
 	int v=parser.parse();
 	return v;
 }

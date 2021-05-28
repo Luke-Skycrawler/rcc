@@ -4,10 +4,10 @@ using namespace std;
 using namespace llvm;
 Function *FunctionAST::codegen(){
     Function *func=topModule->getFunction(op);
-    basicBlock *bb=BacsicBlock::Create(context,"entry",func);
+    BasicBlock *bb=BasicBlock::Create(context,"entry",func);
     builder.SetInsertPoint(bb);
 
-    if(auto ret=boty->codegen()){
+    if(auto ret=body->codegen()){
         builder.CreateRet(ret);
         verifyFunction(*func);
 
@@ -16,10 +16,12 @@ Function *FunctionAST::codegen(){
     func->eraseFromParent();
     return nullptr;
 }
-
+Value *StmtAST::codegen(){
+    return expr->codegen();
+}
 Value *BinaryExprAST::codegen(){
-    Value *l=lhs->codegen(),r=rhs->codegen();
-    switch(op){
+    Value *l=lhs->codegen(),*r=rhs->codegen();
+    switch(op[0]){
         case '+':return builder.CreateFAdd(l,r,"add");
         case '-':return builder.CreateFSub(l,r,"sub");
         case '*':return builder.CreateFMul(l,r,"mult");
@@ -31,18 +33,24 @@ Value *BinaryExprAST::codegen(){
     }
 }
 Value *CallExprAST::codegen(){
-    Function callee=topModule->getFunction(op);
+    Function *callee=topModule->getFunction(op);
     
     vector<Value *> argv;
-    for(auto *it=args;it!=nullptr;it=it->next){
-        argv.push_back(it);
-    }
-    return builder.CreateCall(callee,argv,"call")
+    // for(auto it=args;it!=nullptr;it=it->next){
+    //     argv.push_back(it);
+    // }
+    return builder.CreateCall(callee,argv,"call");
 }
-Value *LiteralExpr::codegen(){
+Value *LiteralAST::codegen(){
     return ConstantFP::get(context,APFloat(val));
 }
 Value *VarAST::codegen(){
     Value *var = binding[op];
     return var;
+}
+Value *UnaryExprAST::codegen(){
+    
+}
+Value *CommaExprAST::codegen(){
+
 }

@@ -14,4 +14,8 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+extern llvm::LLVMContext context;
+extern llvm::IRBuilder<> builder;
+extern llvm::Module *topModule;
+extern std::map<std::string, llvm::Value *> binding;
 #endif

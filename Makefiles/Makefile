@@ -1,7 +1,7 @@
 # win_flex.exe --bison-bridge rcc.l
 # --header-file=lex.yy.h --winconmpact
-LLVMFLAGS = `llvm-config --cxxflags --ldflags --system-libs --libs all`
-CC = g++
+LLVMFLAGS = `llvm-config.exe --cxxflags --ldflags --system-libs --libs all`
+CC = MSBuild
 all: rcc.ypp rcc.l global.hpp codegen.h codegen.cpp ast.h llvmGlobal.cpp
 	bison -d rcc.ypp
 	flex rcc.l
