@@ -3,7 +3,6 @@
 %locations
 %define parser_class_name "rcc"
 %{
-#include <iostream>
 #include <cctype>
 #include <string>
 #include "global.hpp"
@@ -380,7 +379,7 @@ labeled_statement
 
 compound_statement
 	: '{' '}'                                 			{$$=new BlockAST(nullptr);}
-	| '{' statement_list '}'                  			{$$=new BlockAST($1);}
+	| '{' statement_list '}'                  			{$$=new BlockAST($2);}
 	| '{' declaration_list '}'                			{$$=new BlockAST(nullptr);}
 	| '{' declaration_list statement_list '}' 			{$$=new BlockAST(nullptr);}
 	;
@@ -392,7 +391,7 @@ declaration_list
 
 statement_list
 	: statement               							{$$=$1;}
-	| statement_list statement							{dynamic_cast<StmtAST*>($1)->next=$1;$$=$1;}
+	| statement_list statement							{dynamic_cast<StmtAST*>($1)->next=$2;$$=$1;}
 	;
 
 expression_statement
@@ -432,10 +431,10 @@ external_declaration
 	;
 
 function_definition
-	: declaration_specifiers declarator declaration_list compound_statement {root=new FunctionAST(dynamic_cast<BlockAST*>($2));$$=root;}
-	| declaration_specifiers declarator compound_statement                  {root=new FunctionAST(dynamic_cast<BlockAST*>($2));$$=root;}
-	| declarator declaration_list compound_statement                        {root=new FunctionAST(dynamic_cast<BlockAST*>($1));$$=root;}
-	| declarator compound_statement                                         {root=new FunctionAST(dynamic_cast<BlockAST*>($1));$$=root;}
+	: declaration_specifiers declarator declaration_list compound_statement {root=new FunctionAST(dynamic_cast<BlockAST*>($4));$$=root;}
+	| declaration_specifiers declarator compound_statement                  {root=new FunctionAST(dynamic_cast<BlockAST*>($3));$$=root;}
+	| declarator declaration_list compound_statement                        {root=new FunctionAST(dynamic_cast<BlockAST*>($3));$$=root;}
+	| declarator compound_statement                                         {root=new FunctionAST(dynamic_cast<BlockAST*>($2));$$=root;}
 	;
 
 %%
@@ -449,16 +448,25 @@ char *s;
 	fflush(stdout);
 	printf("\n%*s\n%*s\n", column, "^", column, s);
 } */
+using namespace llvm;
 int main(int argc,char **argv){
 	rccGlobal global(argv[1]);
+	freopen(argv[1],"r",stdin);
+	topModule=new Module("retarded",context);
 	yy::rcc parser(global);
 	int v=parser.parse();
+	if(v==0&&root){
+		root->codegen();
+		/* root->traverse(); */
+		topModule->print(errs(),nullptr);
+	}
+	else printf("terminated\n");
 	return v;
 }
 namespace yy {
 	void rcc::error(location const &loc,const string &s){
-		cerr<<"error at "<<loc<<": "<<s<<endl;
-		
+		/* cerr<<"error at "<<loc<<": "<<s<<endl; */
+		printf("error at %d: %s\n",loc,s.data());
 	}
 	/* typedef rcc::semantic_type PrototypeAST; */
 }

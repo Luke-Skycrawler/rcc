@@ -4,32 +4,46 @@
 struct ExprAST;
 struct PrototypeAST;
 extern PrototypeAST *root;
-
 struct PrototypeAST
 {
     std::string op; // for drawing
     PrototypeAST(const std::string &op) : op(op) {printf("\n");}
-    /*virtual*/ llvm::Function *codegen();
+    virtual llvm::Value *codegen()=0;
     bool isLeaf;
-    virtual void visit() = 0;
+    virtual void traverse()=0;
+    protected:
+    virtual void visit(void *_child1,void *_child2=NULL ,void *_sibling=NULL ) {
+        PrototypeAST *sibling=(PrototypeAST *)sibling,
+        *child2=(PrototypeAST *)_child2,
+        *child1=(PrototypeAST *)_child1;
+        if(child1)child1->traverse();
+        if(child2)child2->traverse();
+        // ---------------
+        // reserved for visualizing
+        if(sibling)sibling->traverse();
+    }
 };
 struct StmtAST : public PrototypeAST
 {
-    StmtAST(ExprAST *expr = nullptr, PrototypeAST *next = nullptr) : PrototypeAST(";"), expr(expr), next(next) {printf("%s","StmtAST\n");}
+    StmtAST(ExprAST *expr = NULL , PrototypeAST *next = NULL ) : PrototypeAST(";"), expr(expr), next(next) {printf("%s","StmtAST\n");}
     llvm::Value *codegen() /*override*/;
 
     ExprAST *expr;
     PrototypeAST *next;
-    void visit() override {}
+    void traverse() override {
+        visit (expr,NULL ,next);
+    }
 };
 struct BlockAST : public PrototypeAST
 {
-    BlockAST(PrototypeAST *content = nullptr, PrototypeAST *next = nullptr)
+    BlockAST(PrototypeAST *content = NULL , PrototypeAST *next = NULL )
         : PrototypeAST("{"), content(content), next(next) {printf("%s","BlockAST\n");}
     llvm::Value *codegen() /*override*/;
 
     PrototypeAST *next, *content;
-    void visit() override {}
+    void traverse() override {
+        visit (content,NULL ,next);
+    }
 };
 struct ForAST : public BlockAST
 {
@@ -38,7 +52,10 @@ struct ForAST : public BlockAST
 
     ExprAST *header[3];
     PrototypeAST *body;
-    void visit() override {}
+    void traverse() override {
+        // visit (header[0],NULL );
+        // FIXME:
+    }
 };
 struct IfAST : public PrototypeAST
 {
@@ -48,32 +65,36 @@ struct IfAST : public PrototypeAST
 
     ExprAST *det;
     BlockAST *ybranch, *nbranch;
-    void visit() override {}
+    void traverse() override {visit (det,ybranch,NULL );}
+    // FIXME:
 };
 
 struct DecAST : public PrototypeAST
 {
     DecAST(const std::string &op);
     llvm::Value *codegen() /*override*/;
-    void visit() override {}
+    void traverse() override {visit (NULL );}
+    // 
 };
 
 struct TypeAST : public PrototypeAST
 {
     TypeAST(const std::string &op);
     llvm::Value *codegen() /*override*/;
-    void visit() override {}
+    void traverse() override {visit (NULL );}
+    // 
 };
 struct FunctionAST : public PrototypeAST
 {
-    FunctionAST(BlockAST *body,TypeAST *type=nullptr, DecAST *list=nullptr)
+    FunctionAST(BlockAST *body,TypeAST *type=NULL , DecAST *list=NULL )
         : PrototypeAST("()"), type(type), body(body), args(list) {printf("Defined Function %s",op.data());}
-    llvm::Function *codegen() /*override*/;
+    llvm::Value *codegen() /*override*/;
 
     BlockAST *body;
     DecAST *args;
     TypeAST *type;
-    void visit() override {}
+    void traverse() override {visit (args,body);}
+    // FIXME:
 };
 
 struct ExprAST : public PrototypeAST
@@ -87,7 +108,7 @@ struct CommaExprAST : public ExprAST
     llvm::Value *codegen() override;
 
     ExprAST *next;
-    virtual void visit() = 0;
+    virtual void traverse() = 0;
 };
 struct CallExprAST : public ExprAST
 {
@@ -95,15 +116,15 @@ struct CallExprAST : public ExprAST
     llvm::Value *codegen() override;
 
     ExprAST *args;
-    void visit() override {}
+    void traverse() override {visit (args);}
 };
 struct UnaryExprAST : public ExprAST
 {
-    UnaryExprAST(const std::string &op, ExprAST *exp) : exp(exp), ExprAST(op) {printf("%s","UnaryExprAST\n");}
+    UnaryExprAST(const std::string &op, ExprAST *expr) : expr(expr), ExprAST(op) {printf("%s","UnaryExprAST\n");}
     llvm::Value *codegen() override;
 
-    ExprAST *exp;
-    void visit() override {}
+    ExprAST *expr;
+    void traverse() override {visit (expr);}
 };
 struct BinaryExprAST : public ExprAST
 {
@@ -111,7 +132,7 @@ struct BinaryExprAST : public ExprAST
     llvm::Value *codegen() override;
 
     ExprAST *lhs, *rhs;
-    void visit() override {}
+    void traverse() override {visit (lhs,rhs,NULL );}
 };
 struct LiteralAST : public ExprAST
 {
@@ -119,7 +140,7 @@ struct LiteralAST : public ExprAST
     llvm::Value *codegen() override;
 
     float val;
-    void visit() override {}
+    void traverse() override {printf("literal: %f\n",val);}
 };
 struct VarAST : public ExprAST
 {
@@ -128,6 +149,6 @@ struct VarAST : public ExprAST
 
     char baseType;
     PrototypeAST *type;
-    void visit() override {}
+    void traverse() override {printf("type %c var%s",baseType,op.data());}
 };
 #endif

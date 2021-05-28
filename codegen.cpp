@@ -2,25 +2,34 @@
 #include <vector>
 using namespace std;
 using namespace llvm;
-Function *FunctionAST::codegen()
+Value *FunctionAST::codegen()
 {
     Function *func = topModule->getFunction(op);
+    if(!func) {
+        vector<Type *> args(0, Type::getDoubleTy(context));
+        FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), args, false);
+        func= Function::Create(FT, Function::ExternalLinkage, op, topModule);
+    }
+
     BasicBlock *bb = BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(bb);
+    if(body){
+        if (auto ret = body->codegen())
+        {
+            builder.CreateRet(ret);
+            verifyFunction(*func);
 
-    if (auto ret = body->codegen())
-    {
-        builder.CreateRet(ret);
-        verifyFunction(*func);
-
-        return func;
+            return ret;
+        }
+        if(func)func->eraseFromParent();
     }
-    func->eraseFromParent();
-    return nullptr;
+    return NULL;
 }
 Value *StmtAST::codegen()
 {
-    return expr->codegen();
+    auto tmp=expr->codegen();
+    if(next)next->codegen();
+    return tmp;
 }
 Value *BinaryExprAST::codegen()
 {
@@ -33,12 +42,16 @@ Value *BinaryExprAST::codegen()
         return builder.CreateFSub(l, r, "sub");
     case '*':
         return builder.CreateFMul(l, r, "mult");
+    case '/':
+        return builder.CreateSDiv(l,r,"div");
+    case '|':
+        return builder.CreateOr(l,r,"or");
+    case '&':
+        return builder.CreateAnd(l,r,"and");
+    case '>':
+        return builder.CreateFCmpUGT(l,r,"");
     case '<':
         return builder.CreateFCmpULT(l, r, "cmp");
-        // case '/':return builder.CreateFAdd(l,r,"add");
-        // case '/':return builder.CreateFAdd(l,r,"add");
-        // case '/':return builder.CreateFAdd(l,r,"add");
-        // case '/':return builder.CreateFAdd(l,r,"add");
     }
 }
 Value *CallExprAST::codegen()
@@ -62,10 +75,14 @@ Value *VarAST::codegen()
 }
 Value *UnaryExprAST::codegen()
 {
+    return NULL;
 }
 Value *CommaExprAST::codegen()
 {
+    return NULL;
+
 }
 Value *BlockAST::codegen(){
-    
+    if(content)return content->codegen();
+    else return NULL;
 }
