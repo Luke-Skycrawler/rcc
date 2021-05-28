@@ -9,6 +9,7 @@ IS			(u|U|l|L)*
 %{
 #include <cstdio>
 #include <cstdlib>
+#include "AST.hpp"
 #include "RccGlobal.hpp"
 #include "rcc.tab.hpp"
 #define YY_DECL int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global)
@@ -29,18 +30,10 @@ void comment();
 "sizeof"		{ count(); return(token::SIZEOF); }
 "main"			{ count(); return(token::MAIN); }
 
-{L}({L}|{D})*		{ count(); return(check_type()); }
-
-0[xX]{H}+{IS}?		{ count(); return(token::CONSTANT); }
-0{D}+{IS}?		{ count(); return(token::CONSTANT); }
-{D}+{IS}?		{ count(); return(token::CONSTANT); }
-L?'(\\.|[^\\'])+'	{ count(); return(token::CONSTANT); }
-
-{D}+{E}{FS}?		{ count(); return(token::CONSTANT); }
-{D}*"."{D}+({E})?{FS}?	{ count(); return(token::CONSTANT); }
-{D}+"."{D}*({E})?{FS}?	{ count(); return(token::CONSTANT); }
-
-L?\"(\\.|[^\\"])*\"	{ count(); return(token::STRING_LITERAL); }
+\'.\'			{ count(); yylval->char_value = yytext[1]; return(token::CHAR_CONSTANT); }
+[0-9]+			{ count(); yylval->int_value = atoi(yytext); return(token::INT_CONSTANT); }
+[0-9]+\.[0-9]+	{ count(); yylval->double_value = atof(yytext); return(token::DOUBLE_CONSTANT); }   
+[a-zA-Z_][a-zA-Z0-9_]*    { count(); yylval->identifier_name = new std::string(yytext); return(token::IDENTIFIER); }
 
 ">>="			{ count(); return(token::RIGHT_ASSIGN); }
 "<<="			{ count(); return(token::LEFT_ASSIGN); }
@@ -150,3 +143,17 @@ int check_type()
 
 	return(token::IDENTIFIER);
 }
+
+
+// {L}({L}|{D})*		{ count(); return(check_type()); }
+
+// 0[xX]{H}+{IS}?		{ count(); return(token::CONSTANT); }
+// 0{D}+{IS}?		{ count(); return(token::CONSTANT); }
+// {D}+{IS}?		{ count(); return(token::CONSTANT); }
+// L?'(\\.|[^\\'])+'	{ count(); return(token::CONSTANT); }
+
+// {D}+{E}{FS}?		{ count(); return(token::CONSTANT); }
+// {D}*"."{D}+({E})?{FS}?	{ count(); return(token::CONSTANT); }
+// {D}+"."{D}*({E})?{FS}?	{ count(); return(token::CONSTANT); }
+
+// L?\"(\\.|[^\\"])*\"	{ count(); return(token::STRING_LITERAL); }

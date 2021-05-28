@@ -1,36 +1,94 @@
-
 %language "C++"
 %defines
 %locations
 %define parser_class_name {rcc}
+// %define api.parser.class {rcc}
 %{
 #include <iostream>
 #include <cctype>
 #include <string>
+#include "AST.hpp"
 #include "RccGlobal.hpp"
 #include "rcc.tab.hpp"
 using namespace std;
 extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global);
 %}
+
 %parse-param {RccGlobal &global}
 %lex-param {RccGlobal &global}
 %initial-action {
 	@$.begin.filename=@$.end.filename=new std::string("stdin");
 }
 
+%union {
+	class NcompoundStatement* compound_statement;
+	class Ndeclaration* declaration;
+	std::vector<class Ndeclaration*>* declaration_list;
+	class NdeclarationSpecifiers* declaration_specifiers;
+	std::vector<class NinitDeclarator*>* init_declarator_list;
+	class NtypeSpecifier* type_specifier;
+	class NinitDeclarator* init_declarator;
+	class Ninitializer* initializer;
+	class Ndeclarator* declarator;
+	class NdirectDeclarator* direct_declarator;
+	class Nconstant* constant;
+	char char_value;
+	int int_value;
+	double double_value;
+	std::string *identifier_name;
+}
+
 %token MAIN
-%token IDENTIFIER CONSTANT STRING_LITERAL SIZEOF
+%token STRING_LITERAL SIZEOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME
 %token CHAR INT DOUBLE
 
+%token<identifier_name> IDENTIFIER
+%token<char_value> CHAR_CONSTANT
+%token<int_value> INT_CONSTANT
+%token<double_value> DOUBLE_CONSTANT
+
+%type<compound_statement> program
+%type<compound_statement> program_body
+%type<compound_statement> compound_statement
+%type<declaration> declaration;
+%type<declaration_list> declaration_list;
+%type<declaration_specifiers> declaration_specifiers;
+%type<init_declarator_list> init_declarator_list;
+%type<type_specifier> type_specifier;
+%type<init_declarator> init_declarator;
+%type<initializer> initializer;
+%type<declarator> declarator;
+%type<direct_declarator> direct_declarator;
+%type<constant> assign_expr;
+%type<constant> cond_expr;
+%type<constant> logical_or_expr;
+%type<constant> logical_and_expr;
+%type<constant> inclusive_or_expr; 
+%type<constant> exclusive_or_expr; 
+%type<constant> and_expr; 
+%type<constant> equality_expr; 
+%type<constant> relational_expr; 
+%type<constant> shift_expr; 
+%type<constant> additive_expr;
+%type<constant> multiplicative_expr;
+%type<constant> cast_expr;
+%type<constant> unary_expr;
+%type<constant> postfix_expr;
+%type<constant> primary_expr;
+
 %start program
 %%
 
 program
-    : program_head program_body
+    : program_head program_body {
+		$$ = $2;
+		cout << endl << "Finished." << endl;
+		return 0;
+	}
     ;
 
 program_head
@@ -39,11 +97,7 @@ program_head
     ;
 
 program_body
-    : MAIN compound_statement 
-		{
-			cout << endl << "Finished." << endl;
-			return 0;
-		}
+    : MAIN compound_statement { $$ = $2; }
     ;
 
 
@@ -51,43 +105,77 @@ program_body
 
 
 declaration_list
-	: declaration
-	| declaration_list declaration
+	: declaration {
+		std::vector<Ndeclaration*>* declaration_list = new std::vector<Ndeclaration*>;
+		declaration_list->push_back($1);
+		$$ = declaration_list;
+	}
+	| declaration_list declaration { $1->push_back($2); $$ = $1; }
 	;
 
 declaration
-	: declaration_specifiers ';'  // saved for struct declaration
-	| declaration_specifiers init_declarator_list ';'
+	: declaration_specifiers ';' {
+		$$ = new Ndeclaration($1);
+	} // saved for struct declaration
+	| declaration_specifiers init_declarator_list ';' {
+		$$ = new Ndeclaration($1, $2);
+	}
 	;
 
 declaration_specifiers
-    : type_specifier
+    : type_specifier {
+		$$ = new NdeclarationSpecifiers($1);
+	}
     ;
 
 init_declarator_list
-    : init_declarator
-	| init_declarator_list ',' init_declarator
+    : init_declarator {
+		std::vector<NinitDeclarator*>* init_declarator_list = new std::vector<NinitDeclarator*>;
+		init_declarator_list->push_back($1);
+		$$ = init_declarator_list;
+	}
+	| init_declarator_list ',' init_declarator {
+		$1->push_back($3);
+		$$ = $1;
+	}
 	;
 
 init_declarator
-	: declarator
-	| declarator '=' initializer
+	: declarator { $$ = new NinitDeclarator($1, nullptr); }
+	| declarator '=' initializer { $$ = new NinitDeclarator($1, $3); }
 	;
 
 declarator
-    : direct_declarator
+    : direct_declarator { $$ = new Ndeclarator($1); }
     ;
 
 direct_declarator
-	: IDENTIFIER
-	| '(' declarator ')' // Not implemented now
-	| direct_declarator '[' CONSTANT ']' // Not implemented now
+	: IDENTIFIER {
+		Nidentifier* identifier = new Nidentifier($1);
+		$$ = new NdirectDeclarator(identifier);
+	}
+	| '(' declarator ')' {
+		cout << "Not implemented yet!" << endl;
+		$$ = nullptr;
+	}// Not implemented now
+	| direct_declarator '[' INT_CONSTANT ']' {
+		cout << "Not implemented yet!" << endl;
+		$$ = nullptr;
+	}// Not implemented now
 	;
 
 initializer
-	: assign_expr // Replaced with IDENTIFIER now
-	| '{' initializer_list '}' // Not implemented now
-	| '{' initializer_list ',' '}' // Not implemented now
+	: assign_expr {
+		$$ = new Ninitializer($1);
+	}
+	| '{' initializer_list '}' {
+		cout << "Not implemented yet!" << endl;
+		$$ = nullptr;
+	}// Not implemented now
+	| '{' initializer_list ',' '}' {
+		cout << "Not implemented yet!" << endl;
+		$$ = nullptr;
+	}// Not implemented now
 	;
 
 initializer_list
@@ -99,10 +187,10 @@ initializer_list
 
 
 compound_statement
-	: '{' '}'
-	| '{' statement_list '}'
-	| '{' declaration_list '}'
-	| '{' declaration_list statement_list '}'
+	: '{' '}' { $$ = new NcompoundStatement(); }
+	| '{' statement_list '}' { $$ = new NcompoundStatement(); }
+	| '{' declaration_list '}' { $$ = new NcompoundStatement($2); }
+	| '{' declaration_list statement_list '}' { $$ = new NcompoundStatement($2); }
 	;
 
 statement_list
@@ -124,9 +212,15 @@ expr_statement
 
 
 type_specifier
-    : CHAR
-    | INT
-    | DOUBLE
+    : CHAR {
+		$$ = new NtypeSpecifier(RCC_CHAR);
+	}
+    | INT {
+		$$ = new NtypeSpecifier(RCC_INT);
+	}
+    | DOUBLE {
+		$$ = new NtypeSpecifier(RCC_DOUBLE);
+	}
     ;
 
 
@@ -138,7 +232,7 @@ expr
     ;
 
 assign_expr
-    : cond_expr
+    : cond_expr { $$ = $1; } //Straw man
     | unary_expr assign_op assign_expr
     ;
 
@@ -157,43 +251,43 @@ assign_op
 	;
 
 cond_expr
-	: logical_or_expr
+	: logical_or_expr { $$ = $1; } //Straw man
 	| logical_or_expr '?' expr ':' cond_expr
 	;
 
 logical_or_expr
-	: logical_and_expr
+	: logical_and_expr { $$ = $1; } //Straw man
 	| logical_or_expr OR_OP logical_and_expr
 	;
 
 logical_and_expr
-	: inclusive_or_expr
+	: inclusive_or_expr { $$ = $1; } //Straw man
 	| logical_and_expr AND_OP inclusive_or_expr
 	;
 
 inclusive_or_expr
-    : exclusive_or_expr
+    : exclusive_or_expr { $$ = $1; } //Straw man
 	| inclusive_or_expr '|' exclusive_or_expr
 	;
 
 exclusive_or_expr
-	: and_expr
+	: and_expr { $$ = $1; } //Straw man
 	| exclusive_or_expr '^' and_expr
 	;
 
 and_expr
-	: equality_expr
+	: equality_expr { $$ = $1; } //Straw man
 	| and_expr '&' equality_expr
 	;
 
 equality_expr
-	: relational_expr
+	: relational_expr { $$ = $1; } //Straw man
 	| equality_expr EQ_OP relational_expr
 	| equality_expr NE_OP relational_expr
 	;
 
 relational_expr
-	: shift_expr
+	: shift_expr { $$ = $1; } //Straw man
 	| relational_expr '<' shift_expr
 	| relational_expr '>' shift_expr
 	| relational_expr LE_OP shift_expr
@@ -201,36 +295,36 @@ relational_expr
 	;
 
 shift_expr
-	: additive_expr
+	: additive_expr { $$ = $1; } //Straw man
 	| shift_expr LEFT_OP additive_expr
 	| shift_expr RIGHT_OP additive_expr
 	;
 
 additive_expr
-    : multiplicative_expr
+    : multiplicative_expr { $$ = $1; } //Straw man
 	| additive_expr '+' multiplicative_expr
 	| additive_expr '-' multiplicative_expr
 	;
 
 multiplicative_expr
-    : cast_expr
+    : cast_expr { $$ = $1; } //Straw man
 	| multiplicative_expr '*' cast_expr
 	| multiplicative_expr '/' cast_expr
 	| multiplicative_expr '%' cast_expr
 	;
 
 cast_expr
-    : unary_expr
-	| '(' type_specifier ')' cast_expr
+    : unary_expr { $$ = $1; } //Straw man
+	| '(' type_specifier ')' cast_expr { $$ = new Nconstant(RCC_INT, 0); }
 	;
 
 unary_expr
-	: postfix_expr
-	| INC_OP unary_expr
-	| DEC_OP unary_expr
-	| unary_op cast_expr
-	| SIZEOF unary_expr
-	| SIZEOF '(' type_specifier ')'
+	: postfix_expr { $$ = $1; } //Straw man
+	| INC_OP unary_expr { $$ = new Nconstant(RCC_INT, 0); }
+	| DEC_OP unary_expr { $$ = new Nconstant(RCC_INT, 0); }
+	| unary_op cast_expr { $$ = new Nconstant(RCC_INT, 0); }
+	| SIZEOF unary_expr { $$ = new Nconstant(RCC_INT, 0); }
+	| SIZEOF '(' type_specifier ')' { $$ = new Nconstant(RCC_INT, 0); }
 	;
 
 unary_op
@@ -243,14 +337,14 @@ unary_op
 	;
 
 postfix_expr
-	: primary_expr
-	| postfix_expr '[' expr ']'
-	| postfix_expr '(' ')'
-	| postfix_expr '(' argument_expr_list ')'
-	| postfix_expr '.' IDENTIFIER
-	| postfix_expr PTR_OP IDENTIFIER
-	| postfix_expr INC_OP
-	| postfix_expr DEC_OP
+	: primary_expr { $$ = $1; } //Straw man
+	| postfix_expr '[' expr ']' { $$ = new Nconstant(RCC_INT, 0); }
+	| postfix_expr '(' ')' { $$ = new Nconstant(RCC_INT, 0); }
+	| postfix_expr '(' argument_expr_list ')' { $$ = new Nconstant(RCC_INT, 0); }
+	| postfix_expr '.' IDENTIFIER { $$ = new Nconstant(RCC_INT, 0); }
+	| postfix_expr PTR_OP IDENTIFIER { $$ = new Nconstant(RCC_INT, 0); }
+	| postfix_expr INC_OP { $$ = new Nconstant(RCC_INT, 0); }
+	| postfix_expr DEC_OP { $$ = new Nconstant(RCC_INT, 0); }
 	;
 
 argument_expr_list
@@ -259,10 +353,12 @@ argument_expr_list
 	;
 
 primary_expr
-	: IDENTIFIER
-	| CONSTANT
-	| STRING_LITERAL
-	| '(' expr ')'
+	: IDENTIFIER { $$ = new Nconstant(RCC_INT, 0); }
+	| CHAR_CONSTANT { $$ = new Nconstant(RCC_CHAR, $1); }
+	| INT_CONSTANT { $$ = new Nconstant(RCC_INT, $1); }
+	| DOUBLE_CONSTANT { $$ = new Nconstant(RCC_DOUBLE, $1); }
+	| STRING_LITERAL { $$ = new Nconstant(RCC_INT, 0); }
+	| '(' expr ')' { $$ = new Nconstant(RCC_INT, 0); }
 	;
 
 %%
