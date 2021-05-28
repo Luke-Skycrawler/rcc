@@ -34,7 +34,7 @@ extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rcc
 %%
 
 primary_expression
-	: IDENTIFIER        								{$$=new LiteralAST("foo",0.0f);}
+	: IDENTIFIER        								{$$=new VarAST("foo");}
 	| CONSTANT          								{$$=new LiteralAST("foo",0.0f);}
 	| STRING_LITERAL    								{$$=new LiteralAST("foo",0.0f);}
 	| '(' expression ')'								{$$=new LiteralAST("foo",0.0f);}
@@ -92,7 +92,7 @@ additive_expression
 	| additive_expression '-' multiplicative_expression {$$=new BinaryExprAST("-",dynamic_cast<ExprAST*>($1),dynamic_cast<ExprAST*>($3));}
 	;
 
-shift_expression
+/* shift_expression
 	: additive_expression
 	| shift_expression LEFT_OP additive_expression
 	| shift_expression RIGHT_OP additive_expression
@@ -135,16 +135,18 @@ logical_and_expression
 logical_or_expression
 	: logical_and_expression
 	| logical_or_expression OR_OP logical_and_expression
-	;
+	; 
 
 conditional_expression
 	: logical_or_expression
 	| logical_or_expression '?' expression ':' conditional_expression
-	;
+	; */
+
+conditional_expression : additive_expression {$$=$1;};
 
 assignment_expression
-	: conditional_expression
-	| unary_expression assignment_operator assignment_expression
+	: conditional_expression                                    	{$$=$1;}
+	| unary_expression assignment_operator assignment_expression	{$$=new BinaryExprAST("=",nullptr,nullptr);}
 	;
 
 assignment_operator
@@ -162,8 +164,8 @@ assignment_operator
 	;
 
 expression
-	: assignment_expression
-	| expression ',' assignment_expression
+	: assignment_expression               		{$$=$1;}
+	| expression ',' assignment_expression		{$$=$1;}
 	;
 
 constant_expression
@@ -360,13 +362,15 @@ initializer_list
 	;
 
 statement
-	: labeled_statement
+	: expression_statement	{$$=$1;}
+	| compound_statement	{$$=$1;};
+	/* : labeled_statement
 	| compound_statement
 	| expression_statement
 	| selection_statement
 	| iteration_statement
 	| jump_statement
-	;
+	; */
 
 labeled_statement
 	: IDENTIFIER ':' statement
@@ -375,10 +379,10 @@ labeled_statement
 	;
 
 compound_statement
-	: '{' '}'                                 {$$=new BlockAST(nullptr);}
-	| '{' statement_list '}'                  {$$=new BlockAST(nullptr);}
-	| '{' declaration_list '}'                {$$=new BlockAST(nullptr);}
-	| '{' declaration_list statement_list '}' {$$=new BlockAST(nullptr);}
+	: '{' '}'                                 			{$$=new BlockAST(nullptr);}
+	| '{' statement_list '}'                  			{$$=new BlockAST($1);}
+	| '{' declaration_list '}'                			{$$=new BlockAST(nullptr);}
+	| '{' declaration_list statement_list '}' 			{$$=new BlockAST(nullptr);}
 	;
 
 declaration_list
@@ -387,19 +391,19 @@ declaration_list
 	;
 
 statement_list
-	: statement
-	| statement_list statement
+	: statement               							{$$=$1;}
+	| statement_list statement							{dynamic_cast<StmtAST*>($1)->next=$1;$$=$1;}
 	;
 
 expression_statement
-	: ';'
-	| expression ';'
+	: ';'           									{$$=new StmtAST();}
+	| expression ';'									{$$=new StmtAST(dynamic_cast<ExprAST*>($1));}
 	;
 
 selection_statement
-	: IF '(' expression ')' statement
-	| IF '(' expression ')' statement ELSE statement
-	| SWITCH '(' expression ')' statement
+	: IF '(' expression ')' statement               	{$$=new IfAST(dynamic_cast<ExprAST*>$3,$5);}
+	| IF '(' expression ')' statement ELSE statement	{$$=new IfAST(dynamic_cast<ExprAST*>$3,$5,$7);}
+	| SWITCH '(' expression ')' statement           	{$$=new IfAST(dynamic_cast<ExprAST*>$3,$5);}
 	;
 
 iteration_statement
@@ -428,10 +432,10 @@ external_declaration
 	;
 
 function_definition
-	: declaration_specifiers declarator declaration_list compound_statement
-	| declaration_specifiers declarator compound_statement
-	| declarator declaration_list compound_statement
-	| declarator compound_statement
+	: declaration_specifiers declarator declaration_list compound_statement {root=new FunctionAST(dynamic_cast<BlockAST*>($2));$$=root;}
+	| declaration_specifiers declarator compound_statement                  {root=new FunctionAST(dynamic_cast<BlockAST*>($2));$$=root;}
+	| declarator declaration_list compound_statement                        {root=new FunctionAST(dynamic_cast<BlockAST*>($1));$$=root;}
+	| declarator compound_statement                                         {root=new FunctionAST(dynamic_cast<BlockAST*>($1));$$=root;}
 	;
 
 %%

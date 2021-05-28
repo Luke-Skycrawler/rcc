@@ -2,6 +2,9 @@
 #define _AST_H
 #include "codegen.h"
 struct ExprAST;
+struct PrototypeAST;
+extern PrototypeAST *root;
+
 struct PrototypeAST
 {
     std::string op; // for drawing
@@ -63,11 +66,11 @@ struct TypeAST : public PrototypeAST
 };
 struct FunctionAST : public PrototypeAST
 {
-    FunctionAST(const std::string &op, TypeAST *type, StmtAST *body, DecAST *list)
-        : PrototypeAST(op), type(type), body(body), args(args) {}
+    FunctionAST(BlockAST *body,TypeAST *type=nullptr, DecAST *list=nullptr)
+        : PrototypeAST("()"), type(type), body(body), args(list) {printf("Defined Function %s",op.data());}
     llvm::Function *codegen() /*override*/;
 
-    StmtAST *body;
+    BlockAST *body;
     DecAST *args;
     TypeAST *type;
     void visit() override {}
