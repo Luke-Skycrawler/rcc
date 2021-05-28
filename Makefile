@@ -8,4 +8,4 @@ all: rcc.ypp rcc.l global.hpp codegen.h codegen.cpp ast.h llvmGlobal.cpp
 	${CC} ${LLVMFLAGS} rcc.tab.cpp lex.yy.c codegen.cpp llvmGlobal.cpp -o rcc -lm
 	# ./rcc
 clean:
-	rm rcc rcc.tab.cpp rcc.tab.hpp lex.yy.c
+	rm rcc rcc.tab.cpp rcc.tab.hpp lex.yy.c location.hh position.hh stack.hh
