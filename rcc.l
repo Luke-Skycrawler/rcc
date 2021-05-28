@@ -11,7 +11,7 @@ IS			(u|U|l|L)*
 #include <cstdlib>
 #include "global.hpp"
 #include "rcc.tab.hpp"
-#define YY_DECL int yylex(yy::rcc::semantic_type *yylval,yy::rcc::location_type *yylloc, rccGlobal &global)
+#define YY_DECL int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc, rccGlobal &global)
 // make location include the current token
 # define YY_USER_ACTION yylloc->columns (yyleng);
 typedef yy::rcc::token token;
