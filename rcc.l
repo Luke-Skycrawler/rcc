@@ -9,7 +9,7 @@ IS			(u|U|l|L)*
 %{
 #include <cstdio>
 #include <cstdlib>
-#include "global.hpp"
+#include "rccGlobal.hpp"
 #include "rcc.tab.hpp"
 #include "codegen.h"
 #define YY_DECL int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc, rccGlobal &global)

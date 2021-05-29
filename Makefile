@@ -2,8 +2,8 @@
 # --header-file=lex.yy.h --winconmpact
 LLVMFLAGS = `llvm-config --cxxflags --ldflags --system-libs --libs all` -g
 CC = g++
-all: rcc.tab.cpp lex.yy.c global.hpp codegen.h codegen.cpp ast.h llvmGlobal.cpp
-	${CC} ${LLVMFLAGS} rcc.tab.cpp lex.yy.c codegen.cpp llvmGlobal.cpp -o rcc -lm
+all: main.cpp rcc.tab.cpp lex.yy.c rccGlobal.hpp codegen.h codegen.cpp AST.hpp llvmGlobal.cpp
+	${CC} ${LLVMFLAGS} main.cpp rcc.tab.cpp lex.yy.c codegen.cpp llvmGlobal.cpp -o rcc -lm
 	gdb ./rcc
 rcc.tab.cpp: rcc.ypp 
 	bison -d rcc.ypp

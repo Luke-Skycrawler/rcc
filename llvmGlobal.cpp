@@ -1,4 +1,4 @@
-#include "ast.h"
+#include "AST.hpp"
 using namespace llvm;
 
 LLVMContext context;
