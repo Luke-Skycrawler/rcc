@@ -11,6 +11,7 @@ IS			(u|U|l|L)*
 #include <cstdlib>
 #include "global.hpp"
 #include "rcc.tab.hpp"
+#include "codegen.h"
 #define YY_DECL int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc, rccGlobal &global)
 // make location include the current token
 # define YY_USER_ACTION yylloc->columns (yyleng);
@@ -56,7 +57,13 @@ void comment();
 "volatile"		{ count(); return(token::VOLATILE); }
 "while"			{ count(); return(token::WHILE); }
 
-{L}({L}|{D})*		{ count(); return(check_type()); }
+{L}({L}|{D})*	{ 
+	count();
+	global.buf.type='s';
+	strcpy(global.buf.val.u8,yytext);
+	printf("In check_type:%s\n",global.buf.val.u8);
+	return(check_type());
+}
 
 0[xX]{H}+{IS}?		{ count(); return(token::CONSTANT); }
 0{D}+{IS}?		{ count(); return(token::CONSTANT); }
@@ -171,6 +178,8 @@ int check_type()
 /*
 *	it actually will only return IDENTIFIER
 */
-
-	return(token::IDENTIFIER);
+	/* std::string key(yytext);
+	if(bindings.count(key)==0) */
+		return(token::IDENTIFIER);
+	/* else return token::TYPE_NAME; */
 }

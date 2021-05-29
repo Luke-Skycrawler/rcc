@@ -172,18 +172,19 @@ constant_expression
 	;
 
 declaration
-	: declaration_specifiers ';'
-	| declaration_specifiers init_declarator_list ';'
+	: declaration_specifiers ';'                     	{}
+	| declaration_specifiers init_declarator_list ';'	{$$=$2;}
 	;
 
 declaration_specifiers
-	: storage_class_specifier
+	: type_specifier declaration_specifiers				{};
+	/* : storage_class_specifier
 	| storage_class_specifier declaration_specifiers
 	| type_specifier
 	| type_specifier declaration_specifiers
 	| type_qualifier
 	| type_qualifier declaration_specifiers
-	;
+	; */
 
 init_declarator_list
 	: init_declarator
@@ -191,8 +192,8 @@ init_declarator_list
 	;
 
 init_declarator
-	: declarator
-	| declarator '=' initializer
+	: declarator                						{binding[$1]=$0;}
+	| declarator '=' initializer						{binding[$1]=$0;}
 	;
 
 storage_class_specifier
@@ -278,18 +279,18 @@ type_qualifier
 	;
 
 declarator
-	: pointer direct_declarator
-	| direct_declarator
+	: pointer direct_declarator							{}
+	| direct_declarator        							{}
 	;
 
 direct_declarator
-	: IDENTIFIER
-	| '(' declarator ')'
-	| direct_declarator '[' constant_expression ']'
-	| direct_declarator '[' ']'
-	| direct_declarator '(' parameter_type_list ')'
-	| direct_declarator '(' identifier_list ')'
-	| direct_declarator '(' ')'
+	: IDENTIFIER                                   		{}
+	| '(' declarator ')'                           		{}
+	| direct_declarator '[' constant_expression ']'		{}
+	| direct_declarator '[' ']'                    		{}
+	| direct_declarator '(' parameter_type_list ')'		{}
+	| direct_declarator '(' identifier_list ')'    		{}
+	| direct_declarator '(' ')'                    		{}
 	;
 
 pointer
@@ -316,9 +317,9 @@ parameter_list
 	;
 
 parameter_declaration
-	: declaration_specifiers declarator
-	| declaration_specifiers abstract_declarator
-	| declaration_specifiers
+	: declaration_specifiers declarator          {p=new $1;}
+	| declaration_specifiers abstract_declarator {p=new $1;}
+	| declaration_specifiers                     {p=new $1;}
 	;
 
 identifier_list
