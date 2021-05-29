@@ -1,0 +1,7 @@
+.metals/
+.vscode/
+*.yy.c
+*.hh
+*.tab*
+*.out
+build/
