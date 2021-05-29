@@ -5,15 +5,17 @@ using namespace llvm;
 Value *FunctionAST::codegen()
 {
     Function *func = topModule->getFunction(op);
-    if(!func) {
+    if (!func)
+    {
         vector<Type *> args(0, Type::getDoubleTy(context));
-        FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), args, false);
-        func= Function::Create(FT, Function::ExternalLinkage, op, topModule);
+        FunctionType *ft = FunctionType::get(Type::getDoubleTy(context), args, false);
+        func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
     }
 
     BasicBlock *bb = BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(bb);
-    if(body){
+    if (body)
+    {
         if (auto ret = body->codegen())
         {
             builder.CreateRet(ret);
@@ -21,14 +23,16 @@ Value *FunctionAST::codegen()
 
             return ret;
         }
-        if(func)func->eraseFromParent();
+        if (func)
+            func->eraseFromParent();
     }
     return NULL;
 }
 Value *StmtAST::codegen()
 {
-    auto tmp=expr->codegen();
-    if(next)next->codegen();
+    auto tmp = expr->codegen();
+    if (next)
+        next->codegen();
     return tmp;
 }
 Value *BinaryExprAST::codegen()
@@ -43,13 +47,13 @@ Value *BinaryExprAST::codegen()
     case '*':
         return builder.CreateFMul(l, r, "mult");
     case '/':
-        return builder.CreateSDiv(l,r,"div");
+        return builder.CreateSDiv(l, r, "div");
     case '|':
-        return builder.CreateOr(l,r,"or");
+        return builder.CreateOr(l, r, "or");
     case '&':
-        return builder.CreateAnd(l,r,"and");
+        return builder.CreateAnd(l, r, "and");
     case '>':
-        return builder.CreateFCmpUGT(l,r,"");
+        return builder.CreateFCmpUGT(l, r, "");
     case '<':
         return builder.CreateFCmpULT(l, r, "cmp");
     }
@@ -70,7 +74,7 @@ Value *LiteralAST::codegen()
 }
 Value *VarAST::codegen()
 {
-    Value *var = binding[op];
+    Value *var = bindings[op];
     return var;
 }
 Value *UnaryExprAST::codegen()
@@ -80,9 +84,11 @@ Value *UnaryExprAST::codegen()
 Value *CommaExprAST::codegen()
 {
     return NULL;
-
 }
-Value *BlockAST::codegen(){
-    if(content)return content->codegen();
-    else return NULL;
+Value *BlockAST::codegen()
+{
+    if (content)
+        return content->codegen();
+    else
+        return NULL;
 }
