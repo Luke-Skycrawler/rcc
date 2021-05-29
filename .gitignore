@@ -5,3 +5,5 @@
 *.tab*
 *.out
 build/
+~
+rcc.dSYM
