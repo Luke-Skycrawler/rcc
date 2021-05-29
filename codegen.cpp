@@ -9,7 +9,7 @@ Value *FunctionAST::codegen()
     {
         vector<Type *> args(0, Type::getDoubleTy(context));
         FunctionType *ft = FunctionType::get(Type::getDoubleTy(context), args, false);
-        func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
+        func = Function::Create(ft, Function::ExternalLinkage, "main", topModule);
     }
 
     BasicBlock *bb = BasicBlock::Create(context, "entry", func);
