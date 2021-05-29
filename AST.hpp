@@ -63,7 +63,7 @@ private:
  */
 class NdeclarationSpecifiers: public Node {
 public:
-    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {PRINT_NODE("NdeclarationSpecifiers"}
+    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {PRINT_NODE("NdeclarationSpecifiers");}
     llvm::Value* codeGen();
 private:
     NtypeSpecifier* type_specifier;
@@ -118,24 +118,11 @@ private:
 };
 
 /**
- * `statement` node -- a statement
- * TODO: More statement types to be added
+ * `statement` node -- a base class for `statement`
  */
 class Nstatement: public Node {
 public:
-    enum STATEMENT_TYPE {
-        COMPOUND_STATEMENT = 0,
-        EXPR_STATEMENT = 1
-    };
-    Nstatement() {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
-private:
-    union StatementType
-    {
-        NcompoundStatement* compound_statement;
-        NexprStatement* expr_statement;
-    } statement; // a union of the statement
-    STATEMENT_TYPE statement_type; // type of the statement
+    llvm::Value* codeGen();
 };
 
 /**
@@ -160,7 +147,7 @@ private:
  * `expr_statement` node -- an expression statement
  * It's containing 0 or 1 `expr`...
  */
-class Nstatement: public Node {
+class NexprStatement: public Nstatement {
 public:
     NexprStatement() {expr = nullptr;}
     NexprStatement(Nexpr* expr):expr(expr) {}
