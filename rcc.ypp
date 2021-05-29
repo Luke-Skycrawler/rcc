@@ -118,7 +118,7 @@ declaration
 		$$ = new Ndeclaration($1);
 	} // saved for struct declaration
 	| declaration_specifiers init_declarator_list ';' {
-		$$ = new Ndeclaration($1, $2);
+		$$ = new Ndeclaration($1, *$2);
 	}
 	;
 
@@ -189,8 +189,8 @@ initializer_list
 compound_statement
 	: '{' '}' { $$ = new NcompoundStatement(); }
 	| '{' statement_list '}' { $$ = new NcompoundStatement(); }
-	| '{' declaration_list '}' { $$ = new NcompoundStatement($2); }
-	| '{' declaration_list statement_list '}' { $$ = new NcompoundStatement($2); }
+	| '{' declaration_list '}' { $$ = new NcompoundStatement(*$2); }
+	| '{' declaration_list statement_list '}' { $$ = new NcompoundStatement(*$2); }
 	;
 
 statement_list
