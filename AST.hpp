@@ -5,6 +5,14 @@
 #include <vector>
 #include <string>
 
+#ifdef DEBUG
+#define PRINT_NODE(s)  std::cout << std::endl << "#" << s << " node created" << std::endl 
+#endif
+
+#ifndef DEBUG
+#define PRINT_NODE(s)
+#endif
+
 enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3};
 
 class Node;
@@ -16,6 +24,7 @@ class NdirectDeclarator;
 class Ninitializer;
 class NcompoundStatement;
 class Nstatement;
+class NexprStatement;
 class NtypeSpecifier;
 class Nexpr;
 class Nidentifier;
@@ -37,15 +46,15 @@ public:
  */
 class Ndeclaration: public Node {
 public:
-    Ndeclaration(NdeclarationSpecifiers* declaration_specifiers, std::vector<NinitDeclarator*>* init_declarator_list):\
+    Ndeclaration(NdeclarationSpecifiers* declaration_specifiers, std::vector<NinitDeclarator*>& init_declarator_list):\
         declaration_specifiers(declaration_specifiers),
-        init_declarator_list(init_declarator_list) {}
+        init_declarator_list(init_declarator_list) {PRINT_NODE("Ndeclaration");}
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
-        declaration_specifiers(declaration_specifiers) {}
+        declaration_specifiers(declaration_specifiers) {PRINT_NODE("Ndeclaration");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
     NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
-    std::vector<NinitDeclarator*>* init_declarator_list;
+    std::vector<NinitDeclarator*> init_declarator_list;
 };
 
 /**
@@ -54,7 +63,7 @@ private:
  */
 class NdeclarationSpecifiers: public Node {
 public:
-    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {}
+    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {PRINT_NODE("NdeclarationSpecifiers");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
     NtypeSpecifier* type_specifier;
@@ -65,7 +74,7 @@ private:
  */
 class NinitDeclarator: public Node {
 public:
-    NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {}
+    NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {PRINT_NODE("NinitDeclarator");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
     Ndeclarator* declarator;
@@ -78,7 +87,7 @@ private:
  */
 class Ndeclarator: public Node {
 public:
-    Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {}
+    Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {PRINT_NODE("Ndeclarator");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
     NdirectDeclarator* direct_declarator;
@@ -90,7 +99,7 @@ private:
  */
 class NdirectDeclarator: public Node {
 public:
-    NdirectDeclarator(Nidentifier* identifier):identifier(identifier) {}
+    NdirectDeclarator(Nidentifier* identifier):identifier(identifier) {PRINT_NODE("NdirectDeclarator");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
     Nidentifier* identifier;
@@ -102,10 +111,31 @@ private:
  */
 class Ninitializer: public Node {
 public:
-    Ninitializer(Nconstant* constant):constant(constant) {}
+    Ninitializer(Nconstant* constant):constant(constant) {PRINT_NODE("Ninitializer");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
     Nconstant* constant;
+};
+
+/**
+ * `statement` node -- a statement
+ * TODO: More statement types to be added
+ */
+class Nstatement: public Node {
+public:
+    enum STATEMENT_TYPE {
+        COMPOUND_STATEMENT = 0,
+        EXPR_STATEMENT = 1
+    };
+    Nstatement() {}
+    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+private:
+    union StatementType
+    {
+        NcompoundStatement* compound_statement;
+        NexprStatement* expr_statement;
+    } statement; // a union of the statement
+    STATEMENT_TYPE statement_type; // type of the statement
 };
 
 /**
@@ -113,24 +143,30 @@ private:
  * @param statement_list: a statement list
  * @param declaration_list: a declaration list
  */
-class NcompoundStatement: public Node {
+class NcompoundStatement: public Nstatement {
 public:
-    NcompoundStatement(std::vector<Ndeclaration*>* declaration_list, std::vector<Nstatement*>* statement_list):\
+    NcompoundStatement(std::vector<Ndeclaration*>& declaration_list, std::vector<Nstatement*>& statement_list):\
         statement_list(statement_list),
-        declaration_list(declaration_list) {}
-    NcompoundStatement(std::vector<Ndeclaration*>* declaration_list):declaration_list(declaration_list) {}
-    NcompoundStatement() {}
+        declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
+    NcompoundStatement(std::vector<Ndeclaration*>& declaration_list):declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
+    NcompoundStatement() {PRINT_NODE("NcompoundStatement");}
     // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
 private:
-    std::vector<Ndeclaration*>* declaration_list;
-    std::vector<Nstatement*>* statement_list;
+    std::vector<Ndeclaration*> declaration_list;
+    std::vector<Nstatement*> statement_list;
 };
 
 /**
- * `statement` node -- a statement
- * TODO: implement it
+ * `expr_statement` node -- an expression statement
+ * It's containing 0 or 1 `expr`...
  */
-class Nstatement: public Node {};
+class NexprStatement: public Nstatement {
+public:
+    NexprStatement() {}
+    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+private:
+    Nexpr* expr;
+};
 
 /**
  * `type_specifier` node -- 'char', 'int' or 'double'
