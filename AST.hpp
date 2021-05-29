@@ -1,7 +1,7 @@
 #ifndef _AST_HPP
 #define _AST_HPP
 #include <iostream>
-#include "codegen.h"
+#include "CodeGen.h"
 #include <vector>
 #include <string>
 
