@@ -1,9 +1,9 @@
 # Program
 A simplified program formatt. Should be refined with function declaration.
 ---
-<program> ::= <program_head> <program_body>
-<program_head> ::= {<declaration>}*
-<program_body> ::= main <compound_statement>
+<program> ::= {<external-declaration>}*
+<external-declaration> ::= <function-definition>
+                        | <declaration>
 
 
 
@@ -20,12 +20,13 @@ Function declaration should be added.
 
 <direct_declarator> ::= <identifier>
                         | <declarator> [ <constant> ])
-
 <initializer> ::= <assign_expr>
                 | { <initializer_list> }
                 | { <initializer_list> , }
 <initializer_list> ::= <initializer>
                      | <initializer_list> , <initializer>
+<function-definition> ::= {<declaration-specifier>}* <declarator> {<declaration>}* <compound-statement>
+
 
 
 

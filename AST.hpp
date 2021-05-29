@@ -16,12 +16,15 @@
 enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3};
 
 class Node;
+class Nprogram;
+class NexternalDeclaration;
 class Ndeclaration;
 class NdeclarationSpecifiers;
 class NinitDeclarator;
 class Ndeclarator;
 class NdirectDeclarator;
 class Ninitializer;
+class NfunctionDefinition;
 class NcompoundStatement;
 class Nstatement;
 class NexprStatement;
@@ -40,11 +43,37 @@ public:
 };
 
 /**
- * `declaration` node -- a declaration like 'int x = 3', consisting of
+ * `program` node -- the root node!
+ * @param external_declaration_list: a vector of `external_declaration` nodes,
+ * i.e., `program` consists of function definitions and declarations
+ */
+class Nprogram: public Node {
+public:
+    Nprogram(std::vector<NexternalDeclaration*>& external_declaration_list):\
+        external_declaration_list(external_declaration_list) {}
+    void push_back(NexternalDeclaration* external_declaration)
+    {
+        external_declaration_list.push_back(external_declaration);
+    }
+    llvm::Value* codeGen();
+private:
+    std::vector<NexternalDeclaration*> external_declaration_list;
+};
+
+/**
+ * `external_declaration` node -- either a declaration or a function-definition
+ * It's a base virtual node for
+ * - `Ndeclaration`
+ * - `NfunctionDefinition`
+ */
+class NexternalDeclaration: public Node {};
+
+/**
+ * `declaration` node -- a declaration looks like 'int x = 3', consisting of
  * @param declaration_specifiers: like type_specifier (TODO: storage_type like 'static' and type qualifier like 'const' should be implemented)
  * @param init_declarator_list
  */
-class Ndeclaration: public Node {
+class Ndeclaration: public NexternalDeclaration {
 public:
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers, std::vector<NinitDeclarator*>& init_declarator_list):\
         declaration_specifiers(declaration_specifiers),
@@ -118,6 +147,40 @@ private:
 };
 
 /**
+ * `function_definition` node -- a function definition like 'int f(int x, double y, char z) {...}'
+ * or maybe a function call?
+ * @param declaration_specifiers: 'int'
+ * @param declarator: 'f(int x, double y, char z)'
+ * @param declaration_list: what for?
+ * @param compound_statement: '{...}'
+ */
+class NfunctionDefinition: public NexternalDeclaration {
+public:
+    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, Ndeclarator* declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
+        declaration_specifiers(declaration_specifiers),
+        declarator(declarator),
+        declaration_list(declaration_list),
+        compound_statement(compound_statement) {}
+    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, Ndeclarator* declarator, NcompoundStatement* compound_statement):\
+        declaration_specifiers(declaration_specifiers),
+        declarator(declarator),
+        compound_statement(compound_statement) {}
+    NfunctionDefinition(Ndeclarator* declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
+        declarator(declarator),
+        declaration_list(declaration_list),
+        compound_statement(compound_statement) {}
+    NfunctionDefinition(Ndeclarator* declarator, NcompoundStatement* compound_statement):\
+        declarator(declarator),
+        compound_statement(compound_statement) {}
+    llvm::Value* codeGen();
+private:
+    NdeclarationSpecifiers* declaration_specifiers; // 'int'
+    Ndeclarator* declarator; // 'f(int x, double y, char z)'
+    std::vector<Ndeclaration*> declaration_list; // what for?
+    NcompoundStatement* compound_statement; // '{...}'
+};
+
+/**
  * `statement` node -- a base class for `statement`
  */
 class Nstatement: public Node {
@@ -146,6 +209,7 @@ private:
 /**
  * `expr_statement` node -- an expression statement
  * It's containing 0 or 1 `expr`...
+ * @param expr: a pointer to a `expr` or just a nullptr
  */
 class NexprStatement: public Nstatement {
 public:
@@ -158,6 +222,7 @@ private:
 
 /**
  * `type_specifier` node -- 'char', 'int' or 'double'
+ * @param type: RCC_CHAR, RCC_INT or RCC_DOUBLE (enum type)
  */
 class NtypeSpecifier: public Node {
 public:

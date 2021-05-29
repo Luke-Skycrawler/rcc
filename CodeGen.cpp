@@ -119,3 +119,11 @@ Value *NcompoundStatement::codeGen()
             (*it)->codeGen();
     return NULL;
 }
+Value *NfunctionDefinition::codeGen()
+{
+    return NULL;
+}
+Value *Nprogram::codeGen()
+{
+    return NULL;
+}

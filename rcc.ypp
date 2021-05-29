@@ -21,24 +21,26 @@ extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc,
 }
 
 %union {
-	class NcompoundStatement* compound_statement;
-	class Ndeclaration* declaration;
-	std::vector<class Ndeclaration*>* declaration_list;
-	class NdeclarationSpecifiers* declaration_specifiers;
-	std::vector<class NinitDeclarator*>* init_declarator_list;
-	class NtypeSpecifier* type_specifier;
-	class NinitDeclarator* init_declarator;
-	class Ninitializer* initializer;
-	class Ndeclarator* declarator;
-	class NdirectDeclarator* direct_declarator;
-	class Nconstant* constant;
+	Nprogram* program;
+	NexternalDeclaration* external_declaration;
+	NfunctionDefinition* function_definition;
+	NcompoundStatement* compound_statement;
+	Ndeclaration* declaration;
+	std::vector<Ndeclaration*>* declaration_list;
+	NdeclarationSpecifiers* declaration_specifiers;
+	std::vector<NinitDeclarator*>* init_declarator_list;
+	NtypeSpecifier* type_specifier;
+	NinitDeclarator* init_declarator;
+	Ninitializer* initializer;
+	Ndeclarator* declarator;
+	NdirectDeclarator* direct_declarator;
+	Nconstant* constant;
 	char char_value;
 	int int_value;
 	double double_value;
 	std::string *identifier_name;
 }
 
-%token MAIN
 %token STRING_LITERAL SIZEOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
@@ -51,8 +53,9 @@ extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc,
 %token<int_value> INT_CONSTANT
 %token<double_value> DOUBLE_CONSTANT
 
-%type<compound_statement> program
-%type<compound_statement> program_body
+%type<program> program
+%type<external_declaration> external_declaration
+%type<function_definition> function_definition
 %type<compound_statement> compound_statement
 %type<declaration> declaration;
 %type<declaration_list> declaration_list;
@@ -84,25 +87,25 @@ extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc,
 %%
 
 program
-    : program_head program_body {
-		$$ = $2;
-		cout << endl << "Finished." << endl;
-		return 0;
+    : external_declaration {
+		std::vector<NexternalDeclaration*>* tmp = new std::vector<NexternalDeclaration*>();
+		tmp->push_back($1);
+		$$ = new Nprogram(*tmp);
+	}
+	| program external_declaration {
+		$$ = $1;
+		$1->push_back($2);
 	}
     ;
 
-program_head
-    : declaration_list
-    |
-    ;
-
-program_body
-    : MAIN compound_statement { $$ = $2; }
-    ;
-
-
-
-
+external_declaration
+	: function_definition {
+		$$ = $1;
+	}
+	| declaration {
+		$$ = $1;
+	}
+	;
 
 declaration_list
 	: declaration {
@@ -183,8 +186,20 @@ initializer_list
 	| initializer_list ',' initializer
 	;
 
-
-
+function_definition
+	: declaration_specifiers declarator declaration_list compound_statement {
+		$$ = new NfunctionDefinition($1, $2, *$3, $4);
+	}
+	| declaration_specifiers declarator compound_statement {
+		$$ = new NfunctionDefinition($1, $2, $3);
+	}
+	| declarator declaration_list compound_statement {
+		$$ = new NfunctionDefinition($1, *$2, $3);
+	}
+	| declarator compound_statement {
+		$$ = new NfunctionDefinition($1, $2);
+	}
+	;
 
 compound_statement
 	: '{' '}' { $$ = new NcompoundStatement(); }
