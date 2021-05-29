@@ -1,7 +1,7 @@
 #ifndef _AST_HPP
 #define _AST_HPP
 #include <iostream>
-// #include <llvm/IR/Value.h>
+#include "codegen.h"
 #include <vector>
 #include <string>
 
@@ -27,7 +27,7 @@ class Nconstant;
 class Node {
 public:
     virtual ~Node() {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    virtual llvm::Value* codeGen()=0;
 };
 
 /**
@@ -42,7 +42,7 @@ public:
         init_declarator_list(init_declarator_list) {}
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
         declaration_specifiers(declaration_specifiers) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator*>* init_declarator_list;
@@ -55,7 +55,7 @@ private:
 class NdeclarationSpecifiers: public Node {
 public:
     NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     NtypeSpecifier* type_specifier;
 };
@@ -66,7 +66,7 @@ private:
 class NinitDeclarator: public Node {
 public:
     NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     Ndeclarator* declarator;
     Ninitializer* initializer;
@@ -79,7 +79,7 @@ private:
 class Ndeclarator: public Node {
 public:
     Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     NdirectDeclarator* direct_declarator;
 };
@@ -91,7 +91,7 @@ private:
 class NdirectDeclarator: public Node {
 public:
     NdirectDeclarator(Nidentifier* identifier):identifier(identifier) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     Nidentifier* identifier;
 };
@@ -103,7 +103,7 @@ private:
 class Ninitializer: public Node {
 public:
     Ninitializer(Nconstant* constant):constant(constant) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     Nconstant* constant;
 };
@@ -115,22 +115,25 @@ private:
  */
 class NcompoundStatement: public Node {
 public:
-    NcompoundStatement(std::vector<Ndeclaration*>* declaration_list, std::vector<Nstatement*>* statement_list):\
+    NcompoundStatement(const std::vector<Ndeclaration*> &declaration_list,const std::vector<Nstatement*>& statement_list):\
         statement_list(statement_list),
         declaration_list(declaration_list) {}
-    NcompoundStatement(std::vector<Ndeclaration*>* declaration_list):declaration_list(declaration_list) {}
+    NcompoundStatement(const std::vector<Ndeclaration*> &declaration_list):declaration_list(declaration_list) {}
     NcompoundStatement() {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
-    std::vector<Ndeclaration*>* declaration_list;
-    std::vector<Nstatement*>* statement_list;
+    std::vector<Ndeclaration*> declaration_list;
+    std::vector<Nstatement*> statement_list;
 };
 
 /**
  * `statement` node -- a statement
  * TODO: implement it
  */
-class Nstatement: public Node {};
+class Nstatement: public Node {
+public:
+    llvm::Value* codeGen();
+};
 
 /**
  * `type_specifier` node -- 'char', 'int' or 'double'
@@ -138,7 +141,7 @@ class Nstatement: public Node {};
 class NtypeSpecifier: public Node {
 public:
     NtypeSpecifier(RCC_TYPE type):type(type) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     RCC_TYPE type;
 };
@@ -156,7 +159,7 @@ class Nexpr: public Node {};
 class Nidentifier: public Nexpr {
 public:
     Nidentifier(std::string* name):name(name) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     std::string* name;
 };
@@ -171,7 +174,7 @@ public:
     Nconstant(RCC_TYPE type, char value):type(type) { this->value.char_value = value; }
     Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
     Nconstant(RCC_TYPE type, double value):type(type) { this->value.double_value = value; }
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     RCC_TYPE type;
     union Value {
