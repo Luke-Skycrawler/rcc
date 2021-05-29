@@ -28,7 +28,6 @@ void comment();
 "double"		{ count(); return(token::DOUBLE); }
 "int"			{ count(); return(token::INT); }
 "sizeof"		{ count(); return(token::SIZEOF); }
-"main"			{ count(); return(token::MAIN); }
 
 \'.\'			{ count(); yylval->char_value = yytext[1]; return(token::CHAR_CONSTANT); }
 [0-9]+			{ count(); yylval->int_value = atoi(yytext); return(token::INT_CONSTANT); }
