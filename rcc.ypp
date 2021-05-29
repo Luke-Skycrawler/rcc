@@ -454,8 +454,8 @@ function_definition
 	;
 
 %%
-using namespace std;
-extern char yytext[];
+/* using namespace std;
+/* extern char yytext[]; */
 extern int column;
 
 /* void yyerror(s)
@@ -464,7 +464,7 @@ char *s;
 	fflush(stdout);
 	printf("\n%*s\n%*s\n", column, "^", column, s);
 } */
-using namespace llvm;
+/* using namespace llvm;
 int main(int argc,char **argv){
 	rccGlobal global(argc>1?argv[1]:"");
 	if(argc==2)
@@ -474,12 +474,12 @@ int main(int argc,char **argv){
 	int v=parser.parse();
 	if(v==0&&root){
 		root->codegen();
-		/* root->traverse(); */
+		root->traverse();
 		topModule->print(errs(),nullptr);
 	}
 	else printf("terminated\n");
 	return v;
-}
+}  */
 namespace yy {
 	void rcc::error(location const &loc,const string &s){
 		/* cerr<<"error at "<<loc<<": "<<s<<endl; */

@@ -56,6 +56,8 @@ Value *BinaryExprAST::codegen()
         return builder.CreateFCmpUGT(l, r, "");
     case '<':
         return builder.CreateFCmpULT(l, r, "cmp");
+    default :
+        return NULL;
     }
 }
 Value *CallExprAST::codegen()
