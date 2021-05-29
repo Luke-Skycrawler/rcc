@@ -1,7 +1,7 @@
 #ifndef _AST_HPP
 #define _AST_HPP
 #include <iostream>
-// #include <llvm/IR/Value.h>
+#include "codegen.h"
 #include <vector>
 #include <string>
 
@@ -36,7 +36,7 @@ class Nconstant;
 class Node {
 public:
     virtual ~Node() {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    virtual llvm::Value* codeGen()=0;
 };
 
 /**
@@ -51,7 +51,7 @@ public:
         init_declarator_list(init_declarator_list) {PRINT_NODE("Ndeclaration");}
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
         declaration_specifiers(declaration_specifiers) {PRINT_NODE("Ndeclaration");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator*> init_declarator_list;
@@ -63,8 +63,8 @@ private:
  */
 class NdeclarationSpecifiers: public Node {
 public:
-    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {PRINT_NODE("NdeclarationSpecifiers");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {PRINT_NODE("NdeclarationSpecifiers"}
+    llvm::Value* codeGen();
 private:
     NtypeSpecifier* type_specifier;
 };
@@ -75,7 +75,7 @@ private:
 class NinitDeclarator: public Node {
 public:
     NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {PRINT_NODE("NinitDeclarator");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     Ndeclarator* declarator;
     Ninitializer* initializer;
@@ -88,7 +88,7 @@ private:
 class Ndeclarator: public Node {
 public:
     Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {PRINT_NODE("Ndeclarator");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     NdirectDeclarator* direct_declarator;
 };
@@ -100,7 +100,7 @@ private:
 class NdirectDeclarator: public Node {
 public:
     NdirectDeclarator(Nidentifier* identifier):identifier(identifier) {PRINT_NODE("NdirectDeclarator");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     Nidentifier* identifier;
 };
@@ -112,7 +112,7 @@ private:
 class Ninitializer: public Node {
 public:
     Ninitializer(Nconstant* constant):constant(constant) {PRINT_NODE("Ninitializer");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     Nconstant* constant;
 };
@@ -145,12 +145,12 @@ private:
  */
 class NcompoundStatement: public Nstatement {
 public:
-    NcompoundStatement(std::vector<Ndeclaration*>& declaration_list, std::vector<Nstatement*>& statement_list):\
+    NcompoundStatement(const std::vector<Ndeclaration*>& declaration_list,const std::vector<Nstatement*>& statement_list):\
         statement_list(statement_list),
         declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
-    NcompoundStatement(std::vector<Ndeclaration*>& declaration_list):declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
+    NcompoundStatement(const std::vector<Ndeclaration*>& declaration_list):declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
     NcompoundStatement() {PRINT_NODE("NcompoundStatement");}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     std::vector<Ndeclaration*> declaration_list;
     std::vector<Nstatement*> statement_list;
@@ -160,10 +160,11 @@ private:
  * `expr_statement` node -- an expression statement
  * It's containing 0 or 1 `expr`...
  */
-class NexprStatement: public Nstatement {
+class Nstatement: public Node {
 public:
-    NexprStatement() {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    NexprStatement() {expr = nullptr;}
+    NexprStatement(Nexpr* expr):expr(expr) {}
+    llvm::Value* codeGen();
 private:
     Nexpr* expr;
 };
@@ -174,7 +175,7 @@ private:
 class NtypeSpecifier: public Node {
 public:
     NtypeSpecifier(RCC_TYPE type):type(type) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     RCC_TYPE type;
 };
@@ -192,7 +193,7 @@ class Nexpr: public Node {};
 class Nidentifier: public Nexpr {
 public:
     Nidentifier(std::string* name):name(name) {}
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     std::string* name;
 };
@@ -207,7 +208,7 @@ public:
     Nconstant(RCC_TYPE type, char value):type(type) { this->value.char_value = value; }
     Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
     Nconstant(RCC_TYPE type, double value):type(type) { this->value.double_value = value; }
-    // virtual llvm::Value* codeGen(CodeGenCtx &ctx);
+    llvm::Value* codeGen();
 private:
     RCC_TYPE type;
     union Value {

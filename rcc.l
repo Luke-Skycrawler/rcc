@@ -45,7 +45,6 @@ void comment();
 "&="			{ count(); return(token::AND_ASSIGN); }
 "^="			{ count(); return(token::XOR_ASSIGN); }
 "|="			{ count(); return(token::OR_ASSIGN); }
-
 ">>"			{ count(); return(token::RIGHT_OP); }
 "<<"			{ count(); return(token::LEFT_OP); }
 "++"			{ count(); return(token::INC_OP); }
@@ -57,9 +56,7 @@ void comment();
 ">="			{ count(); return(token::GE_OP); }
 "=="			{ count(); return(token::EQ_OP); }
 "!="			{ count(); return(token::NE_OP); }
-
 ";"			{ count(); return(';'); }
-
 ("{"|"<%")		{ count(); return('{'); }
 ("}"|"%>")		{ count(); return('}'); }
 ","			{ count(); return(','); }
@@ -88,7 +85,6 @@ void comment();
 .			{ /* ignore bad characters */ }
 
 %%
-
 void comment()
 {
 	char c, c1;
