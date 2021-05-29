@@ -74,7 +74,7 @@ Value *LiteralAST::codegen()
 }
 Value *VarAST::codegen()
 {
-    Value *var = bindings[op];
+    Value *var = bindings[op]->p.val;
     return var;
 }
 Value *UnaryExprAST::codegen()

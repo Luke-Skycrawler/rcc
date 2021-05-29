@@ -14,8 +14,16 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+struct BindingEntry{
+    BindingEntry(char type):type(type){}
+    char type;
+    union{
+        llvm::Function *func;
+        llvm::Value *val;
+    } p;
+};
 extern llvm::LLVMContext context;
 extern llvm::IRBuilder<> builder;
 extern llvm::Module *topModule;
-extern std::map<std::string, llvm::Value *> bindings;
+extern std::map<std::string, BindingEntry*> bindings;
 #endif

@@ -11,6 +11,10 @@
 #include "rcc.tab.hpp"
 using namespace std;
 extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rccGlobal &global);
+inline BindingEntry* bind(const rccGlobal &global,char type){
+	return bindings[std::string(global.buf.val.u8)]=new BindingEntry(type);
+}
+// FIXME: strangely, this inline function do not work, probably because of the namespace
 %}
 %parse-param {rccGlobal &global}
 %lex-param {rccGlobal &global}
@@ -192,8 +196,19 @@ init_declarator_list
 	;
 
 init_declarator
-	: declarator                						{/*binding[$1]=$0;*/}
-	| declarator '=' initializer						{/*binding[$1]=$0;*/}
+	: declarator	{
+		// TODO: handle unique
+		std::string id(global.buf.val.u8);
+		bindings[id]=new BindingEntry('i');
+		$$=new VarAST(id);
+		printf("%d",$0);
+	}
+	| declarator '=' initializer	{ 
+		std::string id(global.buf.val.u8);
+		bindings[id]=new BindingEntry('i');
+		$$=new VarAST(id);
+		printf("%d",$0);
+	}
 	;
 
 storage_class_specifier
@@ -451,8 +466,9 @@ char *s;
 } */
 using namespace llvm;
 int main(int argc,char **argv){
-	rccGlobal global(argv[1]);
-	freopen(argv[1],"r",stdin);
+	rccGlobal global(argc>1?argv[1]:"");
+	if(argc==2)
+		freopen(argv[1],"r",stdin);
 	topModule=new Module("retarded",context);
 	yy::rcc parser(global);
 	int v=parser.parse();
