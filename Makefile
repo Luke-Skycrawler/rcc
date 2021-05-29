@@ -1,13 +1,17 @@
 # win_flex.exe --bison-bridge rcc.l
 # --header-file=lex.yy.h --winconmpact
+BISON ?= bison
 LLVMFLAGS = `llvm-config --cxxflags --ldflags --system-libs --libs all` -g
-CC = g++
-all: rcc.tab.cpp lex.yy.c codegen.h RccGlobal.hpp codegen.cpp AST.hpp llvmGlobal.cpp
-	${CC} ${LLVMFLAGS} rcc.tab.cpp lex.yy.c codegen.cpp llvmGlobal.cpp -o rcc -lm
-	gdb ./rcc
+CXX = g++
+all: rcc.tab.cpp lex.yy.cpp codegen.h RccGlobal.hpp codegen.cpp AST.hpp llvmGlobal.cpp
+	${CXX} ${LLVMFLAGS} rcc.tab.cpp lex.yy.cpp codegen.cpp llvmGlobal.cpp -o rcc -lm -Wno-deprecated-register
+	@echo "CXX & LINK => rcc"
 rcc.tab.cpp: rcc.ypp 
-	bison -d rcc.ypp
-lex.yy.c: rcc.l
+	${BISON} -d rcc.ypp
+	@echo "BISON => $@"
+lex.yy.cpp: rcc.l
 	flex rcc.l
+	mv lex.yy.c lex.yy.cpp
+	@echo "FLEX => $@"
 clean:
-	rm rcc rcc.tab.cpp rcc.tab.hpp lex.yy.c location.hh position.hh stack.hh
+	rm rcc rcc.tab.cpp rcc.tab.hpp lex.yy.cpp location.hh position.hh stack.hh
