@@ -178,8 +178,8 @@ int check_type()
 /*
 *	it actually will only return IDENTIFIER
 */
-	auto it = bindings.find(std::string(yytext));
-	if(it!=bindings.end() && it->second->type=='t')
-		return token::TYPE_NAME;
-	return(token::IDENTIFIER);
+	/* std::string key(yytext);
+	if(bindings.count(key)==0) */
+		return(token::IDENTIFIER);
+	/* else return token::TYPE_NAME; */
 }
