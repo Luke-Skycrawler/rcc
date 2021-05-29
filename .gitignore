@@ -1,6 +1,6 @@
 .metals/
 .vscode/
-*.yy.c
+*.yy.c*
 *.hh
 *.tab*
 *.out
