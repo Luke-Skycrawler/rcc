@@ -33,7 +33,7 @@ extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rcc
 %%
 
 primary_expression
-	: IDENTIFIER        								{$$=new VarAST("foo");}
+	: IDENTIFIER        								{}
 	| CONSTANT          								{$$=new LiteralAST("foo",global.buf.val.f64);}
 	| STRING_LITERAL    								{$$=new LiteralAST("foo",global.buf.val.f64);}
 	| '(' expression ')'								{$$=new LiteralAST("foo",global.buf.val.f64);}
@@ -173,7 +173,7 @@ constant_expression
 
 declaration
 	: declaration_specifiers ';'                     	{}
-	| declaration_specifiers init_declarator_list ';'	{}
+	| declaration_specifiers init_declarator_list ';'	{$$=$2;}
 	;
 
 declaration_specifiers
@@ -187,13 +187,13 @@ declaration_specifiers
 	; */
 
 init_declarator_list
-	: init_declarator
-	| init_declarator_list ',' init_declarator
+	: init_declarator                         			{$$=$1;}
+	| init_declarator_list ',' init_declarator			{dynamic_cast<DecAST *>($1)->next=$2;$$=$1;}
 	;
 
 init_declarator
-	: declarator                						{/*binding[$1]=$0;*/}
-	| declarator '=' initializer						{/*binding[$1]=$0;*/}
+	: declarator                						{$$=$1;}
+	| declarator '=' initializer						{$$=$1;}
 	;
 
 storage_class_specifier
@@ -206,14 +206,14 @@ storage_class_specifier
 
 type_specifier
 	: VOID
-	| CHAR
-	| SHORT
-	| INT
-	| LONG
-	| FLOAT
-	| DOUBLE
-	| SIGNED
-	| UNSIGNED
+	| CHAR    											{global.buf.type='c';}
+	| SHORT   											{global.buf.type='i';}
+	| INT     											{global.buf.type='i';}
+	| LONG    											{global.buf.type='i';}
+	| FLOAT   											{global.buf.type='f';}
+	| DOUBLE  											{global.buf.type='f';}
+	| SIGNED  											{global.buf.type='i';}
+	| UNSIGNED											{global.buf.type='u';}
 	| struct_or_union_specifier
 	| enum_specifier
 	| TYPE_NAME
@@ -280,7 +280,7 @@ type_qualifier
 
 declarator
 	: pointer direct_declarator							{}
-	| direct_declarator        							{}
+	| direct_declarator        							{$$=new DecAST(global.buf);bindings[$$->op]=NULL;}
 	;
 
 direct_declarator
@@ -381,13 +381,13 @@ labeled_statement
 compound_statement
 	: '{' '}'                                 			{$$=new BlockAST(nullptr);}
 	| '{' statement_list '}'                  			{$$=new BlockAST($2);}
-	| '{' declaration_list '}'                			{$$=new BlockAST(nullptr);}
-	| '{' declaration_list statement_list '}' 			{$$=new BlockAST(nullptr);}
+	| '{' declaration_list '}'                			{$$=new BlockAST($2);}
+	| '{' declaration_list statement_list '}' 			{$$=new BlockAST($2);dynamic_cast<DecAST *>($2)->tail()->next=$3;}
 	;
 
 declaration_list
-	: declaration
-	| declaration_list declaration
+	: declaration                 						{$$=$1;}
+	| declaration_list declaration						{$$=$1;}
 	;
 
 statement_list
@@ -449,25 +449,9 @@ char *s;
 	fflush(stdout);
 	printf("\n%*s\n%*s\n", column, "^", column, s);
 } */
-/* using namespace llvm;
-int main(int argc,char **argv){
-	rccGlobal global(argv[1]);
-	freopen(argv[1],"r",stdin);
-	topModule=new Module("retarded",context);
-	yy::rcc parser(global);
-	int v=parser.parse();
-	if(v==0&&root){
-		root->codegen();
-		root->traverse();
-		topModule->print(errs(),nullptr);
-	}
-	else printf("terminated\n");
-	return v;
-}  */
 namespace yy {
 	void rcc::error(location const &loc,const string &s){
 		/* cerr<<"error at "<<loc<<": "<<s<<endl; */
 		printf("error at %d: %s\n",loc,s.data());
 	}
-	/* typedef rcc::semantic_type PrototypeAST; */
 }

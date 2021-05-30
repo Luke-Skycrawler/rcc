@@ -1,6 +1,7 @@
 #ifndef _AST_H
 #define _AST_H
 #include "codegen.h"
+#include "RccGlobal.hpp"
 struct ExprAST;
 struct PrototypeAST;
 extern PrototypeAST *root;
@@ -111,13 +112,27 @@ struct IfAST : public PrototypeAST
 
 struct DecAST : public PrototypeAST
 {
-    DecAST(const std::string &op);
+    // DecAST(const std::string &op);
+    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8),baseType(buf.type) { printf("%s", "VarAST\n"); }
+    
     llvm::Value *codegen() /*override*/;
     void traverse() override
     {
         print(indent, op);
-        visit(NULL);
+        visit(NULL,NULL,next);
     }
+
+    PrototypeAST *next;
+    DecAST *tail(){
+        if(!next)return this;
+        auto p=dynamic_cast<DecAST*>(next);
+        
+        while(p->next){
+            p=dynamic_cast<DecAST*>(p->next);
+        }
+        return p;
+    }
+    char baseType;
     //
 };
 
@@ -134,7 +149,7 @@ struct TypeAST : public PrototypeAST
 };
 struct FunctionAST : public PrototypeAST
 {
-    FunctionAST(BlockAST *body, TypeAST *type = NULL, DecAST *list = NULL)
+    FunctionAST(BlockAST *body, DecAST *list = NULL,TypeAST *type = NULL)
         : PrototypeAST("()"), type(type), body(body), args(list) { printf("Defined Function %s", op.data()); }
     llvm::Value *codegen() /*override*/;
 
@@ -211,9 +226,9 @@ struct LiteralAST : public ExprAST
 };
 struct VarAST : public ExprAST
 {
-    VarAST(const std::string &op) : ExprAST(op) { printf("%s", "VarAST\n"); }
+    VarAST(const std::string &op,char baseType=' ') : ExprAST(op),baseType(baseType) { printf("%s", "VarAST\n"); }
     llvm::Value *codegen() override;
-
+    llvm::Value *allocate(llvm::Constant* initial=NULL);
     char baseType;
     PrototypeAST *type;
     void traverse() override
