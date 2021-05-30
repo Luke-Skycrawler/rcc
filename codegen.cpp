@@ -2,6 +2,7 @@
 #include <vector>
 using namespace std;
 using namespace llvm;
+int indent=0;
 Value *FunctionAST::codegen()
 {
     Function *func = topModule->getFunction(op);

@@ -15,20 +15,25 @@
 using namespace llvm;
 using namespace llvm::sys;
 
-int main(int argc,char **argv){
-	rccGlobal global(argc>1?argv[1]:"");
-	if(argc==2)
-		freopen(argv[1],"r",stdin);
-	topModule=new Module("retarded",context);
-	yy::rcc parser(global);
-	int v=parser.parse();
-	if(v==0&&root){
-		root->codegen();
-		// root->traverse(); 
-		topModule->print(errs(),nullptr);
-	}
-	else printf("terminated\n");
-    
+int main(int argc, char **argv)
+{
+    rccGlobal global(argc > 1 ? argv[1] : "");
+    if (argc == 2)
+        freopen(argv[1], "r", stdin);
+    topModule = new Module("retarded", context);
+    yy::rcc parser(global);
+    int v = parser.parse();
+    if (v == 0 && root)
+    {
+        root->codegen();
+        printf("\n//--------------------visual-------------------\n");
+        root->traverse();
+        printf("\n//--------------------visual-------------------\n");
+        topModule->print(errs(), nullptr);
+    }
+    else
+        printf("terminated\n");
+
     InitializeAllTargetInfos();
     InitializeAllTargets();
     InitializeAllTargetMCs();
@@ -36,7 +41,7 @@ int main(int argc,char **argv){
     InitializeAllAsmPrinters();
 
     auto TargetTriple = sys::getDefaultTargetTriple();
-    
+
     topModule->setTargetTriple(TargetTriple);
 
     std::string Error;
@@ -45,7 +50,8 @@ int main(int argc,char **argv){
     // Print an error and exit if we couldn't find the requested target.
     // This generally occurs if we've forgotten to initialise the
     // TargetRegistry or we have a bogus target triple.
-    if (!Target) {
+    if (!Target)
+    {
         errs() << Error;
         return 1;
     }
@@ -64,7 +70,8 @@ int main(int argc,char **argv){
     std::error_code EC;
     raw_fd_ostream dest(Filename, EC, sys::fs::OF_None);
 
-    if (EC) {
+    if (EC)
+    {
         errs() << "Could not open file: " << EC.message();
         return 1;
     }
@@ -72,7 +79,8 @@ int main(int argc,char **argv){
     legacy::PassManager pass;
     auto fileType = TargetMachine::CodeGenFileType::CGFT_ObjectFile;
 
-    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType)) {
+    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType))
+    {
         errs() << "Target machine can't emit a file of this type";
         return 1;
     }
@@ -81,6 +89,5 @@ int main(int argc,char **argv){
     dest.flush();
 
     outs() << "Wrote " << Filename << "\n";
-	return v;
-
+    return v;
 }

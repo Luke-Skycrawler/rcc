@@ -17,8 +17,19 @@ IS			(u|U|l|L)*
 # define YY_USER_ACTION yylloc->columns (yyleng);
 typedef yy::rcc::token token;
 void count();
-int check_type();
+yy::rcc::token::yytokentype check_type();
 void comment();
+inline yy::rcc::token::yytokentype numeric(yy::rcc::token::yytokentype tok,rccGlobal &global){
+	global.buf.type='d';
+	global.buf.val.f64=atof(yytext);
+	return tok;
+}
+inline yy::rcc::token::yytokentype strLiteral(yy::rcc::token::yytokentype tok,rccGlobal &global){
+	global.buf.type='s';
+	strcpy(global.buf.val.u8,yytext);
+	// printf("In check_type:%s\n",global.buf.val.u8);
+	return tok;
+}
 %}
 
 %%
@@ -57,24 +68,16 @@ void comment();
 "volatile"		{ count(); return(token::VOLATILE); }
 "while"			{ count(); return(token::WHILE); }
 
-{L}({L}|{D})*	{ 
-	count();
-	global.buf.type='s';
-	strcpy(global.buf.val.u8,yytext);
-	printf("In check_type:%s\n",global.buf.val.u8);
-	return(check_type());
-}
+{L}({L}|{D})*			{ count(); return strLiteral(check_type(),global); }
 
-0[xX]{H}+{IS}?		{ count(); return(token::CONSTANT); }
-0{D}+{IS}?		{ count(); return(token::CONSTANT); }
-{D}+{IS}?		{ count(); return(token::CONSTANT); }
-L?'(\\.|[^\\'])+'	{ count(); return(token::CONSTANT); }
-
-{D}+{E}{FS}?		{ count(); return(token::CONSTANT); }
-{D}*"."{D}+({E})?{FS}?	{ count(); return(token::CONSTANT); }
-{D}+"."{D}*({E})?{FS}?	{ count(); return(token::CONSTANT); }
-
-L?\"(\\.|[^\\"])*\"	{ count(); return(token::STRING_LITERAL); }
+0[xX]{H}+{IS}?			{ count(); return numeric(token::CONSTANT,global); }
+{D}+{IS}?				{ count(); return numeric(token::CONSTANT,global); }
+0{D}+{IS}?				{ count(); return numeric(token::CONSTANT,global); }
+{D}+{E}{FS}?			{ count(); return numeric(token::CONSTANT,global); }
+L?'(\\.|[^\\'])+'		{ count(); return numeric(token::CONSTANT,global); }
+{D}*"."{D}+({E})?{FS}?	{ count(); return numeric(token::CONSTANT,global); }
+{D}+"."{D}*({E})?{FS}?	{ count(); return numeric(token::CONSTANT,global); }
+L?\"(\\.|[^\\"])*\"		{ count(); return strLiteral(token::STRING_LITERAL,global); }
 
 "..."			{ count(); return(token::ELLIPSIS); }
 ">>="			{ count(); return(token::RIGHT_ASSIGN); }
@@ -98,14 +101,14 @@ L?\"(\\.|[^\\"])*\"	{ count(); return(token::STRING_LITERAL); }
 ">="			{ count(); return(token::GE_OP); }
 "=="			{ count(); return(token::EQ_OP); }
 "!="			{ count(); return(token::NE_OP); }
-";"			{ count(); return(';'); }
+";"				{ count(); return(';'); }
 ("{"|"<%")		{ count(); return('{'); }
 ("}"|"%>")		{ count(); return('}'); }
-","			{ count(); return(','); }
-":"			{ count(); return(':'); }
-"="			{ count(); return('='); }
-"("			{ count(); return('('); }
-")"			{ count(); return(')'); }
+","				{ count(); return(','); }
+":"				{ count(); return(':'); }
+"="				{ count(); return('='); }
+"("				{ count(); return('('); }
+")"				{ count(); return(')'); }
 ("["|"<:")		{ count(); return('['); }
 ("]"|":>")		{ count(); return(']'); }
 "."			{ count(); return('.'); }
@@ -164,7 +167,7 @@ void count()
 }
 
 
-int check_type()
+yy::rcc::token::yytokentype check_type()
 {
 /*
 * pseudo code --- this is what it should check

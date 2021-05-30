@@ -34,9 +34,9 @@ extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rcc
 
 primary_expression
 	: IDENTIFIER        								{$$=new VarAST("foo");}
-	| CONSTANT          								{$$=new LiteralAST("foo",0.0f);}
-	| STRING_LITERAL    								{$$=new LiteralAST("foo",0.0f);}
-	| '(' expression ')'								{$$=new LiteralAST("foo",0.0f);}
+	| CONSTANT          								{$$=new LiteralAST("foo",global.buf.val.f64);}
+	| STRING_LITERAL    								{$$=new LiteralAST("foo",global.buf.val.f64);}
+	| '(' expression ')'								{$$=new LiteralAST("foo",global.buf.val.f64);}
 	;
 
 postfix_expression
@@ -56,12 +56,12 @@ argument_expression_list
 	;
 
 unary_expression
-	: postfix_expression            						{}
-	| INC_OP unary_expression       						{}
-	| DEC_OP unary_expression       						{}
-	| unary_operator cast_expression						{}
-	| SIZEOF unary_expression       						{}
-	| SIZEOF '(' type_name ')'      						{}
+	: postfix_expression            					{$$=$1;}
+	| INC_OP unary_expression       					{$$=$2;}
+	| DEC_OP unary_expression       					{$$=$2;}
+	| unary_operator cast_expression					{$$=$2;}
+	| SIZEOF unary_expression       					{$$=$2;}
+	| SIZEOF '(' type_name ')'      					{$$=$3;}
 	;
 
 unary_operator
@@ -79,7 +79,7 @@ cast_expression
 	;
 
 multiplicative_expression
-	: cast_expression
+	: cast_expression									{$$=$1;}
 	| multiplicative_expression '*' cast_expression		{$$=new BinaryExprAST("*",dynamic_cast<ExprAST*>($1),dynamic_cast<ExprAST*>($3));}
 	| multiplicative_expression '/' cast_expression		{$$=new BinaryExprAST("/",dynamic_cast<ExprAST*>($1),dynamic_cast<ExprAST*>($3));}
 	| multiplicative_expression '%' cast_expression		{$$=new BinaryExprAST("%",dynamic_cast<ExprAST*>($1),dynamic_cast<ExprAST*>($3));}
