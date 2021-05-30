@@ -9,6 +9,7 @@ IS			(u|U|l|L)*
 %{
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include "AST.hpp"
 #include "RccGlobal.hpp"
 #include "rcc.tab.hpp"
@@ -29,10 +30,10 @@ void comment();
 "int"			{ count(); return(token::INT); }
 "sizeof"		{ count(); return(token::SIZEOF); }
 
-\'.\'			{ count(); yylval->char_value = yytext[1]; return(token::CHAR_CONSTANT); }
-[0-9]+			{ count(); yylval->int_value = atoi(yytext); return(token::INT_CONSTANT); }
-[0-9]+\.[0-9]+	{ count(); yylval->double_value = atof(yytext); return(token::DOUBLE_CONSTANT); }   
-[a-zA-Z_][a-zA-Z0-9_]*    { count(); yylval->identifier_name = new std::string(yytext); return(token::IDENTIFIER); }
+\'.\'			{ count(); yylval->constant = new Nconstant(RCC_CHAR, yytext[1]); return(token::CHAR_CONSTANT); }
+[0-9]+			{ count(); yylval->constant = new Nconstant(RCC_CHAR, atoi(yytext)); return(token::INT_CONSTANT); }
+[0-9]+\.[0-9]+	{ count(); yylval->constant = new Nconstant(RCC_CHAR, atof(yytext)); return(token::DOUBLE_CONSTANT); }   
+[a-zA-Z_][a-zA-Z0-9_]*    { count(); std::string tmp(yytext); yylval->identifier = new Nidentifier(tmp); return(token::IDENTIFIER); }
 
 ">>="			{ count(); return(token::RIGHT_ASSIGN); }
 "<<="			{ count(); return(token::LEFT_ASSIGN); }
