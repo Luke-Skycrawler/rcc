@@ -199,3 +199,7 @@ Value *NprimaryExpr::codeGen()
 {
     return NULL;
 }
+Value *NparameterDeclaration::codeGen()
+{
+    return NULL;
+}

@@ -32,8 +32,12 @@ extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc,
 	NtypeSpecifier* type_specifier;
 	NinitDeclarator* init_declarator;
 	Ninitializer* initializer;
+	std::vector<Ninitializer*>* initializer_list;
 	Ndeclarator* declarator;
 	NdirectDeclarator* direct_declarator;
+	std::vector<NparameterDeclaration*>* parameter_list;
+	NparameterDeclaration* parameter_declaration;
+	std::vector<Nidentifier*>* identifier_list;
 	std::vector<Nstatement*>* statement_list;
 	Nstatement* statement; 
 	NexprStatement* expr_statement;
@@ -72,8 +76,12 @@ extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc,
 %type<type_specifier> type_specifier;
 %type<init_declarator> init_declarator;
 %type<initializer> initializer;
+%type<initializer_list> initializer_list;
 %type<declarator> declarator;
 %type<direct_declarator> direct_declarator;
+%type<parameter_list> parameter_list;
+%type<parameter_declaration> parameter_declaration;
+%type<identifier_list> identifier_list;
 %type<statement_list> statement_list;
 %type<statement> statement;
 %type<expr_statement> expr_statement;
@@ -134,7 +142,7 @@ declaration_list
 declaration
 	: declaration_specifiers ';' {
 		$$ = new Ndeclaration($1);
-	} // saved for struct declaration
+	}
 	| declaration_specifiers init_declarator_list ';' {
 		$$ = new Ndeclaration($1, *$2);
 	}
@@ -144,7 +152,7 @@ declaration_specifiers
     : type_specifier {
 		$$ = new NdeclarationSpecifiers($1);
 	}
-    ;
+    ; // TODO: struct declaration specifiers
 
 init_declarator_list
     : init_declarator {
@@ -159,7 +167,7 @@ init_declarator_list
 	;
 
 init_declarator
-	: declarator { $$ = new NinitDeclarator($1, nullptr); }
+	: declarator { $$ = new NinitDeclarator($1); }
 	| declarator '=' initializer { $$ = new NinitDeclarator($1, $3); }
 	;
 
@@ -169,35 +177,83 @@ declarator
 
 direct_declarator
 	: IDENTIFIER {
-		$$ = new NdirectDeclarator($1);
+		$$ = new NdirectDeclarator(NdirectDeclarator::IDENTIFIER, $1);
 	}
 	| '(' declarator ')' {
-		cout << "Not implemented yet!" << endl;
-		$$ = nullptr;
-	}// Not implemented now
+		$$ = new NdirectDeclarator(NdirectDeclarator::NESTED_DECLARATOR, $2);
+	}
 	| direct_declarator '[' INT_CONSTANT ']' {
-		cout << "Not implemented yet!" << endl;
-		$$ = nullptr;
-	}// Not implemented now
+		$$ = new NdirectDeclarator(NdirectDeclarator::SQUARE_BRACKET_CONSTANT, $1, $3);
+	}
+	| direct_declarator '[' ']' {
+		$$ = new NdirectDeclarator(NdirectDeclarator::SQUARE_BRACKET_EMPTY, $1);
+	}
+	| direct_declarator '(' parameter_list ')' {
+		$$ = new NdirectDeclarator(NdirectDeclarator::PARENTHESES_PARAMETER_LIST, $1, *$3);
+	}
+	| direct_declarator '(' identifier_list ')' {
+		$$ = new NdirectDeclarator(NdirectDeclarator::PARENTHESES_IDENTIFIER_LIST, $1, *$3);
+	}
+	| direct_declarator '(' ')' {
+		$$ = new NdirectDeclarator(NdirectDeclarator::PARENTHESES_EMPTY, $1);
+	}
 	;
+
+parameter_list
+	: parameter_declaration {
+		std::vector<NparameterDeclaration*>* parameter_list = new std::vector<NparameterDeclaration*>;
+		parameter_list->push_back($1);
+		$$ = parameter_list;
+	}
+	| parameter_list ',' parameter_declaration {
+		$$ = $1;
+		$1->push_back($3);
+	}
+	;
+
+parameter_declaration
+	: declaration_specifiers declarator {
+		$$ = new NparameterDeclaration($1, $2);
+	}
+	// | declaration_specifiers abstract_declarator
+	| declaration_specifiers {
+		$$ = new NparameterDeclaration($1);
+	}
+	;
+
+identifier_list
+	: IDENTIFIER {
+		std::vector<Nidentifier*>* identifier_list = new std::vector<Nidentifier*>;
+		identifier_list->push_back($1);
+		$$ = identifier_list;
+	}
+	| identifier_list ',' IDENTIFIER {
+		$$ = $1;
+		$$->push_back($3);
+	}
 
 initializer
 	: assign_expr {
 		$$ = new Ninitializer($1);
 	}
 	| '{' initializer_list '}' {
-		cout << "Not implemented yet!" << endl;
-		$$ = nullptr;
-	}// Not implemented now
+		$$ = new Ninitializer(*$2);
+	}
 	| '{' initializer_list ',' '}' {
-		cout << "Not implemented yet!" << endl;
-		$$ = nullptr;
-	}// Not implemented now
+		$$ = new Ninitializer(*$2);
+	}
 	;
 
 initializer_list
-	: initializer
-	| initializer_list ',' initializer
+	: initializer {
+		std::vector<Ninitializer*>* initializer_list = new std::vector<Ninitializer*>;
+		initializer_list->push_back($1);
+		$$ = initializer_list;
+	}
+	| initializer_list ',' initializer {
+		$$ = $1;
+		$1->push_back($3);
+	}
 	;
 
 function_definition

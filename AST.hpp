@@ -23,6 +23,7 @@ class NdeclarationSpecifiers;
 class NinitDeclarator;
 class Ndeclarator;
 class NdirectDeclarator;
+class NparameterDeclaration;
 class Ninitializer;
 class NfunctionDefinition;
 class NcompoundStatement;
@@ -120,6 +121,7 @@ private:
 class NinitDeclarator: public Node {
 public:
     NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {PRINT_NODE("NinitDeclarator");}
+    NinitDeclarator(Ndeclarator* declarator):declarator(declarator) {PRINT_NODE("NinitDeclarator");}
     llvm::Value* codeGen();
 private:
     Ndeclarator* declarator;
@@ -144,21 +146,74 @@ private:
  */
 class NdirectDeclarator: public Node {
 public:
-    NdirectDeclarator(Nidentifier* identifier):identifier(identifier) {PRINT_NODE("NdirectDeclarator");}
+    enum DIRECT_DECLARATOR_TYPE {
+        IDENTIFIER = 0,
+        NESTED_DECLARATOR = 1,
+        SQUARE_BRACKET_CONSTANT = 2,
+        SQUARE_BRACKET_EMPTY = 3,
+        PARENTHESES_PARAMETER_LIST = 4,
+        PARENTHESES_IDENTIFIER_LIST = 5,
+        PARENTHESES_EMPTY = 6
+    };
+    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Nidentifier* identifier):\
+        direct_declarator_type(direct_declarator_type),
+        identifier(identifier) {PRINT_NODE("NdirectDeclarator");}
+    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Ndeclarator* declarator):\
+        direct_declarator_type(direct_declarator_type),
+        declarator(declarator) {PRINT_NODE("NdirectDeclarator");}
+    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, Nconstant* int_constant):\
+        direct_declarator_type(direct_declarator_type),
+        direct_declarator(direct_declarator),
+        int_constant(int_constant) {PRINT_NODE("NdirectDeclarator");}
+    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator):\
+        direct_declarator_type(direct_declarator_type),
+        direct_declarator(direct_declarator) {PRINT_NODE("NdirectDeclarator");}
+    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, std::vector<NparameterDeclaration*>& parameter_list):\
+        direct_declarator_type(direct_declarator_type),
+        direct_declarator(direct_declarator),
+        parameter_list(parameter_list) {PRINT_NODE("NdirectDeclarator");}
+    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, std::vector<Nidentifier*>& identifier_list):\
+        direct_declarator_type(direct_declarator_type),
+        direct_declarator(direct_declarator),
+        identifier_list(identifier_list) {PRINT_NODE("NdirectDeclarator");}
     llvm::Value* codeGen();
 private:
+    DIRECT_DECLARATOR_TYPE direct_declarator_type;
     Nidentifier* identifier;
+    Ndeclarator* declarator;
+    Nconstant* int_constant;
+    NdirectDeclarator* direct_declarator;
+    std::vector<NparameterDeclaration*> parameter_list;
+    std::vector<Nidentifier*> identifier_list;
+};
+
+class NparameterDeclaration: public Node {
+public:
+    NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers, Ndeclarator* declarator):
+        declaration_specifiers(declaration_specifiers),
+        declarator(declarator) {}
+    NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers):
+        declaration_specifiers(declaration_specifiers) {}
+    llvm::Value* codeGen();
+private:
+    NdeclarationSpecifiers* declaration_specifiers;
+    Ndeclarator* declarator;
 };
 
 /**
- * TODO: complete it
+ * `initializer` node -- looks like '{3, x + y, P | Q}'
+ * @param assign_expr: a single assign_expr (actually any expression with priviledge higher than the assignment expression)
+ * @param initializer_list: a nested vector of initializer
+ * (Could only be 1 of the 2!)
  */
 class Ninitializer: public Node {
 public:
     Ninitializer(Nexpr* assign_expr):assign_expr(assign_expr) {PRINT_NODE("Ninitializer");}
+    Ninitializer(std::vector<Ninitializer*>& initializer_list):initializer_list(initializer_list) {PRINT_NODE("Ninitializer");}
     llvm::Value* codeGen();
 private:
     Nexpr* assign_expr;
+    std::vector<Ninitializer*> initializer_list;
 };
 
 /**
