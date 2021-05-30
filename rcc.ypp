@@ -33,7 +33,7 @@ extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rcc
 %%
 
 primary_expression
-	: IDENTIFIER        								{}
+	: IDENTIFIER        								{$$=new VarAST(global.buf.val.u8);}
 	| CONSTANT          								{$$=new LiteralAST("foo",global.buf.val.f64);}
 	| STRING_LITERAL    								{$$=new LiteralAST("foo",global.buf.val.f64);}
 	| '(' expression ')'								{$$=new LiteralAST("foo",global.buf.val.f64);}

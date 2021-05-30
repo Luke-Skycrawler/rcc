@@ -17,5 +17,5 @@
 extern llvm::LLVMContext context;
 extern llvm::IRBuilder<> builder;
 extern llvm::Module *topModule;
-extern std::map<std::string, llvm::Value *> bindings;
+extern std::map<std::string, llvm::AllocaInst *> bindings;
 #endif

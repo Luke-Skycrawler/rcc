@@ -37,10 +37,10 @@ Value *DecAST::codegen(){
     auto t=funcStack[funcStack.size()-1];
     // llvm::IRBuilder<> builder(&t->getEntryBlock(), t->getEntryBlock().begin());
     auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
-    builder.CreateStore(builder.getInt32(0), allocation);
-    if(next)next->codegen();
+    builder.CreateStore(builder.getInt64(0), allocation);
     bindings[op]=allocation;
-    return allocation;
+    if(next)next->codegen();
+    return allocation;          // some arbitary pointer other than NULL    
 }
 Value *IfAST::codegen(){
     return NULL;
@@ -96,10 +96,8 @@ Value *LiteralAST::codegen()
 }
 Value *VarAST::codegen()
 {
-    return bindings[op];
-    // return var;
-}
-Value *VarAST::allocate(Constant *initial){
+    return builder.CreateLoad(bindings[op]);
+    // return bindings[op];
 }
 Value *UnaryExprAST::codegen()
 {

@@ -113,7 +113,7 @@ struct IfAST : public PrototypeAST
 struct DecAST : public PrototypeAST
 {
     // DecAST(const std::string &op);
-    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8),baseType(buf.type) { printf("%s", "VarAST\n"); }
+    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8),baseType(buf.type) { printf("%s", "DecAST\n"); }
     
     llvm::Value *codegen() /*override*/;
     void traverse() override
@@ -228,7 +228,6 @@ struct VarAST : public ExprAST
 {
     VarAST(const std::string &op,char baseType=' ') : ExprAST(op),baseType(baseType) { printf("%s", "VarAST\n"); }
     llvm::Value *codegen() override;
-    llvm::Value *allocate(llvm::Constant* initial=NULL);
     char baseType;
     PrototypeAST *type;
     void traverse() override
