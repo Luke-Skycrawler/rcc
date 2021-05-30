@@ -76,8 +76,8 @@ Value *Nconstant::codeGen()
 Value *Nidentifier::codeGen()
 {
     Value *var=NULL;
-    if(bindings.find(*name)!=bindings.end()){
-        var = bindings[*name]->p.val;
+    if(bindings.find(name)!=bindings.end()){
+        var = bindings[name]->p.val;
     }
     return var;
 }
@@ -124,6 +124,78 @@ Value *NfunctionDefinition::codeGen()
     return NULL;
 }
 Value *Nprogram::codeGen()
+{
+    return NULL;
+}
+Value *NexprStatement::codeGen()
+{
+    return NULL;
+}
+Value *Nexpr::codeGen()
+{
+    return NULL;
+}
+Value *NassignExpr::codeGen()
+{
+    return NULL;
+}
+Value *NcondExpr::codeGen()
+{
+    return NULL;
+}
+Value *NlogicalOrExpr::codeGen()
+{
+    return NULL;
+}
+Value *NlogicalAndExpr::codeGen()
+{
+    return NULL;
+}
+Value *NinclusiveOrExpr::codeGen()
+{
+    return NULL;
+}
+Value *NexclusiveOrExpr::codeGen()
+{
+    return NULL;
+}
+Value *NandExpr::codeGen()
+{
+    return NULL;
+}
+Value *NequalityExpr::codeGen()
+{
+    return NULL;
+}
+Value *NrelationalExpr::codeGen()
+{
+    return NULL;
+}
+Value *NshiftExpr::codeGen()
+{
+    return NULL;
+}
+Value *NadditiveExpr::codeGen()
+{
+    return NULL;
+}
+Value *NmultiplicativeExpr::codeGen()
+{
+    return NULL;
+}
+Value *NcastExpr::codeGen()
+{
+    return NULL;
+}
+Value *NunaryExpr::codeGen()
+{
+    return NULL;
+}
+Value *NpostfixExpr::codeGen()
+{
+    return NULL;
+}
+Value *NprimaryExpr::codeGen()
 {
     return NULL;
 }
