@@ -30,6 +30,22 @@ class Nstatement;
 class NexprStatement;
 class NtypeSpecifier;
 class Nexpr;
+class NassignExpr;
+class NcondExpr;
+class NlogicalOrExpr;
+class NlogicalAndExpr;
+class NinclusiveOrExpr;
+class NexclusiveOrExpr;
+class NandExpr;
+class NequalityExpr;
+class NrelationalExpr;
+class NshiftExpr;
+class NadditiveExpr;
+class NmultiplicativeExpr;
+class NcastExpr;
+class NunaryExpr;
+class NpostfixExpr;
+class NprimaryExpr;
 class Nidentifier;
 class Nconstant;
 
@@ -135,15 +151,14 @@ private:
 };
 
 /**
- * 
- * TODO: a straw man implementation using CONSTANT only! Should replace it with an assign expression and more (probably an initializer list, but maybe unnecessary...)
+ * TODO: complete it
  */
 class Ninitializer: public Node {
 public:
-    Ninitializer(Nconstant* constant):constant(constant) {PRINT_NODE("Ninitializer");}
+    Ninitializer(Nexpr* assign_expr):assign_expr(assign_expr) {PRINT_NODE("Ninitializer");}
     llvm::Value* codeGen();
 private:
-    Nconstant* constant;
+    Nexpr* assign_expr;
 };
 
 /**
@@ -199,6 +214,7 @@ public:
         statement_list(statement_list),
         declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
     NcompoundStatement(const std::vector<Ndeclaration*>& declaration_list):declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
+    NcompoundStatement(const std::vector<Nstatement*>& statement_list):statement_list(statement_list) {PRINT_NODE("NcompoundStatement");}
     NcompoundStatement() {PRINT_NODE("NcompoundStatement");}
     llvm::Value* codeGen();
 private:
@@ -233,10 +249,329 @@ private:
 };
 
 /**
- * `expr` node -- an expression
- * The node should have no content, only to be inherited by different types of expression classes.
+ * `expr` node -- an expression looks like 'x = 3, ++y, d[i]--'
+ * The class would be inherited by different types of expression classes,
+ * while it holds a vector...
+ * TODO: The design costs extra non-used space for derived classes, which is not so good...
+ * But the current design is plained and conforms to our EBNF!
  */
-class Nexpr: public Node {};
+class Nexpr: public Node {
+public:
+    Nexpr() {} // default constructor
+    Nexpr(std::vector<Nexpr*>& expr_list):expr_list(expr_list) {}
+    void push_back(Nexpr* expr) {
+        expr_list.push_back(expr);
+    }
+    llvm::Value* codeGen();
+private:
+    std::vector<Nexpr*> expr_list;
+};
+
+/**
+ * x = 3
+ */
+class NassignExpr: public Nexpr {
+public:
+    enum ASSIGN_OP_TYPE {
+        EQUAL = 0,
+        MUL_ASSIGN = 1,
+        DIV_ASSIGN = 2,
+        MOD_ASSIGN = 3,
+        ADD_ASSIGN = 4,
+        SUB_ASSIGN = 5,
+        LEFT_ASSIGN = 6,
+        RIGHT_ASSIGN = 7,
+        AND_ASSIGN = 8,
+        XOR_ASSIGN = 9,
+        OR_ASSIGN = 10
+    };
+    NassignExpr(Nexpr* unary_expr, ASSIGN_OP_TYPE assign_op, Nexpr* assign_expr):\
+        unary_expr(unary_expr),
+        assign_op(assign_op),
+        assign_expr(assign_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* unary_expr;
+    ASSIGN_OP_TYPE assign_op;
+    Nexpr* assign_expr;
+};
+
+/**
+ * P ? 0 : 1
+ */
+class NcondExpr: public Nexpr {
+public:
+    NcondExpr(Nexpr* logical_or_expr, Nexpr* expr, Nexpr* cond_expr):\
+        logical_or_expr(logical_or_expr),
+        expr(expr),
+        cond_expr(cond_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* logical_or_expr;
+    Nexpr* expr;
+    Nexpr* cond_expr;
+};
+
+/**
+ * P || Q
+ */
+class NlogicalOrExpr: public Nexpr {
+public:
+    NlogicalOrExpr(Nexpr* logical_or_expr, Nexpr* logical_and_expr):\
+        logical_or_expr(logical_or_expr),
+        logical_and_expr(logical_and_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* logical_or_expr;
+    Nexpr* logical_and_expr;
+};
+
+/**
+ * P && Q
+ */
+class NlogicalAndExpr: public Nexpr {
+public:
+    NlogicalAndExpr(Nexpr* logical_and_expr, Nexpr* inclusive_or_expr):\
+        logical_and_expr(logical_and_expr),
+        inclusive_or_expr(inclusive_or_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* logical_and_expr;
+    Nexpr* inclusive_or_expr;
+};
+
+/**
+ * P | Q
+ */
+class NinclusiveOrExpr: public Nexpr {
+public:
+    NinclusiveOrExpr(Nexpr* inclusive_or_expr, Nexpr* exclusive_or_expr):\
+        inclusive_or_expr(inclusive_or_expr),
+        exclusive_or_expr(exclusive_or_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* inclusive_or_expr;
+    Nexpr* exclusive_or_expr;
+};
+
+/**
+ * P ^ Q
+ */
+class NexclusiveOrExpr: public Nexpr {
+public:
+    NexclusiveOrExpr(Nexpr* exclusive_or_expr, Nexpr* and_expr):\
+        exclusive_or_expr(exclusive_or_expr),
+        and_expr(and_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* exclusive_or_expr;
+    Nexpr* and_expr;
+};
+
+/**
+ * P & Q
+ */
+class NandExpr: public Nexpr {
+public:
+    NandExpr(Nexpr* and_expr, Nexpr* equality_expr):\
+        and_expr(and_expr),
+        equality_expr(equality_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* and_expr;
+    Nexpr* equality_expr;
+};
+
+/**
+ * P == Q
+ * or
+ * P != Q
+ */
+class NequalityExpr: public Nexpr {
+public:
+    enum EQUALITY_OP {EQ_OP = 0, NE_OP = 1};
+    NequalityExpr(Nexpr* equality_expr, EQUALITY_OP equality_op, Nexpr* relational_expr):\
+        equality_expr(equality_expr),
+        equality_op(equality_op),
+        relational_expr(relational_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* equality_expr;
+    EQUALITY_OP equality_op;
+    Nexpr* relational_expr;
+};
+
+/**
+ * P < Q or P > Q or P <= Q or P >= Q
+ */
+class NrelationalExpr: public Nexpr {
+public:
+    enum RELATIONAL_OP {L_OP = 0, G_OP = 1, LE_OP = 2, GE_OP = 3};
+    NrelationalExpr(Nexpr* relational_expr, RELATIONAL_OP relational_op, Nexpr* shift_expr):\
+        relational_expr(relational_expr),
+        relational_op(relational_op),
+        shift_expr(shift_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* relational_expr;
+    RELATIONAL_OP relational_op;
+    Nexpr* shift_expr;
+};
+
+/**
+ * P << Q or P >> Q
+ */
+class NshiftExpr: public Nexpr {
+public:
+    enum SHIFT_OP {LEFT_OP = 0, RIGHT_OP = 1};
+    NshiftExpr(Nexpr* shift_expr, SHIFT_OP shift_op, Nexpr* additive_expr):\
+        shift_expr(shift_expr),
+        shift_op(shift_op),
+        additive_expr(additive_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* shift_expr;
+    SHIFT_OP shift_op;
+    Nexpr* additive_expr;
+};
+
+class NadditiveExpr: public Nexpr {
+public:
+    enum ADDITIVE_OP {PLUS_OP = 0, MINUS_OP = 1};
+    NadditiveExpr(Nexpr* additive_expr, ADDITIVE_OP additive_op, Nexpr* multiplicative_expr):\
+        additive_expr(additive_expr),
+        additive_op(additive_op),
+        multiplicative_expr(multiplicative_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* additive_expr;
+    ADDITIVE_OP additive_op;
+    Nexpr* multiplicative_expr;
+};
+
+/**
+ * P * Q or P / Q or P % Q
+ */
+class NmultiplicativeExpr: public Nexpr {
+public:
+    enum MULTIPLICATIVE_OP {MULTIPLY_OP = 0, DIVIDE_OP = 1, MOD_OP = 2};
+    NmultiplicativeExpr(Nexpr* multiplicative_expr, MULTIPLICATIVE_OP multiplicative_op, Nexpr* shift_expr):\
+        multiplicative_expr(multiplicative_expr),
+        multiplicative_op(multiplicative_op),
+        shift_expr(shift_expr) {}
+    llvm::Value* codeGen();
+private:
+    Nexpr* multiplicative_expr;
+    MULTIPLICATIVE_OP multiplicative_op;
+    Nexpr* shift_expr;
+};
+
+/**
+ * (int)x
+ */
+class NcastExpr: public Nexpr {
+public:
+    NcastExpr(NtypeSpecifier* type_specifier, Nexpr* cast_expr):\
+        type_specifier(type_specifier),
+        cast_expr(cast_expr) {}
+    llvm::Value* codeGen();
+private:
+    NtypeSpecifier* type_specifier;
+    Nexpr* cast_expr;
+};
+
+/**
+ * ++x or --x or sizeof(x)
+ * or
+ * ~x (or ~(int)x) or sizeof(int)
+ * TODO: maybe we can combine `unary_expr` and `cast_expr` into one member (or use `union`)!
+ */
+class NunaryExpr: public Nexpr {
+public:
+    enum UNARY_OP {
+        INC_OP = 0, // followed by a unary_expr
+        DEC_OP = 1, // followed by a unary_expr
+        SIZEOF_U = 2, // followed by a unary_expr
+        SIZEOF_T = 3, // followed by a type_specifier
+        AND_OP = 4, // followed by a cast_expr
+        MULTIPLY_OP = 5, // followed by a cast_expr
+        PLUS_OP = 6, // followed by a cast_expr
+        MINUS_OP = 7, // followed by a cast_expr
+        TILDE_OP = 8, // followed by a cast_expr
+        EXCLAMATION_OP = 9 // followed by a cast_expr
+    };
+    NunaryExpr(UNARY_OP unary_op, Nexpr* unary_expr, Nexpr* cast_expr):\
+        unary_op(unary_op),
+        unary_expr(unary_expr),
+        cast_expr(cast_expr) {}
+    NunaryExpr(UNARY_OP unary_op, NtypeSpecifier* type_specifier):\
+        unary_op(unary_op),
+        type_specifier(type_specifier) {}
+    llvm::Value* codeGen();
+private:
+    UNARY_OP unary_op;
+    //Only one of the following should be valid!
+    Nexpr* unary_expr;
+    Nexpr* cast_expr;
+    NtypeSpecifier* type_specifier;
+};
+
+/**
+ * x[3] or f() or f(3, 4) or a.id or a->id or x++ or x--
+ */
+class NpostfixExpr: public Nexpr {
+public:
+    enum POSTFIX_TYPE {
+        SQUARE_BRACKETS = 0,
+        PARENTHESES = 1,
+        DOT = 2,
+        PTR_OP = 3,
+        INC_OP = 4,
+        DEC_OP = 5
+    };
+    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr* postfix_expr, Nexpr* expr):\
+        postfix_expr(postfix_expr),
+        postfix_type(postfix_type),
+        expr(expr) {}
+    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr* postfix_expr, std::vector<Nexpr*>& argument_expr_list):\
+        postfix_expr(postfix_expr),
+        postfix_type(postfix_type),
+        argument_expr_list(argument_expr_list) {}
+    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr* postfix_expr, Nidentifier* identifier):\
+        postfix_expr(postfix_expr),
+        postfix_type(postfix_type),
+        identifier(identifier) {}
+    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr* postfix_expr):\
+        postfix_expr(postfix_expr),
+        postfix_type(postfix_type) {}
+    llvm::Value* codeGen();
+private:
+    POSTFIX_TYPE postfix_type;
+    Nexpr* postfix_expr;
+    Nexpr* expr; // valid when postfix_type = SUQARE_BRACKETS
+    std::vector<Nexpr*> argument_expr_list; // valid when postfix_type = PARENTHESES, could be a nullptr!
+    Nidentifier* identifier; // valid when postfix_type = DOT or PTR_OP
+    // when postfix_type = INC_OP or DEC_OP, none of the 3 upon would be used!
+};
+
+/**
+ * x or 'c' or 3 or 3.14
+ * TODO: Implement with STRING_LITERAL
+ */
+class NprimaryExpr: public Nexpr {
+public:
+    enum PRIMARY_TYPE {
+        IDENTIFIER = 0,
+        CONSTANT = 1
+    };
+    NprimaryExpr(Nidentifier* identifier):identifier(identifier), primary_type(IDENTIFIER) {}
+    NprimaryExpr(Nconstant* constant):constant(constant), primary_type(CONSTANT) {}
+    llvm::Value* codeGen();
+private:
+    PRIMARY_TYPE primary_type; // tell whether the primary expression is an identifier or a constant
+    Nidentifier* identifier;
+    Nconstant* constant;
+};
 
 /**
  * `IDENTIFIER` node -- an identifier
@@ -244,10 +579,10 @@ class Nexpr: public Node {};
  */
 class Nidentifier: public Nexpr {
 public:
-    Nidentifier(std::string* name):name(name) {}
+    Nidentifier(std::string& name):name(name) {}
     llvm::Value* codeGen();
 private:
-    std::string* name;
+    std::string name;
 };
 
 /**
@@ -255,7 +590,7 @@ private:
  * @param type: RCC_CHAR, RCC_INT or RCC_DOUBLE
  * @param value: a RCC_CHAR, RCC_INT or RCC_DOUBLE constant value
  */
-class Nconstant: public Nexpr {
+class Nconstant: public Node {
 public:
     Nconstant(RCC_TYPE type, char value):type(type) { this->value.char_value = value; }
     Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
