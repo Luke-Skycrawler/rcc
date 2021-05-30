@@ -19,7 +19,19 @@ Function declaration should be added.
 <declarator> ::= <direct_declarator>
 
 <direct_declarator> ::= <identifier>
+                        | ( <declarator> )
                         | <declarator> [ <constant> ])
+                        | <declarator> [ ]
+                        | <declarator> ( <parameter_type_list> )
+                        | <declarator> ( <identifier_list> )
+                        | <declarator> ( )
+<parameter_type_list> ::= <parameter_declaration>
+                        | <parameter_type_list> , <parameter_declaration>
+<parameter_declaration> ::= <declaration_specifier> <declarator>
+                        // | <declaration_specifier> <abstract_declarator>
+                        | <declaration_specifier>
+<identifier_list> ::= <identifier>
+                | <identifier_list> ',' <identifier>
 <initializer> ::= <assign_expr>
                 | { <initializer_list> }
                 | { <initializer_list> , }
