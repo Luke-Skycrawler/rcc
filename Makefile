@@ -16,10 +16,10 @@ CXX = g++
 all: rcc
 %.o: %.cpp
 	${CXX} -c ${CXXFLAGS} -g -o $@ $<
-	@echo "CXX $<.cpp => $@.o"
-rcc: rcc.tab.o lex.yy.o CodeGen.o LLVMGlobal.o
-	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o LLVMGlobal.o ${LIBS} ${LDFLAGS}
-	@echo "LINK *.o => rcc"
+	@echo "CXX $< => $@"
+rcc: rcc.tab.o lex.yy.o CodeGen.o LLVMGlobal.o AST.o
+	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o LLVMGlobal.o AST.o ${LIBS} ${LDFLAGS}
+	@echo "LINK * => rcc"
 rcc.tab.cpp: rcc.ypp 
 	${BISON} -d rcc.ypp
 	@echo "BISON => $@"
