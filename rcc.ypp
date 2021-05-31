@@ -12,6 +12,7 @@
 #include "rcc.tab.hpp"
 using namespace std;
 extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global);
+Nprogram* root;
 %}
 
 %parse-param {RccGlobal &global}
@@ -114,10 +115,12 @@ program
 		std::vector<NexternalDeclaration*>* tmp = new std::vector<NexternalDeclaration*>();
 		tmp->push_back($1);
 		$$ = new Nprogram(*tmp);
+		root = $$;
 	}
 	| program external_declaration {
 		$$ = $1;
 		$1->push_back($2);
+		root = $$;
 	}
     ;
 
@@ -565,6 +568,8 @@ int main(int argc, char **argv)
 		cout << "Usage: rcc [FILE_NAME]\nor\nrcc" << endl;
 	yy::rcc parser(global);
 	int v = parser.parse();
+	std::cout << std::endl;
+	root->printNode(0);
 	return v;
 }
 

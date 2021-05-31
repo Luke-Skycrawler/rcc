@@ -5,13 +5,15 @@
 #include <vector>
 #include <string>
 
-#ifdef DEBUG
-#define PRINT_NODE(s)  std::cout << std::endl << "#" << s << " node created" << std::endl 
-#endif
-
-#ifndef DEBUG
-#define PRINT_NODE(s)
-#endif
+inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
+{
+    for (int i = 1; i < indent; i++)
+        std::cout << "\t";
+    if (indent)
+        std::cout << "|___";
+    if(new_line) std::cout << msg << std::endl;
+    else std::cout << msg;
+}
 
 enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3};
 
@@ -57,6 +59,7 @@ class Node {
 public:
     virtual ~Node() {}
     virtual llvm::Value* codeGen()=0;
+    virtual void printNode(int indent) {};
 };
 
 /**
@@ -73,6 +76,7 @@ public:
         external_declaration_list.push_back(external_declaration);
     }
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     std::vector<NexternalDeclaration*> external_declaration_list;
 };
@@ -83,7 +87,8 @@ private:
  * - `Ndeclaration`
  * - `NfunctionDefinition`
  */
-class NexternalDeclaration: public Node {};
+class NexternalDeclaration: public Node {
+};
 
 /**
  * `declaration` node -- a declaration looks like 'int x = 3', consisting of
@@ -94,10 +99,11 @@ class Ndeclaration: public NexternalDeclaration {
 public:
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers, std::vector<NinitDeclarator*>& init_declarator_list):\
         declaration_specifiers(declaration_specifiers),
-        init_declarator_list(init_declarator_list) {PRINT_NODE("Ndeclaration");}
+        init_declarator_list(init_declarator_list) {}
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
-        declaration_specifiers(declaration_specifiers) {PRINT_NODE("Ndeclaration");}
+        declaration_specifiers(declaration_specifiers) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator*> init_declarator_list;
@@ -109,8 +115,9 @@ private:
  */
 class NdeclarationSpecifiers: public Node {
 public:
-    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {PRINT_NODE("NdeclarationSpecifiers");}
+    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     NtypeSpecifier* type_specifier;
 };
@@ -120,9 +127,10 @@ private:
  */
 class NinitDeclarator: public Node {
 public:
-    NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {PRINT_NODE("NinitDeclarator");}
-    NinitDeclarator(Ndeclarator* declarator):declarator(declarator) {PRINT_NODE("NinitDeclarator");}
+    NinitDeclarator(Ndeclarator* declarator, Ninitializer* initializer):declarator(declarator), initializer(initializer) {}
+    NinitDeclarator(Ndeclarator* declarator):declarator(declarator) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     Ndeclarator* declarator;
     Ninitializer* initializer;
@@ -134,8 +142,9 @@ private:
  */
 class Ndeclarator: public Node {
 public:
-    Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {PRINT_NODE("Ndeclarator");}
+    Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     NdirectDeclarator* direct_declarator;
 };
@@ -157,26 +166,27 @@ public:
     };
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Nidentifier* identifier):\
         direct_declarator_type(direct_declarator_type),
-        identifier(identifier) {PRINT_NODE("NdirectDeclarator");}
+        identifier(identifier) {}
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Ndeclarator* declarator):\
         direct_declarator_type(direct_declarator_type),
-        declarator(declarator) {PRINT_NODE("NdirectDeclarator");}
+        declarator(declarator) {}
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, Nconstant* int_constant):\
         direct_declarator_type(direct_declarator_type),
         direct_declarator(direct_declarator),
-        int_constant(int_constant) {PRINT_NODE("NdirectDeclarator");}
+        int_constant(int_constant) {}
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator):\
         direct_declarator_type(direct_declarator_type),
-        direct_declarator(direct_declarator) {PRINT_NODE("NdirectDeclarator");}
+        direct_declarator(direct_declarator) {}
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, std::vector<NparameterDeclaration*>& parameter_list):\
         direct_declarator_type(direct_declarator_type),
         direct_declarator(direct_declarator),
-        parameter_list(parameter_list) {PRINT_NODE("NdirectDeclarator");}
+        parameter_list(parameter_list) {}
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, std::vector<Nidentifier*>& identifier_list):\
         direct_declarator_type(direct_declarator_type),
         direct_declarator(direct_declarator),
-        identifier_list(identifier_list) {PRINT_NODE("NdirectDeclarator");}
+        identifier_list(identifier_list) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     DIRECT_DECLARATOR_TYPE direct_declarator_type;
     Nidentifier* identifier;
@@ -195,6 +205,7 @@ public:
     NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers):
         declaration_specifiers(declaration_specifiers) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     NdeclarationSpecifiers* declaration_specifiers;
     Ndeclarator* declarator;
@@ -208,9 +219,10 @@ private:
  */
 class Ninitializer: public Node {
 public:
-    Ninitializer(Nexpr* assign_expr):assign_expr(assign_expr) {PRINT_NODE("Ninitializer");}
-    Ninitializer(std::vector<Ninitializer*>& initializer_list):initializer_list(initializer_list) {PRINT_NODE("Ninitializer");}
+    Ninitializer(Nexpr* assign_expr):assign_expr(assign_expr) {}
+    Ninitializer(std::vector<Ninitializer*>& initializer_list):initializer_list(initializer_list) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     Nexpr* assign_expr;
     std::vector<Ninitializer*> initializer_list;
@@ -243,6 +255,7 @@ public:
         declarator(declarator),
         compound_statement(compound_statement) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     NdeclarationSpecifiers* declaration_specifiers; // 'int'
     Ndeclarator* declarator; // 'f(int x, double y, char z)'
@@ -267,11 +280,12 @@ class NcompoundStatement: public Nstatement {
 public:
     NcompoundStatement(const std::vector<Ndeclaration*>& declaration_list,const std::vector<Nstatement*>& statement_list):\
         statement_list(statement_list),
-        declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
-    NcompoundStatement(const std::vector<Ndeclaration*>& declaration_list):declaration_list(declaration_list) {PRINT_NODE("NcompoundStatement");}
-    NcompoundStatement(const std::vector<Nstatement*>& statement_list):statement_list(statement_list) {PRINT_NODE("NcompoundStatement");}
-    NcompoundStatement() {PRINT_NODE("NcompoundStatement");}
+        declaration_list(declaration_list) {}
+    NcompoundStatement(const std::vector<Ndeclaration*>& declaration_list):declaration_list(declaration_list) {}
+    NcompoundStatement(const std::vector<Nstatement*>& statement_list):statement_list(statement_list) {}
+    NcompoundStatement() {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     std::vector<Ndeclaration*> declaration_list;
     std::vector<Nstatement*> statement_list;
@@ -287,6 +301,7 @@ public:
     NexprStatement() {expr = nullptr;}
     NexprStatement(Nexpr* expr):expr(expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* expr;
 };
@@ -299,6 +314,7 @@ class NtypeSpecifier: public Node {
 public:
     NtypeSpecifier(RCC_TYPE type):type(type) {}
     llvm::Value* codeGen();
+    virtual void printNode(int indent);
 private:
     RCC_TYPE type;
 };
@@ -317,6 +333,7 @@ public:
     void push_back(Nexpr* expr) {
         expr_list.push_back(expr);
     }
+    void printNode(int indent);
     llvm::Value* codeGen();
 private:
     std::vector<Nexpr*> expr_list;
@@ -345,6 +362,7 @@ public:
         assign_op(assign_op),
         assign_expr(assign_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* unary_expr;
     ASSIGN_OP_TYPE assign_op;
@@ -361,6 +379,7 @@ public:
         expr(expr),
         cond_expr(cond_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* logical_or_expr;
     Nexpr* expr;
@@ -376,6 +395,7 @@ public:
         logical_or_expr(logical_or_expr),
         logical_and_expr(logical_and_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* logical_or_expr;
     Nexpr* logical_and_expr;
@@ -390,6 +410,7 @@ public:
         logical_and_expr(logical_and_expr),
         inclusive_or_expr(inclusive_or_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* logical_and_expr;
     Nexpr* inclusive_or_expr;
@@ -404,6 +425,7 @@ public:
         inclusive_or_expr(inclusive_or_expr),
         exclusive_or_expr(exclusive_or_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* inclusive_or_expr;
     Nexpr* exclusive_or_expr;
@@ -418,6 +440,7 @@ public:
         exclusive_or_expr(exclusive_or_expr),
         and_expr(and_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* exclusive_or_expr;
     Nexpr* and_expr;
@@ -432,6 +455,7 @@ public:
         and_expr(and_expr),
         equality_expr(equality_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* and_expr;
     Nexpr* equality_expr;
@@ -450,6 +474,7 @@ public:
         equality_op(equality_op),
         relational_expr(relational_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* equality_expr;
     EQUALITY_OP equality_op;
@@ -467,6 +492,7 @@ public:
         relational_op(relational_op),
         shift_expr(shift_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* relational_expr;
     RELATIONAL_OP relational_op;
@@ -484,6 +510,7 @@ public:
         shift_op(shift_op),
         additive_expr(additive_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* shift_expr;
     SHIFT_OP shift_op;
@@ -498,6 +525,7 @@ public:
         additive_op(additive_op),
         multiplicative_expr(multiplicative_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* additive_expr;
     ADDITIVE_OP additive_op;
@@ -515,6 +543,7 @@ public:
         multiplicative_op(multiplicative_op),
         shift_expr(shift_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     Nexpr* multiplicative_expr;
     MULTIPLICATIVE_OP multiplicative_op;
@@ -530,6 +559,7 @@ public:
         type_specifier(type_specifier),
         cast_expr(cast_expr) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     NtypeSpecifier* type_specifier;
     Nexpr* cast_expr;
@@ -563,6 +593,7 @@ public:
         unary_op(unary_op),
         type_specifier(type_specifier) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     UNARY_OP unary_op;
     //Only one of the following should be valid!
@@ -600,6 +631,7 @@ public:
         postfix_expr(postfix_expr),
         postfix_type(postfix_type) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     POSTFIX_TYPE postfix_type;
     Nexpr* postfix_expr;
@@ -622,6 +654,7 @@ public:
     NprimaryExpr(Nidentifier* identifier):identifier(identifier), primary_type(IDENTIFIER) {}
     NprimaryExpr(Nconstant* constant):constant(constant), primary_type(CONSTANT) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     PRIMARY_TYPE primary_type; // tell whether the primary expression is an identifier or a constant
     Nidentifier* identifier;
@@ -636,6 +669,7 @@ class Nidentifier: public Nexpr {
 public:
     Nidentifier(std::string& name):name(name) {}
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     std::string name;
 };
@@ -651,6 +685,7 @@ public:
     Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
     Nconstant(RCC_TYPE type, double value):type(type) { this->value.double_value = value; }
     llvm::Value* codeGen();
+    void printNode(int indent);
 private:
     RCC_TYPE type;
     union Value {
