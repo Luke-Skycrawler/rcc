@@ -18,8 +18,19 @@ IS			(u|U|l|L)*
 # define YY_USER_ACTION yylloc->columns (yyleng);
 typedef yy::rcc::token token;
 void count();
-int check_type();
+yy::rcc::token::yytokentype check_type();
 void comment();
+inline yy::rcc::token::yytokentype numeric(yy::rcc::token::yytokentype tok,rccGlobal &global){
+	// global.buf.type='d';
+	global.buf.val.f64=atof(yytext);
+	return tok;
+}
+inline yy::rcc::token::yytokentype strLiteral(yy::rcc::token::yytokentype tok,rccGlobal &global){
+	// global.buf.type='s';
+	strcpy(global.buf.val.u8,yytext);
+	// printf("In check_type:%s\n",global.buf.val.u8);
+	return tok;
+}
 %}
 
 %%
@@ -57,14 +68,14 @@ void comment();
 ">="			{ count(); return(token::GE_OP); }
 "=="			{ count(); return(token::EQ_OP); }
 "!="			{ count(); return(token::NE_OP); }
-";"			{ count(); return(';'); }
+";"				{ count(); return(';'); }
 ("{"|"<%")		{ count(); return('{'); }
 ("}"|"%>")		{ count(); return('}'); }
-","			{ count(); return(','); }
-":"			{ count(); return(':'); }
-"="			{ count(); return('='); }
-"("			{ count(); return('('); }
-")"			{ count(); return(')'); }
+","				{ count(); return(','); }
+":"				{ count(); return(':'); }
+"="				{ count(); return('='); }
+"("				{ count(); return('('); }
+")"				{ count(); return(')'); }
 ("["|"<:")		{ count(); return('['); }
 ("]"|":>")		{ count(); return(']'); }
 "."			{ count(); return('.'); }
@@ -123,7 +134,7 @@ void count()
 }
 
 
-int check_type()
+yy::rcc::token::yytokentype check_type()
 {
 /*
 * pseudo code --- this is what it should check
