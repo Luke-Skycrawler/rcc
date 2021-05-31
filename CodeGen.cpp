@@ -121,20 +121,23 @@ Value *NcompoundStatement::codeGen()
 }
 Value *NfunctionDefinition::codeGen()
 {
+    string op="";
+    Node *body=NULL;
+
     Function *func = topModule->getFunction(op);
     if (!func)
     {
         vector<Type *> args(0, Type::getDoubleTy(context));
         FunctionType *ft = FunctionType::get(Type::getDoubleTy(context), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, "main", topModule);
-        funcStack.push_back(func);
+        // funcStack.push_back(func);
     }
 
     BasicBlock *bb = BasicBlock::Create(context, "entry", func);
     builder.SetInsertPoint(bb);
     if (body)
     {
-        if (auto ret = body->codegen())
+        if (auto ret = body->codeGen())
         {
             builder.CreateRet(ret);
             verifyFunction(*func);
@@ -144,7 +147,7 @@ Value *NfunctionDefinition::codeGen()
         if (func)
             func->eraseFromParent();
     }
-    funcStack.pop_back();
+    // funcStack.pop_back();
     return NULL;
 }
 Value *Nprogram::codeGen()
@@ -219,18 +222,15 @@ Value *NpostfixExpr::codeGen()
 {
     return NULL;
 }
-Value *NprimaryExpr::codeGen()
-{
-    return NULL;
-}
 Value *NparameterDeclaration::codeGen()
 {
-    auto t = funcStack[funcStack.size() - 1];
-    // llvm::IRBuilder<> builder(&t->getEntryBlock(), t->getEntryBlock().begin());
+    string op="";
+    Node *next=NULL;
+
     auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
     builder.CreateStore(builder.getInt64(0), allocation);
     bindings[op] = allocation;
     if (next)
-        next->codegen();
+        next->codeGen();
     return allocation; // some arbitary pointer other than NULL
 }

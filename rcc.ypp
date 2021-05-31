@@ -537,11 +537,11 @@ argument_expr_list
 	;
 
 primary_expr
-	: IDENTIFIER { $$ = new NprimaryExpr($1); }
-	| CHAR_CONSTANT { $$ = new NprimaryExpr($1); }
-	| INT_CONSTANT { $$ = new NprimaryExpr($1); }
-	| DOUBLE_CONSTANT { $$ = new NprimaryExpr($1); }
-	| STRING_LITERAL { $$ = new NprimaryExpr($1); }
+	: IDENTIFIER { $$ = $1; }
+	| CHAR_CONSTANT { $$ = $1; }
+	| INT_CONSTANT { $$ = $1; }
+	| DOUBLE_CONSTANT { $$ = $1; }
+	| STRING_LITERAL { $$ = $1; }
 	| '(' expr ')' { $$ = $2; }
 	;
 

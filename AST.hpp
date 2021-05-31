@@ -48,7 +48,6 @@ class NmultiplicativeExpr;
 class NcastExpr;
 class NunaryExpr;
 class NpostfixExpr;
-class NprimaryExpr;
 class Nidentifier;
 class Nconstant;
 
@@ -641,25 +640,6 @@ private:
     // when postfix_type = INC_OP or DEC_OP, none of the 3 upon would be used!
 };
 
-/**
- * x or 'c' or 3 or 3.14
- * TODO: Implement with STRING_LITERAL
- */
-class NprimaryExpr: public Nexpr {
-public:
-    enum PRIMARY_TYPE {
-        IDENTIFIER = 0,
-        CONSTANT = 1
-    };
-    NprimaryExpr(Nidentifier* identifier):identifier(identifier), primary_type(IDENTIFIER) {}
-    NprimaryExpr(Nconstant* constant):constant(constant), primary_type(CONSTANT) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    PRIMARY_TYPE primary_type; // tell whether the primary expression is an identifier or a constant
-    Nidentifier* identifier;
-    Nconstant* constant;
-};
 
 /**
  * `IDENTIFIER` node -- an identifier
@@ -679,7 +659,7 @@ private:
  * @param type: RCC_CHAR, RCC_INT or RCC_DOUBLE
  * @param value: a RCC_CHAR, RCC_INT or RCC_DOUBLE constant value
  */
-class Nconstant: public Node {
+class Nconstant: public Nexpr {
 public:
     Nconstant(RCC_TYPE type, char value):type(type) { this->value.char_value = value; }
     Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
