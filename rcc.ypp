@@ -317,13 +317,13 @@ expr_statement
 
 type_specifier
     : CHAR {
-		$$ = new NtypeSpecifier(RCC_CHAR);
+		$$ = new NtypeSpecifier("char");
 	}
     | INT {
-		$$ = new NtypeSpecifier(RCC_INT);
+		$$ = new NtypeSpecifier("int");
 	}
     | DOUBLE {
-		$$ = new NtypeSpecifier(RCC_DOUBLE);
+		$$ = new NtypeSpecifier("double");
 	}
     ;
 
@@ -371,94 +371,94 @@ cond_expr
 logical_or_expr
 	: logical_and_expr { $$ = $1; }
 	| logical_or_expr OR_OP logical_and_expr {
-		$$ = new NbinaryExpr("||",$1, $3);
+		$$ = new NbinaryExpr("||", $1, $3);
 	}
 	;
 
 logical_and_expr
 	: inclusive_or_expr { $$ = $1; }
 	| logical_and_expr AND_OP inclusive_or_expr {
-		$$ = new NbinaryExpr("&&",$1, $3);
+		$$ = new NbinaryExpr("&&", $1, $3);
 	}
 	;
 
 inclusive_or_expr
     : exclusive_or_expr { $$ = $1; }
 	| inclusive_or_expr '|' exclusive_or_expr {
-		$$ = new NbinaryExpr("|",$1, $3);
+		$$ = new NbinaryExpr("|", $1, $3);
 	}
 	;
 
 exclusive_or_expr
 	: and_expr { $$ = $1; }
 	| exclusive_or_expr '^' and_expr {
-		$$ = new NbinaryExpr("^",$1, $3);
+		$$ = new NbinaryExpr("^", $1, $3);
 	}
 	;
 
 and_expr
 	: equality_expr { $$ = $1; }
 	| and_expr '&' equality_expr {
-		$$ = new NbinaryExpr("&",$1, $3);
+		$$ = new NbinaryExpr("&", $1, $3);
 	}
 	;
 
 equality_expr
 	: relational_expr { $$ = $1; }
 	| equality_expr EQ_OP relational_expr {
-		$$ = new NbinaryExpr("==",$1, $3);
+		$$ = new NbinaryExpr("==", $1, $3);
 	}
 	| equality_expr NE_OP relational_expr {
-		$$ = new NbinaryExpr("!=",$1, $3);
+		$$ = new NbinaryExpr("!=", $1, $3);
 	}
 	;
 
 relational_expr
 	: shift_expr { $$ = $1; }
 	| relational_expr '<' shift_expr {
-		$$ = new NbinaryExpr("<",$1, $3);
+		$$ = new NbinaryExpr("<", $1, $3);
 	}
 	| relational_expr '>' shift_expr {
-		$$ = new NbinaryExpr(">",$1, $3);
+		$$ = new NbinaryExpr(">", $1, $3);
 	}
 	| relational_expr LE_OP shift_expr {
-		$$ = new NbinaryExpr("<=",$1, $3);
+		$$ = new NbinaryExpr("<=", $1, $3);
 	}
 	| relational_expr GE_OP shift_expr {
-		$$ = new NbinaryExpr(">=",$1, $3);
+		$$ = new NbinaryExpr(">=", $1, $3);
 	}
 	;
 
 shift_expr
 	: additive_expr { $$ = $1; }
 	| shift_expr LEFT_OP additive_expr {
-		$$ = new NbinaryExpr("<<",$1, $3);
+		$$ = new NbinaryExpr("<<", $1, $3);
 	}
 	| shift_expr RIGHT_OP additive_expr {
-		$$ = new NbinaryExpr(">>",$1, $3);
+		$$ = new NbinaryExpr(">>", $1, $3);
 	}
 	;
 
 additive_expr
     : multiplicative_expr { $$ = $1; }
 	| additive_expr '+' multiplicative_expr {
-		$$ = new NbinaryExpr("+",$1, $3);
+		$$ = new NbinaryExpr("+", $1, $3);
 	}
 	| additive_expr '-' multiplicative_expr {
-		$$ = new NbinaryExpr("-",$1, $3);
+		$$ = new NbinaryExpr("-", $1, $3);
 	}
 	;
 
 multiplicative_expr
     : cast_expr { $$ = $1; }
 	| multiplicative_expr '*' cast_expr {
-		$$ = new NbinaryExpr("*",$1, $3);
+		$$ = new NbinaryExpr("*", $1, $3);
 	}
 	| multiplicative_expr '/' cast_expr {
-		$$ = new NbinaryExpr("/",$1, $3);
+		$$ = new NbinaryExpr("/", $1, $3);
 	}
 	| multiplicative_expr '%' cast_expr {
-		$$ = new NbinaryExpr("%",$1, $3);
+		$$ = new NbinaryExpr("%", $1, $3);
 	}
 	;
 
