@@ -18,8 +18,10 @@ using namespace llvm::sys;
 LLVMContext context;
 IRBuilder<> builder(context);
 Module *topModule;
-std::map<std::string,AllocaInst *> bindings;
+std::map<std::string, std::string> binding_info_map;
+std::map<std::string, AllocaInst*> bindings;
 Node *root;
+bool type_error_alarm = true;
 
 int main(int argc, char **argv)
 {
