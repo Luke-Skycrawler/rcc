@@ -69,17 +69,22 @@ Value *NbinaryExpr::codeGen()
 //     // }
 //     return builder.CreateCall(callee, argv, "call");
 // }
-Value *Nconstant::codeGen()
+llvm::Value *Nconstant::codeGen()
 {
-    return ConstantFP::get(context, APFloat(value.double_value));
+    string op(value.string_literal_value);
+
+    if(type!=RCC_STRING_LITERAL)return ConstantFP::get(context, APFloat(value.double_value));
+
+    auto str= ConstantDataArray::getString(context,op);
+	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");
+    addr->setAlignment (1);		   	
+	llvm::Value* p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+	builder.CreateStore(str, p)->setAlignment(1);
+    return p;
 }
 Value *Nidentifier::codeGen()
 {
-    Value *var=NULL;
-    // if(bindings.find(name)!=bindings.end()){
-    //     var = bindings[name]->p.val;
-    // }
-    // return var;
+    return builder.CreateLoad(bindings[name]);
 }
 Value *Ninitializer::codeGen()
 {
@@ -97,10 +102,10 @@ Value *NdirectDeclarator::codeGen()
 {
     return NULL;
 }
-Value *Ndeclarator::codeGen()
-{
-    return NULL;
-}
+// Value *Ndeclarator::codeGen()
+// {
+//     return NULL;
+// }
 Value *NdeclarationSpecifiers::codeGen()
 {
     return NULL;

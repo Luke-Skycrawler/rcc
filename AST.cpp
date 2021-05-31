@@ -33,11 +33,11 @@ void NinitDeclarator::printNode(int indent)
         initializer->printNode(indent + 1);
 }
 
-void Ndeclarator::printNode(int indent)
-{
-    PRINT_INDENT(indent, "Ndeclarator");
-    direct_declarator->printNode(indent + 1);
-}
+// void Ndeclarator::printNode(int indent)
+// {
+//     PRINT_INDENT(indent, "Ndeclarator");
+//     direct_declarator->printNode(indent + 1);
+// }
 
 void NdirectDeclarator::printNode(int indent)
 {

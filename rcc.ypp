@@ -34,7 +34,7 @@ extern Node* root;
 	NinitDeclarator* init_declarator;
 	Ninitializer* initializer;
 	std::vector<Ninitializer*>* initializer_list;
-	Ndeclarator* declarator;
+	// Ndeclarator* declarator;
 	NdirectDeclarator* direct_declarator;
 	std::vector<NparameterDeclaration*>* parameter_list;
 	NparameterDeclaration* parameter_declaration;
@@ -79,7 +79,7 @@ extern Node* root;
 %type<init_declarator> init_declarator;
 %type<initializer> initializer;
 %type<initializer_list> initializer_list;
-%type<declarator> declarator;
+%type<direct_declarator> declarator;
 %type<direct_declarator> direct_declarator;
 %type<parameter_list> parameter_list;
 %type<parameter_declaration> parameter_declaration;
@@ -171,12 +171,12 @@ init_declarator_list
 	;
 
 init_declarator
-	: declarator { $$ = new NinitDeclarator($1); }
-	| declarator '=' initializer { $$ = new NinitDeclarator($1, $3); }
+	: declarator { $$ = $1; }
+	| declarator '=' initializer { $$ ->initializer= $3; }
 	;
 
 declarator
-    : direct_declarator { $$ = new Ndeclarator($1); }
+    : direct_declarator { $$ = $1; }
     ;
 
 direct_declarator
