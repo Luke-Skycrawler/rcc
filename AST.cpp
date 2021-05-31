@@ -153,6 +153,10 @@ void Nconstant::printNode(int indent)
             PRINT_INDENT(indent, "Nconstant", false);
             std::cout << "(double: " << value.double_value << ")" << std::endl;
             break;
+        case RCC_STRING_LITERAL:
+            PRINT_INDENT(indent, "Nconstant", false);
+            std::cout << "(string literal: \"" << value.string_literal_value << "\")" << std::endl;
+            break;
     }
     
 }

@@ -54,7 +54,7 @@ Nprogram* root;
 	Nidentifier* identifier;
 }
 
-%token STRING_LITERAL SIZEOF
+%token SIZEOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
@@ -65,6 +65,7 @@ Nprogram* root;
 %token<constant> CHAR_CONSTANT
 %token<constant> INT_CONSTANT
 %token<constant> DOUBLE_CONSTANT
+%token<constant> STRING_LITERAL
 
 %type<program> program
 %type<external_declaration> external_declaration
@@ -540,10 +541,7 @@ primary_expr
 	| CHAR_CONSTANT { $$ = new NprimaryExpr($1); }
 	| INT_CONSTANT { $$ = new NprimaryExpr($1); }
 	| DOUBLE_CONSTANT { $$ = new NprimaryExpr($1); }
-	| STRING_LITERAL {
-		std::cout << "STRING_LITERAL not implemented yet!" << std::endl;
-		return -1;
-	}
+	| STRING_LITERAL { $$ = new NprimaryExpr($1); }
 	| '(' expr ')' { $$ = $2; }
 	;
 

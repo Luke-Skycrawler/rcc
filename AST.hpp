@@ -15,7 +15,7 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
     else std::cout << msg;
 }
 
-enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3};
+enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3, RCC_STRING_LITERAL = 4};
 
 class Node;
 class Nprogram;
@@ -684,6 +684,13 @@ public:
     Nconstant(RCC_TYPE type, char value):type(type) { this->value.char_value = value; }
     Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
     Nconstant(RCC_TYPE type, double value):type(type) { this->value.double_value = value; }
+    Nconstant(RCC_TYPE type, char* value):type(type) {
+        //Ignore the last \", so use `len` but not `len + 1`
+        int len = strlen(value);
+        this->value.string_literal_value = (char*)malloc(len);
+        memset(this->value.string_literal_value, '\0', len);
+        strncpy(this->value.string_literal_value, value, len - 1);
+    }
     llvm::Value* codeGen();
     void printNode(int indent);
 private:
@@ -692,6 +699,7 @@ private:
         char char_value;
         int int_value;
         double double_value;
+        char* string_literal_value;
     } value;
 };
 
