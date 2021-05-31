@@ -1,6 +1,6 @@
-#include "rccGlobal.hpp"
-#include "rcc.tab.hpp"
 #include "AST.hpp"
+#include "RccGlobal.hpp"
+#include "rcc.tab.hpp"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/FileSystem.h"
@@ -15,9 +15,15 @@
 using namespace llvm;
 using namespace llvm::sys;
 
+LLVMContext context;
+IRBuilder<> builder(context);
+Module *topModule;
+std::map<std::string,AllocaInst *> bindings;
+Node *root;
+
 int main(int argc, char **argv)
 {
-    rccGlobal global(argc > 1 ? argv[1] : "");
+    RccGlobal global(argc > 1 ? argv[1] : "");
     if (argc == 2)
         freopen(argv[1], "r", stdin);
     topModule = new Module("retarded", context);
@@ -26,9 +32,9 @@ int main(int argc, char **argv)
     if (v == 0 && root)
     {
         printf("\n//--------------------visual-------------------\n");
-        root->traverse();
+        root->printNode(0);
         printf("\n//--------------------visual-------------------\n");
-        root->codegen();
+        root->codeGen();
         topModule->print(errs(), nullptr);
     }
     else

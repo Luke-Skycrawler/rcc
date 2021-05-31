@@ -11,9 +11,9 @@ struct Buffer{
         void *p;
     } val;
 };
-class rccGlobal{
+class RccGlobal{
     public:
-    rccGlobal(std::string filename):in(filename){}
+    RccGlobal(std::string filename):in(filename){}
     std::string in;
     Buffer buf;
 };

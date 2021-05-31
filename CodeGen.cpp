@@ -76,10 +76,10 @@ Value *Nconstant::codeGen()
 Value *Nidentifier::codeGen()
 {
     Value *var=NULL;
-    if(bindings.find(name)!=bindings.end()){
-        var = bindings[name]->p.val;
-    }
-    return var;
+    // if(bindings.find(name)!=bindings.end()){
+    //     var = bindings[name]->p.val;
+    // }
+    // return var;
 }
 Value *Ninitializer::codeGen()
 {

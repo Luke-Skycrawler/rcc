@@ -17,8 +17,8 @@ all: rcc
 %.o: %.cpp
 	${CXX} -c ${CXXFLAGS} -g -o $@ $<
 	@echo "CXX $< => $@"
-rcc: rcc.tab.o lex.yy.o CodeGen.o LLVMGlobal.o AST.o
-	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o LLVMGlobal.o AST.o ${LIBS} ${LDFLAGS}
+rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o
+	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o ${LIBS} ${LDFLAGS}
 	@echo "LINK * => rcc"
 rcc.tab.cpp: rcc.ypp 
 	${BISON} -d rcc.ypp
