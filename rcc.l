@@ -31,8 +31,8 @@ void comment();
 "sizeof"		{ count(); return(token::SIZEOF); }
 
 \'.\'			{ count(); yylval->constant = new Nconstant(RCC_CHAR, yytext[1]); return(token::CHAR_CONSTANT); }
-[0-9]+			{ count(); yylval->constant = new Nconstant(RCC_CHAR, atoi(yytext)); return(token::INT_CONSTANT); }
-[0-9]+\.[0-9]+	{ count(); yylval->constant = new Nconstant(RCC_CHAR, atof(yytext)); return(token::DOUBLE_CONSTANT); }   
+[0-9]+			{ count(); yylval->constant = new Nconstant(RCC_INT, atoi(yytext)); return(token::INT_CONSTANT); }
+[0-9]+\.[0-9]+	{ count(); yylval->constant = new Nconstant(RCC_DOUBLE, atof(yytext)); return(token::DOUBLE_CONSTANT); }   
 [a-zA-Z_][a-zA-Z0-9_]*    { count(); std::string tmp(yytext); yylval->identifier = new Nidentifier(tmp); return(token::IDENTIFIER); }
 
 ">>="			{ count(); return(token::RIGHT_ASSIGN); }
