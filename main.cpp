@@ -25,10 +25,10 @@ int main(int argc, char **argv)
     int v = parser.parse();
     if (v == 0 && root)
     {
-        root->codegen();
         printf("\n//--------------------visual-------------------\n");
         root->traverse();
         printf("\n//--------------------visual-------------------\n");
+        root->codegen();
         topModule->print(errs(), nullptr);
     }
     else

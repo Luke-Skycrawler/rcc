@@ -1,3 +1,5 @@
+// FIXME: destructor get virtual 
+
 #ifndef _AST_H
 #define _AST_H
 #include "codegen.h"
@@ -6,6 +8,8 @@ struct ExprAST;
 struct PrototypeAST;
 extern PrototypeAST *root;
 extern int indent;
+llvm::Function *CreateScanf();
+llvm::Function *CreatePrintf();
 struct PrototypeAST
 {
     std::string op; // for drawing
@@ -113,22 +117,25 @@ struct IfAST : public PrototypeAST
 struct DecAST : public PrototypeAST
 {
     // DecAST(const std::string &op);
-    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8),baseType(buf.type) { printf("%s", "DecAST\n"); }
-    
+    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8), baseType(buf.type) { printf("%s", "DecAST\n"); }
+
     llvm::Value *codegen() /*override*/;
     void traverse() override
     {
         print(indent, op);
-        visit(NULL,NULL,next);
+        visit(NULL, NULL, next);
     }
 
     PrototypeAST *next;
-    DecAST *tail(){
-        if(!next)return this;
-        auto p=dynamic_cast<DecAST*>(next);
-        
-        while(p->next){
-            p=dynamic_cast<DecAST*>(p->next);
+    DecAST *tail()
+    {
+        if (!next)
+            return this;
+        auto p = dynamic_cast<DecAST *>(next);
+
+        while (p->next)
+        {
+            p = dynamic_cast<DecAST *>(p->next);
         }
         return p;
     }
@@ -149,7 +156,7 @@ struct TypeAST : public PrototypeAST
 };
 struct FunctionAST : public PrototypeAST
 {
-    FunctionAST(BlockAST *body, DecAST *list = NULL,TypeAST *type = NULL)
+    FunctionAST(BlockAST *body, DecAST *list = NULL, TypeAST *type = NULL)
         : PrototypeAST("()"), type(type), body(body), args(list) { printf("Defined Function %s", op.data()); }
     llvm::Value *codegen() /*override*/;
 
@@ -168,25 +175,26 @@ struct ExprAST : public PrototypeAST
 {
     ExprAST(const std::string &op) : PrototypeAST(op) {}
     virtual llvm::Value *codegen() = 0;
+    ExprAST *next;  // only used in a string of comma expressions
 };
-struct CommaExprAST : public ExprAST
-{
-    CommaExprAST(const std::string &op);
-    llvm::Value *codegen() override;
+// struct CommaExprAST : public ExprAST
+// {
+//     CommaExprAST(const std::string &op);
+//     llvm::Value *codegen() override;
 
-    ExprAST *next;
-    virtual void traverse() = 0;
-};
+//     ExprAST *next;
+//     virtual void traverse() = 0;
+// };
 struct CallExprAST : public ExprAST
 {
-    CallExprAST(const std::string &op, ExprAST *args) : ExprAST(op), args(args) { printf("%s", "CallExprAST\n"); }
+    CallExprAST(const std::string &op, ExprAST *args=NULL) : ExprAST(op), args(args) { printf("%s", "CallExprAST\n"); }
     llvm::Value *codegen() override;
 
     ExprAST *args;
     void traverse() override
     {
-        print(indent, op);
-        visit(args);
+        print(indent, op+"()");
+        visit(args,NULL,next);
     }
 };
 struct UnaryExprAST : public ExprAST
@@ -198,7 +206,7 @@ struct UnaryExprAST : public ExprAST
     void traverse() override
     {
         print(indent, op);
-        visit(expr);
+        visit(expr,NULL,next);
     }
 };
 struct BinaryExprAST : public ExprAST
@@ -210,29 +218,36 @@ struct BinaryExprAST : public ExprAST
     void traverse() override
     {
         print(indent, op);
-        visit(lhs, rhs, NULL);
+        visit(lhs, rhs, next);
     }
 };
 struct LiteralAST : public ExprAST
 {
     LiteralAST(const std::string &op, float val) : ExprAST(op), val(val) { printf("%s", "LiteralAST\n"); }
+    LiteralAST(const std::string &op):ExprAST(op){printf("String Literal\n");}
     llvm::Value *codegen() override;
 
     float val;
+    std::string sval;
     void traverse() override
     {
-        print(indent, "literal: val = "+std::to_string(val));
+        if(sval!="")
+            print(indent, sval);
+        else 
+            print(indent, "literal: val = " + std::to_string(val));
+        visit(NULL,NULL,next);
     }
 };
 struct VarAST : public ExprAST
 {
-    VarAST(const std::string &op,char baseType=' ') : ExprAST(op),baseType(baseType) { printf("%s", "VarAST\n"); }
+    VarAST(const std::string &op, char baseType = ' ') : ExprAST(op), baseType(baseType) { printf("%s", "VarAST\n"); }
     llvm::Value *codegen() override;
     char baseType;
     PrototypeAST *type;
     void traverse() override
     {
-        print(indent, "var "+op+": type = "+baseType);
+        print(indent, "var " + op + ": type = " + baseType);
+        visit(NULL,NULL,next);
     }
 };
 #endif

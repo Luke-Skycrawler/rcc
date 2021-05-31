@@ -2,8 +2,8 @@
 #include <vector>
 using namespace std;
 using namespace llvm;
-int indent=0;
-static const int volume=255;
+int indent = 0;
+static const int volume = 255;
 vector<Function *> funcStack;
 Value *FunctionAST::codegen()
 {
@@ -33,19 +33,23 @@ Value *FunctionAST::codegen()
     funcStack.pop_back();
     return NULL;
 }
-Value *DecAST::codegen(){
-    auto t=funcStack[funcStack.size()-1];
+Value *DecAST::codegen()
+{
+    auto t = funcStack[funcStack.size() - 1];
     // llvm::IRBuilder<> builder(&t->getEntryBlock(), t->getEntryBlock().begin());
     auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
     builder.CreateStore(builder.getInt64(0), allocation);
-    bindings[op]=allocation;
-    if(next)next->codegen();
-    return allocation;          // some arbitary pointer other than NULL    
+    bindings[op] = allocation;
+    if (next)
+        next->codegen();
+    return allocation; // some arbitary pointer other than NULL
 }
-Value *IfAST::codegen(){
+Value *IfAST::codegen()
+{
     return NULL;
 }
-Value *ForAST::codegen(){
+Value *ForAST::codegen()
+{
     return NULL;
 }
 Value *StmtAST::codegen()
@@ -76,23 +80,31 @@ Value *BinaryExprAST::codegen()
         return builder.CreateFCmpUGT(l, r, "");
     case '<':
         return builder.CreateFCmpULT(l, r, "cmp");
-    default :
+    default:
         return NULL;
     }
 }
 Value *CallExprAST::codegen()
 {
+    if(op=="printf")CreatePrintf();
     Function *callee = topModule->getFunction(op);
-
     vector<Value *> argv;
-    // for(auto it=args;it!=nullptr;it=it->next){
-    //     argv.push_back(it);
-    // }
+    for(auto it=args;it!=NULL;it=it->next){
+        argv.push_back(it->codegen());
+    }
     return builder.CreateCall(callee, argv, "call");
+    
 }
 Value *LiteralAST::codegen()
 {
-    return ConstantFP::get(context, APFloat(val));
+    if(op[0]!='"')return ConstantFP::get(context, APFloat(val));
+    auto str= ConstantDataArray::getString(context,op);
+	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");
+    addr->setAlignment (1);		   	
+	Value* p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+	builder.CreateStore(str, p)->setAlignment(1);
+    return p;
+    // return builder.CreateInBoundsGEP( str->getType(), addr, index_vector, "tmpstr");    
 }
 Value *VarAST::codegen()
 {
@@ -103,38 +115,34 @@ Value *UnaryExprAST::codegen()
 {
     return NULL;
 }
-Value *CommaExprAST::codegen()
-{
-    return NULL;
-}
+// Value *CommaExprAST::codegen()
+// {
+//     return NULL;
+// }
 Value *BlockAST::codegen()
 {
-    auto ret=content?content->codegen():NULL;
-    if(next)next->codegen();
+    auto ret = content ? content->codegen() : NULL;
+    if (next)
+        next->codegen();
     return ret;
 }
-/*llvm::Function* createPrintf()
+// llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction, llvm::StringRef VarName, llvm::Type* type)
+// {
+//   llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
+// }
+llvm::Function *CreatePrintf()
 {
-    std::vector<llvm::Type*> arg_types;
-    arg_types.push_back(TheBuilder.getInt8PtrTy());
-    auto printf_type = llvm::FunctionType::get(TheBuilder.getInt32Ty(), llvm::makeArrayRef(arg_types), true);
-    auto func = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, llvm::Twine("printf"), topModule.get());
+    std::vector<llvm::Type *> arg_types;
+    arg_types.push_back(builder.getInt8PtrTy());
+    auto printf_type = llvm::FunctionType::get(builder.getInt32Ty(), llvm::makeArrayRef(arg_types), true);
+    auto func = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, llvm::Twine("printf"), topModule);
     func->setCallingConv(llvm::CallingConv::C);
     return func;
 }
-llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction, llvm::StringRef VarName, llvm::Type* type)
+llvm::Function *CreateScanf()
 {
-  llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-}
-        auto alloc = CreateEntryBlockAlloca(generator.getCurFunction(), name, this->type->toLLVMType());
-  return TmpB.CreateAlloca(type, nullptr, VarName);
-        return TheBuilder.CreateStore(this->value->codeGen(generator), alloc);
-
-
-llvm::Function* createScanf()
-{
-    auto scanf_type = llvm::FunctionType::get(TheBuilder.getInt32Ty(), true);
-    auto func = llvm::Function::Create(scanf_type, llvm::Function::ExternalLinkage, llvm::Twine("scanf"), topModule.get());
+    auto scanf_type = llvm::FunctionType::get(builder.getInt32Ty(), true);
+    auto func = llvm::Function::Create(scanf_type, llvm::Function::ExternalLinkage, llvm::Twine("scanf"), topModule);
     func->setCallingConv(llvm::CallingConv::C);
     return func;
-}*/
+}

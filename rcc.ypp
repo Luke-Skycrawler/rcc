@@ -35,15 +35,15 @@ extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rcc
 primary_expression
 	: IDENTIFIER        								{$$=new VarAST(global.buf.val.u8);}
 	| CONSTANT          								{$$=new LiteralAST("foo",global.buf.val.f64);}
-	| STRING_LITERAL    								{$$=new LiteralAST("foo",global.buf.val.f64);}
-	| '(' expression ')'								{$$=new LiteralAST("foo",global.buf.val.f64);}
+	| STRING_LITERAL    								{$$=new LiteralAST(global.buf.val.u8);}
+	| '(' expression ')'								{$$=$2;}
 	;
 
 postfix_expression
 	: primary_expression                                 {$$=$1;}
 	| postfix_expression '[' expression ']'              {$$=$1;}
-	| postfix_expression '(' ')'                         {$$=$1;}
-	| postfix_expression '(' argument_expression_list ')'{$$=$1;}
+	| postfix_expression '(' ')'                         {$$=new CallExprAST($1->op);}
+	| postfix_expression '(' argument_expression_list ')'{$$=new CallExprAST($1->op,dynamic_cast<ExprAST*>($3));}
 	| postfix_expression '.' IDENTIFIER                  {$$=$1;}
 	| postfix_expression PTR_OP IDENTIFIER               {$$=$1;}
 	| postfix_expression INC_OP                          {$$=$1;}
@@ -52,7 +52,7 @@ postfix_expression
 
 argument_expression_list
 	: assignment_expression
-	| argument_expression_list ',' assignment_expression
+	| argument_expression_list ',' assignment_expression{$$=$1;dynamic_cast<ExprAST*>($1)->next=dynamic_cast<ExprAST*>($3);}
 	;
 
 unary_expression
