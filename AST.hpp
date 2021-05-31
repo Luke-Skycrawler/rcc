@@ -17,22 +17,6 @@ struct PrototypeAST
     virtual llvm::Value *codegen() = 0;
     bool isLeaf;
     virtual void traverse() = 0;
-
-protected:
-    // virtual void visit(void *_child1, void *_child2 = NULL, void *_sibling = NULL)
-    // {
-    //     PrototypeAST *sibling = (PrototypeAST *)_sibling,
-    //                  *child2  = (PrototypeAST *)_child2,
-    //                  *child1  = (PrototypeAST *)_child1;
-    //     if (child1)
-    //         child1->traverse();
-    //     if (child2)
-    //         child2->traverse();
-    //     // ---------------
-    //     // reserved for visualizing
-    //     if (sibling)
-    //         sibling->traverse();
-    // }
 };
 inline void visit(void *_child1, void *_child2 = NULL, void *_sibling = NULL)
 {

@@ -2,14 +2,14 @@ void foo(int a){
 
 }
 int main(void){
-	int a;
+	int a,i,n;
 	char b;
-	b^=a^=b^=a;
-	int (*f)(void *(int *)); /* arbitary shitty syntax */
-	f=0;
 	void (*g)(int a)=foo;
+	int (*f)(void *(int *)); /* arbitary shitty syntax */
+	b^=a^=b^=a;
+	f=0;
 	
-	for(int i=0,n=10;i<n==10;i++){
+	for(i=0,n=10;i<n==10;i++){
 		if(i==0)
 			if(i!=0)break;
 			else continue;

@@ -242,8 +242,8 @@ struct_declaration
 specifier_qualifier_list
 	: type_specifier specifier_qualifier_list
 	| type_specifier
-	| type_qualifier specifier_qualifier_list
-	| type_qualifier
+	/* | type_qualifier specifier_qualifier_list
+	| type_qualifier */
 	;
 
 struct_declarator_list
@@ -273,37 +273,37 @@ enumerator
 	| IDENTIFIER '=' constant_expression
 	;
 
-type_qualifier
+/* type_qualifier
 	: CONST
 	| VOLATILE
-	;
+	; */
 
 declarator
-	: pointer direct_declarator							{}
-	| direct_declarator        							{$$=new DecAST(global.buf);bindings[$$->op]=NULL;}
+	: '*' declarator									{$$=$2;$2->op="*"+$2->op;}
+	| direct_declarator        							{$$=$1;}
 	;
 
 direct_declarator
-	: IDENTIFIER                                   		{}
-	| '(' declarator ')'                           		{}
-	| direct_declarator '[' constant_expression ']'		{}
-	| direct_declarator '[' ']'                    		{}
-	| direct_declarator '(' parameter_type_list ')'		{}
-	| direct_declarator '(' identifier_list ')'    		{}
-	| direct_declarator '(' ')'                    		{}
+	: IDENTIFIER                                   		{$$=new DecAST(global.buf);bindings[$$->op]=NULL;}
+	| '(' declarator ')'                           		{$$=$2;}
+	| direct_declarator '[' constant_expression ']'		{$$=$1;$1->op+="[]";/*size can only be decided in runtime*/}
+	| direct_declarator '[' ']'                    		{$$=$1;$1->op+="[]";}
+	| direct_declarator '(' parameter_type_list ')'		{$$=$1;$1->op+="()";}
+	| direct_declarator '(' ')'                    		{$$=$1;$1->op+="()";}
+	/* | direct_declarator '(' identifier_list ')'    		{$$=$1;} */
 	;
 
-pointer
+/* pointer
 	: '*'
-	| '*' type_qualifier_list
 	| '*' pointer
+	| '*' type_qualifier_list
 	| '*' type_qualifier_list pointer
-	;
+	; */
 
-type_qualifier_list
+/* type_qualifier_list
 	: type_qualifier
 	| type_qualifier_list type_qualifier
-	;
+	; */
 
 
 parameter_type_list
@@ -322,10 +322,10 @@ parameter_declaration
 	| declaration_specifiers
 	;
 
-identifier_list
+/* identifier_list
 	: IDENTIFIER
 	| identifier_list ',' IDENTIFIER
-	;
+	; */
 
 type_name
 	: specifier_qualifier_list
@@ -333,9 +333,9 @@ type_name
 	;
 
 abstract_declarator
-	: pointer
+	: '*' abstract_declarator
 	| direct_abstract_declarator
-	| pointer direct_abstract_declarator
+	/* | pointer direct_abstract_declarator */
 	;
 
 direct_abstract_declarator
