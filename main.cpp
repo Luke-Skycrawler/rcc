@@ -83,7 +83,12 @@ int main(int argc, char **argv)
     }
 
     legacy::PassManager pass;
+    #ifdef MACOS
+    auto fileType = CodeGenFileType::CGFT_ObjectFile;
+    #endif
+    #ifndef MACOS
     auto fileType = TargetMachine::CodeGenFileType::CGFT_ObjectFile;
+    #endif
 
     if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType))
     {
