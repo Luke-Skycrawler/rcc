@@ -1,0 +1,58 @@
+int main(int argc, char argv)
+{
+    int x = 3;
+    char y;
+    double z = 0.1415;
+    x + z;
+}
+Nprogram
+|___NfunctionDefinition
+	|___NdeclarationSpecifiers
+		|___NtypeSpecifier(int)
+	|___Ndeclarator
+		|___NdirectDeclarator
+			|___NdirectDeclarator
+				|___Nidentifier(main)
+			|___NparameterDeclaration
+				|___NdeclarationSpecifiers
+					|___NtypeSpecifier(int)
+				|___Ndeclarator
+					|___NdirectDeclarator
+						|___Nidentifier(argc)
+			|___NparameterDeclaration
+				|___NdeclarationSpecifiers
+					|___NtypeSpecifier(char)
+				|___Ndeclarator
+					|___NdirectDeclarator
+						|___Nidentifier(argv)
+	|___NcompoundStatement
+		|___Ndeclaration
+			|___NdeclarationSpecifiers
+				|___NtypeSpecifier(int)
+			|___NinitDeclarator
+				|___Ndeclarator
+					|___NdirectDeclarator
+						|___Nidentifier(x)
+				|___Ninitializer
+					|___NprimaryExpr
+						|___Nconstant(int: 3)
+		|___Ndeclaration
+			|___NdeclarationSpecifiers
+				|___NtypeSpecifier(char)
+			|___NinitDeclarator
+				|___Ndeclarator
+					|___NdirectDeclarator
+						|___Nidentifier(y)
+		|___Ndeclaration
+			|___NdeclarationSpecifiers
+				|___NtypeSpecifier(double)
+			|___NinitDeclarator
+				|___Ndeclarator
+					|___NdirectDeclarator
+						|___Nidentifier(z)
+				|___Ninitializer
+					|___NprimaryExpr
+						|___Nconstant(double: 0.1415)
+		|___NexprStatement
+			|___Nexpr
+				|___NadditiveExpr
