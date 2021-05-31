@@ -190,57 +190,9 @@ void NcondExpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "NcondExpr");
 }
-
-void NlogicalOrExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NlogicalOrExpr");
+void NbinaryExpr::printNode(int indent){
+    PRINT_INDENT(indent,"NbianryExpr("+op+")");
 }
-
-void NlogicalAndExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NlogicalAndExpr");
-}
-
-void NinclusiveOrExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NinclusiveOrExpr");
-}
-
-void NexclusiveOrExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NexclusiveOrExpr");
-}
-
-void NandExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NandExpr");
-}
-
-void NequalityExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NequalityExpr");
-}
-
-void NrelationalExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NrelationalExpr");
-}
-
-void NshiftExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NshiftExpr");
-}
-
-void NadditiveExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NadditiveExpr");
-}
-
-void NmultiplicativeExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NmultiplicativeExpr");
-}
-
 void NcastExpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "NcastExpr");
@@ -256,11 +208,3 @@ void NpostfixExpr::printNode(int indent)
     PRINT_INDENT(indent, "NpostfixExpr");
 }
 
-void NprimaryExpr::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NprimaryExpr");
-    if(primary_type == IDENTIFIER)
-        identifier->printNode(indent + 1);
-    else
-        constant->printNode(indent + 1);
-}

@@ -36,29 +36,29 @@ Value *Nstatement::codeGen()
     // return tmp;
     return NULL;
 }
-// Value *BinaryExprAST::codeGen()
-// {
-//     Value *l = lhs->codeGen(), *r = rhs->codeGen();
-//     switch (op[0])
-//     {
-//     case '+':
-//         return builder.CreateFAdd(l, r, "add");
-//     case '-':
-//         return builder.CreateFSub(l, r, "sub");
-//     case '*':
-//         return builder.CreateFMul(l, r, "mult");
-//     case '/':
-//         return builder.CreateSDiv(l, r, "div");
-//     case '|':
-//         return builder.CreateOr(l, r, "or");
-//     case '&':
-//         return builder.CreateAnd(l, r, "and");
-//     case '>':
-//         return builder.CreateFCmpUGT(l, r, "");
-//     case '<':
-//         return builder.CreateFCmpULT(l, r, "cmp");
-//     }
-// }
+Value *NbinaryExpr::codeGen()
+{
+    Value *l = lhs->codeGen(), *r = rhs->codeGen();
+    switch (op[0])
+    {
+    case '+':
+        return builder.CreateFAdd(l, r, "add");
+    case '-':
+        return builder.CreateFSub(l, r, "sub");
+    case '*':
+        return builder.CreateFMul(l, r, "mult");
+    case '/':
+        return builder.CreateSDiv(l, r, "div");
+    case '|':
+        return builder.CreateOr(l, r, "or");
+    case '&':
+        return builder.CreateAnd(l, r, "and");
+    case '>':
+        return builder.CreateFCmpUGT(l, r, "");
+    case '<':
+        return builder.CreateFCmpULT(l, r, "cmp");
+    }
+}
 // Value *CallExprAST::codeGen()
 // {
 //     Function *callee = topModule->getFunction(op);
@@ -167,46 +167,6 @@ Value *NassignExpr::codeGen()
     return NULL;
 }
 Value *NcondExpr::codeGen()
-{
-    return NULL;
-}
-Value *NlogicalOrExpr::codeGen()
-{
-    return NULL;
-}
-Value *NlogicalAndExpr::codeGen()
-{
-    return NULL;
-}
-Value *NinclusiveOrExpr::codeGen()
-{
-    return NULL;
-}
-Value *NexclusiveOrExpr::codeGen()
-{
-    return NULL;
-}
-Value *NandExpr::codeGen()
-{
-    return NULL;
-}
-Value *NequalityExpr::codeGen()
-{
-    return NULL;
-}
-Value *NrelationalExpr::codeGen()
-{
-    return NULL;
-}
-Value *NshiftExpr::codeGen()
-{
-    return NULL;
-}
-Value *NadditiveExpr::codeGen()
-{
-    return NULL;
-}
-Value *NmultiplicativeExpr::codeGen()
 {
     return NULL;
 }

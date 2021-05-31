@@ -35,16 +35,6 @@ class NtypeSpecifier;
 class Nexpr;
 class NassignExpr;
 class NcondExpr;
-class NlogicalOrExpr;
-class NlogicalAndExpr;
-class NinclusiveOrExpr;
-class NexclusiveOrExpr;
-class NandExpr;
-class NequalityExpr;
-class NrelationalExpr;
-class NshiftExpr;
-class NadditiveExpr;
-class NmultiplicativeExpr;
 class NcastExpr;
 class NunaryExpr;
 class NpostfixExpr;
@@ -332,8 +322,8 @@ public:
     void push_back(Nexpr* expr) {
         expr_list.push_back(expr);
     }
-    void printNode(int indent);
-    llvm::Value* codeGen();
+    void printNode(int indent)=0;
+    llvm::Value* codeGen()=0;
 private:
     std::vector<Nexpr*> expr_list;
 };
@@ -386,167 +376,16 @@ private:
 };
 
 /**
- * P || Q
+ * P op Q
  */
-class NlogicalOrExpr: public Nexpr {
+class NbinaryExpr: public Nexpr{
 public:
-    NlogicalOrExpr(Nexpr* logical_or_expr, Nexpr* logical_and_expr):\
-        logical_or_expr(logical_or_expr),
-        logical_and_expr(logical_and_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
+    NbinaryExpr(const std::string &op,Nexpr *lhs,Nexpr *rhs):Nexpr(),op(op),lhs(lhs),rhs(rhs){}
+    std::string op;
+    llvm::Value *codeGen() override;
+    void printNode(int indent) override;
 private:
-    Nexpr* logical_or_expr;
-    Nexpr* logical_and_expr;
-};
-
-/**
- * P && Q
- */
-class NlogicalAndExpr: public Nexpr {
-public:
-    NlogicalAndExpr(Nexpr* logical_and_expr, Nexpr* inclusive_or_expr):\
-        logical_and_expr(logical_and_expr),
-        inclusive_or_expr(inclusive_or_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* logical_and_expr;
-    Nexpr* inclusive_or_expr;
-};
-
-/**
- * P | Q
- */
-class NinclusiveOrExpr: public Nexpr {
-public:
-    NinclusiveOrExpr(Nexpr* inclusive_or_expr, Nexpr* exclusive_or_expr):\
-        inclusive_or_expr(inclusive_or_expr),
-        exclusive_or_expr(exclusive_or_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* inclusive_or_expr;
-    Nexpr* exclusive_or_expr;
-};
-
-/**
- * P ^ Q
- */
-class NexclusiveOrExpr: public Nexpr {
-public:
-    NexclusiveOrExpr(Nexpr* exclusive_or_expr, Nexpr* and_expr):\
-        exclusive_or_expr(exclusive_or_expr),
-        and_expr(and_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* exclusive_or_expr;
-    Nexpr* and_expr;
-};
-
-/**
- * P & Q
- */
-class NandExpr: public Nexpr {
-public:
-    NandExpr(Nexpr* and_expr, Nexpr* equality_expr):\
-        and_expr(and_expr),
-        equality_expr(equality_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* and_expr;
-    Nexpr* equality_expr;
-};
-
-/**
- * P == Q
- * or
- * P != Q
- */
-class NequalityExpr: public Nexpr {
-public:
-    enum EQUALITY_OP {EQ_OP = 0, NE_OP = 1};
-    NequalityExpr(Nexpr* equality_expr, EQUALITY_OP equality_op, Nexpr* relational_expr):\
-        equality_expr(equality_expr),
-        equality_op(equality_op),
-        relational_expr(relational_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* equality_expr;
-    EQUALITY_OP equality_op;
-    Nexpr* relational_expr;
-};
-
-/**
- * P < Q or P > Q or P <= Q or P >= Q
- */
-class NrelationalExpr: public Nexpr {
-public:
-    enum RELATIONAL_OP {L_OP = 0, G_OP = 1, LE_OP = 2, GE_OP = 3};
-    NrelationalExpr(Nexpr* relational_expr, RELATIONAL_OP relational_op, Nexpr* shift_expr):\
-        relational_expr(relational_expr),
-        relational_op(relational_op),
-        shift_expr(shift_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* relational_expr;
-    RELATIONAL_OP relational_op;
-    Nexpr* shift_expr;
-};
-
-/**
- * P << Q or P >> Q
- */
-class NshiftExpr: public Nexpr {
-public:
-    enum SHIFT_OP {LEFT_OP = 0, RIGHT_OP = 1};
-    NshiftExpr(Nexpr* shift_expr, SHIFT_OP shift_op, Nexpr* additive_expr):\
-        shift_expr(shift_expr),
-        shift_op(shift_op),
-        additive_expr(additive_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* shift_expr;
-    SHIFT_OP shift_op;
-    Nexpr* additive_expr;
-};
-
-class NadditiveExpr: public Nexpr {
-public:
-    enum ADDITIVE_OP {PLUS_OP = 0, MINUS_OP = 1};
-    NadditiveExpr(Nexpr* additive_expr, ADDITIVE_OP additive_op, Nexpr* multiplicative_expr):\
-        additive_expr(additive_expr),
-        additive_op(additive_op),
-        multiplicative_expr(multiplicative_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* additive_expr;
-    ADDITIVE_OP additive_op;
-    Nexpr* multiplicative_expr;
-};
-
-/**
- * P * Q or P / Q or P % Q
- */
-class NmultiplicativeExpr: public Nexpr {
-public:
-    enum MULTIPLICATIVE_OP {MULTIPLY_OP = 0, DIVIDE_OP = 1, MOD_OP = 2};
-    NmultiplicativeExpr(Nexpr* multiplicative_expr, MULTIPLICATIVE_OP multiplicative_op, Nexpr* shift_expr):\
-        multiplicative_expr(multiplicative_expr),
-        multiplicative_op(multiplicative_op),
-        shift_expr(shift_expr) {}
-    llvm::Value* codeGen();
-    void printNode(int indent);
-private:
-    Nexpr* multiplicative_expr;
-    MULTIPLICATIVE_OP multiplicative_op;
-    Nexpr* shift_expr;
+    Nexpr *lhs,*rhs;
 };
 
 /**
