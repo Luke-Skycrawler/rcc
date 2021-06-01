@@ -127,90 +127,61 @@ public:
 
 /**
  * `init_declarator` node -- a init declarator looks like 'x = 3' or 'x'
+ * It's a base node for `NdirectDeclarator` to inherit!!!
+ * The `initializer` contains the initializer part, while the other info are in the derived `NdirectDeclarator` node
  */
 class NinitDeclarator: public Node {
 public:
-    NinitDeclarator(NinitDeclarator* declarator=NULL, Ninitializer* initializer=NULL):declarator(declarator), initializer(initializer) {}
+    NinitDeclarator() {}
     llvm::Value* codeGen();
     virtual void printNode(int indent);
+    virtual void bind(std::string type) { initializer = nullptr; }; // Do nothing
     Ninitializer* initializer;
-    NinitDeclarator* declarator;
 };
 
 /**
- * `declarator` node -- a declarator looks like 'x', '(x)', 'x[30]' or '*x'
- * TODO: implement the pointer feature like '*x'
- */
-// class Ndeclarator: public NinitDeclarator {
-// public:
-//     Ndeclarator(NdirectDeclarator* direct_declarator):direct_declarator(direct_declarator) {}
-//     llvm::Value* codeGen();
-//     virtual void printNode(int indent);
-// private:
-//     NdirectDeclarator* direct_declarator;
-// };
-
-/**
- * `direct_declarator` node -- a direct declarator looks like 'x', '(x)' or 'x[30]'
- * TODO: only a single identifier like 'x' is implemented now, more to implement later
+ * `direct_declarator` node -- a direct declarator looks like 'x', 'x[30]', 'f(int x)', 'f(x)' or 'f()'
  */
 class NdirectDeclarator: public NinitDeclarator {
 public:
     enum DIRECT_DECLARATOR_TYPE {
         IDENTIFIER = 0,
-        NESTED_DECLARATOR = 1,
-        SQUARE_BRACKET_CONSTANT = 2,
-        SQUARE_BRACKET_EMPTY = 3, // probably not used
-        PARENTHESES_PARAMETER_LIST = 4,
-        PARENTHESES_IDENTIFIER_LIST = 5, // probably not used
-        PARENTHESES_EMPTY = 6
+        SQUARE_BRACKET_CONSTANT = 1,
+        SQUARE_BRACKET_EMPTY = 2, // probably not used
+        PARENTHESES_PARAMETER_LIST = 3,
+        PARENTHESES_IDENTIFIER_LIST = 4, // probably not used
+        PARENTHESES_EMPTY = 5
     };
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Nidentifier* identifier):\
         direct_declarator_type(direct_declarator_type),
         identifier(identifier) {}
-    // NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* declarator):\
-    //     direct_declarator_type(direct_declarator_type),
-    //     declarator(declarator) {}
-    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, Nconstant* int_constant):\
-        direct_declarator_type(direct_declarator_type),
-        direct_declarator(direct_declarator),
-        int_constant(int_constant) {}
-    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator):\
-        direct_declarator_type(direct_declarator_type),
-        direct_declarator(direct_declarator) {}
-    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, std::vector<NparameterDeclaration*>& parameter_list):\
-        direct_declarator_type(direct_declarator_type),
-        direct_declarator(direct_declarator),
-        parameter_list(parameter_list) {}
-    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, NdirectDeclarator* direct_declarator, std::vector<Nidentifier*>& identifier_list):\
-        direct_declarator_type(direct_declarator_type),
-        direct_declarator(direct_declarator),
-        identifier_list(identifier_list) {}
     llvm::Value* codeGen();
     virtual void printNode(int indent);
-    void bind(std::string type, std::string additional_info);
+    void bind(std::string type);
+    void pushIntConstant(Nconstant* int_constant);
+    void updateType(DIRECT_DECLARATOR_TYPE direct_declarator_type);
+    void setParameterList(const std::vector<NparameterDeclaration*>& parameter_list);
+    void setIdentifierList(const std::vector<Nidentifier*>& identifier_list);
 // private:
     DIRECT_DECLARATOR_TYPE direct_declarator_type;
     Nidentifier* identifier;
-    // Ndeclarator* declarator;
-    Nconstant* int_constant;
-    NdirectDeclarator* direct_declarator;
     std::vector<NparameterDeclaration*> parameter_list;
     std::vector<Nidentifier*> identifier_list;
+    std::vector<int> int_constant_list;
 };
 
 class NparameterDeclaration: public Node {
 public:
-    NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* declarator):
+    NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* direct_declarator):
         declaration_specifiers(declaration_specifiers),
-        declarator(declarator) {}
+        direct_declarator(direct_declarator) {}
     NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers):
         declaration_specifiers(declaration_specifiers) {}
     llvm::Value* codeGen();
     void printNode(int indent);
 private:
     NdeclarationSpecifiers* declaration_specifiers;
-    NdirectDeclarator* declarator;
+    NdirectDeclarator* direct_declarator;
 };
 
 /**
@@ -234,34 +205,34 @@ private:
  * `function_definition` node -- a function definition like 'int f(int x, double y, char z) {...}'
  * or maybe a function call?
  * @param declaration_specifiers: 'int'
- * @param declarator: 'f(int x, double y, char z)'
+ * @param direct_declarator: 'f(int x, double y, char z)'
  * @param declaration_list: what for?
  * @param compound_statement: '{...}'
  */
 class NfunctionDefinition: public NexternalDeclaration {
 public:
-    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
+    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
         declaration_specifiers(declaration_specifiers),
-        declarator(declarator),
+        direct_declarator(direct_declarator),
         declaration_list(declaration_list),
         compound_statement(compound_statement) { bind();}
-    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* declarator, NcompoundStatement* compound_statement):\
+    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* direct_declarator, NcompoundStatement* compound_statement):\
         declaration_specifiers(declaration_specifiers),
-        declarator(declarator),
+        direct_declarator(direct_declarator),
         compound_statement(compound_statement) {bind();}
-    NfunctionDefinition(NdirectDeclarator* declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
-        declarator(declarator),
+    NfunctionDefinition(NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
+        direct_declarator(direct_declarator),
         declaration_list(declaration_list),
         compound_statement(compound_statement) {bind();}
-    NfunctionDefinition(NdirectDeclarator* declarator, NcompoundStatement* compound_statement):\
-        declarator(declarator),
+    NfunctionDefinition(NdirectDeclarator* direct_declarator, NcompoundStatement* compound_statement):\
+        direct_declarator(direct_declarator),
         compound_statement(compound_statement) { bind(); }
     llvm::Value* codeGen();
     void printNode(int indent);
     void bind();
 // private:
     NdeclarationSpecifiers* declaration_specifiers; // 'int'
-    NdirectDeclarator* declarator; // 'f(int x, double y, char z)'
+    NdirectDeclarator* direct_declarator; // 'f(int x, double y, char z)'
     std::vector<Ndeclaration*> declaration_list; // what for?
     NcompoundStatement* compound_statement; // '{...}'
 };
