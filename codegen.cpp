@@ -38,7 +38,21 @@ Value *DecAST::codegen()
     auto t = funcStack[funcStack.size() - 1];
     // llvm::IRBuilder<> builder(&t->getEntryBlock(), t->getEntryBlock().begin());
     auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
-    builder.CreateStore(builder.getInt64(0), allocation);
+    switch(baseType){
+        case 'd':
+            allocation = builder.CreateAlloca(Type::getDoubleTy(context),NULL,op);
+            if(init)builder.CreateStore(init->codegen(),allocation);
+            break;
+        case 'i':
+            allocation = builder.CreateAlloca(Type::getInt32Ty(context),NULL,op);
+            builder.CreateStore(init?init->codegen():builder.getInt32(0),allocation);
+            break;
+        case 'c':
+            allocation = builder.CreateAlloca(Type::getInt8Ty(context),NULL,op);
+            builder.CreateStore(init?init->codegen():builder.getInt8(0),allocation);
+            break;
+    }
+    // builder.CreateStore(builder.getInt64(0), allocation);
     bindings[op] = allocation;
     if (next)
         next->codegen();
@@ -59,9 +73,13 @@ Value *StmtAST::codegen()
         next->codegen();
     return tmp;
 }
+inline char typeCheck(ExprAST *lhs,ExprAST *rhs,const string &op){
+    return 'd';
+}
 Value *BinaryExprAST::codegen()
 {
     Value *l = lhs->codegen(), *r = rhs->codegen();
+    char type=typeCheck(lhs,rhs,op);
     switch (op[0])
     {
     case '+':
@@ -115,10 +133,6 @@ Value *UnaryExprAST::codegen()
 {
     return NULL;
 }
-// Value *CommaExprAST::codegen()
-// {
-//     return NULL;
-// }
 Value *BlockAST::codegen()
 {
     auto ret = content ? content->codegen() : NULL;

@@ -2,7 +2,8 @@
 #define _GLOBAL_HPP
 #include <string>
 struct Buffer{
-    char type;
+    char type,advice;
+    // type is passed from yacc to lex, while advice the opposite
     union{
         int i32;
         float f32;

@@ -124,7 +124,7 @@ struct DecAST : public PrototypeAST
         return p;
     }
     char baseType;
-    //
+    ExprAST *init;
 };
 
 struct TypeAST : public PrototypeAST
@@ -209,14 +209,17 @@ struct LiteralAST : public ExprAST
 {
     LiteralAST(const std::string &op, float val) : ExprAST(op), val(val) { printf("%s", "LiteralAST\n"); }
     LiteralAST(const std::string &op):ExprAST(op){printf("String Literal\n");}
+    LiteralAST(const rccGlobal &global):ExprAST(global.buf.advice=='s'?global.buf.val.u8:"foo"),compatible(global.buf.advice){
+        if(global.buf.advice!='s')val=global.buf.val.f64;
+    }
     llvm::Value *codegen() override;
 
-    float val;
-    std::string sval;
+    double val;
+    char compatible;
     void traverse() override
     {
-        if(sval!="")
-            print(indent, sval);
+        if(op!="foo")
+            print(indent, op);
         else 
             print(indent, "literal: val = " + std::to_string(val));
         visit(NULL,NULL,next);

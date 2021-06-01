@@ -34,8 +34,8 @@ extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rcc
 
 primary_expression
 	: IDENTIFIER        								{$$=new VarAST(global.buf.val.u8);}
-	| CONSTANT          								{$$=new LiteralAST("foo",global.buf.val.f64);}
-	| STRING_LITERAL    								{$$=new LiteralAST(global.buf.val.u8);}
+	| CONSTANT          								{$$=new LiteralAST(global);}
+	| STRING_LITERAL    								{$$=new LiteralAST(global);}
 	| '(' expression ')'								{$$=$2;}
 	;
 
@@ -193,7 +193,7 @@ init_declarator_list
 
 init_declarator
 	: declarator                						{$$=$1;}
-	| declarator '=' initializer						{$$=$1;}
+	| declarator '=' initializer						{$$=$1;dynamic_cast<DecAST*>($1)->init=dynamic_cast<ExprAST*>($2);}
 	;
 
 storage_class_specifier
@@ -351,14 +351,14 @@ direct_abstract_declarator
 	;
 
 initializer
-	: assignment_expression
-	| '{' initializer_list '}'
-	| '{' initializer_list ',' '}'
+	: assignment_expression       						{$$=$1;}
+	| '{' initializer_list '}'    						{$$=$2;}
+	| '{' initializer_list ',' '}'						{$$=$2;}
 	;
 
 initializer_list
-	: initializer
-	| initializer_list ',' initializer
+	: initializer                     					{$$=$1;}
+	| initializer_list ',' initializer					{$$=$1;dynamic_cast<ExprAST*>($1)->next=dynamic_cast<ExprAST*>($2);}
 	;
 
 statement

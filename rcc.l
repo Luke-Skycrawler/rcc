@@ -19,13 +19,13 @@ typedef yy::rcc::token token;
 void count();
 yy::rcc::token::yytokentype check_type();
 void comment();
-inline yy::rcc::token::yytokentype numeric(yy::rcc::token::yytokentype tok,rccGlobal &global){
-	// global.buf.type='d';
+inline yy::rcc::token::yytokentype numeric(yy::rcc::token::yytokentype tok,rccGlobal &global,char advice){
+	global.buf.advice=advice;
 	global.buf.val.f64=atof(yytext);
 	return tok;
 }
 inline yy::rcc::token::yytokentype strLiteral(yy::rcc::token::yytokentype tok,rccGlobal &global){
-	// global.buf.type='s';
+	global.buf.advice='s';
 	strcpy(global.buf.val.u8,yytext);
 	// printf("In check_type:%s\n",global.buf.val.u8);
 	return tok;
@@ -70,13 +70,13 @@ inline yy::rcc::token::yytokentype strLiteral(yy::rcc::token::yytokentype tok,rc
 
 {L}({L}|{D})*			{ count(); return strLiteral(check_type(),global); }
 
-0[xX]{H}+{IS}?			{ count(); return numeric(token::CONSTANT,global); }
-{D}+{IS}?				{ count(); return numeric(token::CONSTANT,global); }
-0{D}+{IS}?				{ count(); return numeric(token::CONSTANT,global); }
-{D}+{E}{FS}?			{ count(); return numeric(token::CONSTANT,global); }
-L?'(\\.|[^\\'])+'		{ count(); return numeric(token::CONSTANT,global); }
-{D}*"."{D}+({E})?{FS}?	{ count(); return numeric(token::CONSTANT,global); }
-{D}+"."{D}*({E})?{FS}?	{ count(); return numeric(token::CONSTANT,global); }
+0[xX]{H}+{IS}?			{ count(); return numeric(token::CONSTANT,global,'i'); }
+{D}+{IS}?				{ count(); return numeric(token::CONSTANT,global,'i'); }
+0{D}+{IS}?				{ count(); return numeric(token::CONSTANT,global,'i'); }
+{D}+{E}{FS}?			{ count(); return numeric(token::CONSTANT,global,'d'); }
+L?'(\\.|[^\\'])+'		{ count(); return numeric(token::CONSTANT,global,'c'); }
+{D}*"."{D}+({E})?{FS}?	{ count(); return numeric(token::CONSTANT,global,'d'); }
+{D}+"."{D}*({E})?{FS}?	{ count(); return numeric(token::CONSTANT,global,'d'); }
 L?\"(\\.|[^\\"])*\"		{ count(); return strLiteral(token::STRING_LITERAL,global); }
 
 "..."			{ count(); return(token::ELLIPSIS); }
