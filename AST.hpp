@@ -441,48 +441,48 @@ public:
     NbinaryExpr(const std::string &op, Nexpr *lhs, Nexpr *rhs):op(op), lhs(lhs), rhs(rhs)
     {
         // Calculate and check type
-        if(op == "||" || op == "&&" || op == "|" || op == "^" || \
-        op == "&" || op == "==" || op == "!=" || op == "<" || \
-        op == ">" || op == ">=" || op == "<=" || op == "<<" || \
-        op == ">>")
-        {
-            if(lhs->getType() != "int" || rhs->getType() != "int")
-            {
-                if(type_error_alarm)
-                {
-                    std::cout << "Type error!" << std::endl;
-                    type_error_alarm = false;
-                }
-                type = "error";
-            }
-            else
-            {
-                type = "int";
-            }
-        }
-        else if(op == "+" || op == "-" || op == "*" || op == "/" ||\
-            op == "%")
-        {
-            if((lhs->getType() != "int" && lhs->getType() != "double") || (rhs->getType() != "int" && rhs->getType() != "double"))
-            {
-                    if(type_error_alarm)
-                    {
-                        std::cout << "Type error!" << std::endl;
-                        type_error_alarm = false;
-                    }
-                    type = "error";
-            }
-            else
-            {
-                if(lhs->getType() == "double" || rhs->getType() == "double")
-                    type = "double";
-                else type = "int";
-            }
-        }    
-        else
-        {
-            type = "NULL";
-        }
+        // if(op == "||" || op == "&&" || op == "|" || op == "^" || \
+        // op == "&" || op == "==" || op == "!=" || op == "<" || \
+        // op == ">" || op == ">=" || op == "<=" || op == "<<" || \
+        // op == ">>")
+        // {
+        //     if(lhs->getType() != "int" || rhs->getType() != "int")
+        //     {
+        //         if(type_error_alarm)
+        //         {
+        //             std::cout << "Type error!" << std::endl;
+        //             type_error_alarm = false;
+        //         }
+        //         type = "error";
+        //     }
+        //     else
+        //     {
+        //         type = "int";
+        //     }
+        // }
+        // else if(op == "+" || op == "-" || op == "*" || op == "/" ||\
+        //     op == "%")
+        // {
+        //     if((lhs->getType() != "int" && lhs->getType() != "double") || (rhs->getType() != "int" && rhs->getType() != "double"))
+        //     {
+        //             if(type_error_alarm)
+        //             {
+        //                 std::cout << "Type error!" << std::endl;
+        //                 type_error_alarm = false;
+        //             }
+        //             type = "error";
+        //     }
+        //     else
+        //     {
+        //         if(lhs->getType() == "double" || rhs->getType() == "double")
+        //             type = "double";
+        //         else type = "int";
+        //     }
+        // }    
+        // else
+        // {
+        //     type = "NULL";
+        // }
     }
     std::string op;
     llvm::Value *codeGen();

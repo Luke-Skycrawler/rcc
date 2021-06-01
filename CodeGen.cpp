@@ -73,7 +73,7 @@ llvm::Value *Nconstant::codeGen()
 {
     string op(value.string_literal_value);
 
-    if(type!=RCC_STRING_LITERAL)return ConstantFP::get(context, APFloat(value.double_value));
+    if(type!="char")return ConstantFP::get(context, APFloat(value.double_value));
 
     auto str= ConstantDataArray::getString(context,op);
 	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");

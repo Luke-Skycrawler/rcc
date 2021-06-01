@@ -214,8 +214,8 @@ void Ndeclaration::bind()
 
     for(auto& init_declarator: init_declarator_list)
     {
-        NdirectDeclarator* direct_declarator = init_declarator->declarator->direct_declarator;
-        direct_declarator->bind(type, "");
+        if(NdirectDeclarator* direct_declarator = dynamic_cast<NdirectDeclarator*>(init_declarator->declarator))
+            direct_declarator->bind(type, "");
     }
 }
 
@@ -228,14 +228,16 @@ void NdirectDeclarator::bind(std::string type, std::string additional_info)
     }
     else if(direct_declarator_type == NESTED_DECLARATOR)
     {
-        direct_declarator->bind(type, additional_info);
+        if(direct_declarator)
+            direct_declarator->bind(type, additional_info);
     }
     else if(direct_declarator_type == SQUARE_BRACKET_CONSTANT)
     {
         std::string tmp(INT2STRING(int_constant->value.int_value));
         tmp = tmp + additional_info; // appending '[INT_CONSTANT]' in the front
         tmp = "|" + tmp;
-        direct_declarator->bind(type, tmp);
+        if(direct_declarator)
+            direct_declarator->bind(type, tmp);
     }
     else if(direct_declarator_type == SQUARE_BRACKET_EMPTY)
     {
@@ -246,18 +248,21 @@ void NdirectDeclarator::bind(std::string type, std::string additional_info)
     {
         //TODO: more to implement
         additional_info += "|function";
-        direct_declarator->bind(type, additional_info);
+        if(direct_declarator)
+            direct_declarator->bind(type, additional_info);
     }
     else if(direct_declarator_type == PARENTHESES_IDENTIFIER_LIST)
     {
         //TODO: more to implement
         additional_info += "|function";
-        direct_declarator->bind(type, additional_info);
+        if(direct_declarator)
+            direct_declarator->bind(type, additional_info);
     }
     else if(direct_declarator_type == PARENTHESES_EMPTY)
     {
         additional_info += "|function";
-        direct_declarator->bind(type, additional_info);
+        if(direct_declarator)
+            direct_declarator->bind(type, additional_info);
     }
     else
     {
@@ -270,6 +275,6 @@ void NfunctionDefinition::bind()
     // Binding!
     std::string type = declaration_specifiers->type_specifier->type;
 
-    NdirectDeclarator* direct_declarator = declarator->direct_declarator;
-    direct_declarator->bind(type, "");
+    if(NdirectDeclarator* direct_declarator = declarator->direct_declarator)
+        direct_declarator->bind(type, "");
 }
