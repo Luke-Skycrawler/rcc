@@ -13,26 +13,51 @@ Value *Nstatement::codeGen()
 Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen();
-    switch (op[0])
-    {
-    case '+':
-        return builder.CreateFAdd(l, r, "add");
-    case '-':
-        return builder.CreateFSub(l, r, "sub");
-    case '*':
-        return builder.CreateFMul(l, r, "mult");
-    case '/':
-        return builder.CreateSDiv(l, r, "div");
-    case '|':
-        return builder.CreateOr(l, r, "or");
-    case '&':
-        return builder.CreateAnd(l, r, "and");
-    case '>':
-        return builder.CreateFCmpUGT(l, r, "");
-    case '<':
-        return builder.CreateFCmpULT(l, r, "cmp");
-    default:
-        return NULL;
+    if(type=="int"){
+        switch(op[0]){
+            case '+':return builder.CreateAdd(l,r);
+            case '-':return builder.CreateSub(l,r);
+            case '*':return builder.CreateMul(l,r);
+            case '/':return builder.CreateSDiv(l,r);
+            case '%':return builder.CreateSRem(l,r);
+            case '&':
+                if(op.size()==1)
+                    return builder.CreateAnd(l,r);
+                else return builder.CreateAnd(l,r);
+            case '|':return builder.CreateOr(l,r);
+            case '^':return builder.CreateXor(l,r);
+            case '<':
+                if(op.size()==1)return builder.CreateICmpSLT(l,r);
+                else if(op[1]=='=')return builder.CreateICmpSLE(l,r);
+                else if(op[1]=='<')return builder.CreateShl(l,r);
+            case '>':
+                if(op.size()==1) return builder.CreateICmpSGT(l,r);
+                else if (op[1]=='=')return builder.CreateICmpSGE(l,r);
+                else if(op[1]=='>') return builder.CreateAShr(l,r);
+            case '=':return builder.CreateICmpEQ(l,r);
+            case '!':return builder.CreateICmpNE(l,r);
+        }
+    }
+    else {
+        switch (op[0])
+        {
+        case '+':
+            return builder.CreateFAdd(l, r, "add");
+        case '-':
+            return builder.CreateFSub(l, r, "sub");
+        case '*':
+            return builder.CreateFMul(l, r, "mult");
+        case '/':
+            return builder.CreateFDiv(l, r, "div");
+        case '>':
+            if(op.size()==1)return builder.CreateFCmpUGT(l, r, "");
+            else return builder.CreateFCmpUGE(l, r, "");
+        case '<':
+            if(op.size()==1)return builder.CreateFCmpULT(l, r, "cmp");
+            return builder.CreateFCmpULE(l, r, "cmp");
+        default:
+            return NULL;
+        }
     }
 }
 // Value *CallExprAST::codeGen()
