@@ -76,9 +76,9 @@ llvm::Value *Nconstant::codeGen()
     string op(value.string_literal_value);
     auto str= ConstantDataArray::getString(context, op);
 	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()), "str_addr");
-    addr->setAlignment(Align(1));		   	
+    // addr->setAlignment(Align(1));		   	
 	llvm::Value* p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
-	builder.CreateStore(str, p)->setAlignment(Align(1));
+	builder.CreateStore(str, p);//->setAlignment(Align(1));
     return p;
 }
 Value *Nidentifier::codeGen()
