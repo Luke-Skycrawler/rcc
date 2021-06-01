@@ -60,16 +60,6 @@ Value *NbinaryExpr::codeGen()
         }
     }
 }
-// Value *CallExprAST::codeGen()
-// {
-//     Function *callee = topModule->getFunction(op);
-
-//     vector<Value *> argv;
-//     // for(auto it=args;it!=nullptr;it=it->next){
-//     //     argv.push_back(it);
-//     // }
-//     return builder.CreateCall(callee, argv, "call");
-// }
 llvm::Value *Nconstant::codeGen()
 {
     if(type!="string_literal")return ConstantFP::get(context, APFloat(value.double_value));
@@ -115,7 +105,15 @@ Value *Ndeclaration::codeGen()
     void * ret;
     for(auto it:init_declarator_list){
         auto op=dynamic_cast<NdirectDeclarator*>(it)->identifier->name;
-        auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+        auto type = declaration_specifiers->type_specifier->type;
+        AllocaInst * allocation;
+        if(type=="double")
+            allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+        else if(type=="int")
+            allocation=builder.CreateAlloca(Type::getInt32Ty(context),NULL,op);
+        else if(type=="char")
+            allocation=builder.CreateAlloca(Type::getInt8Ty(context),NULL,op);
+        
         ret = allocation;
         builder.CreateStore(builder.getInt64(0), allocation);
         bindings[op] = allocation;
