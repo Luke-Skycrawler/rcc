@@ -72,14 +72,13 @@ Value *NbinaryExpr::codeGen()
 // }
 llvm::Value *Nconstant::codeGen()
 {
-
     if(type!="string_literal")return ConstantFP::get(context, APFloat(value.double_value));
     string op(value.string_literal_value);
-    auto str= ConstantDataArray::getString(context,op);
-	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");
-    addr->setAlignment (1);		   	
+    auto str= ConstantDataArray::getString(context, op);
+	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()), "str_addr");
+    addr->setAlignment(Align(1));		   	
 	llvm::Value* p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
-	builder.CreateStore(str, p)->setAlignment(1);
+	builder.CreateStore(str, p)->setAlignment(Align(1));
     return p;
 }
 Value *Nidentifier::codeGen()
@@ -117,13 +116,13 @@ Value *Ndeclaration::codeGen()
     for(auto it:init_declarator_list){
         auto op=dynamic_cast<NdirectDeclarator*>(it)->identifier->name;
         auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
-        ret=allocation;
+        ret = allocation;
         builder.CreateStore(builder.getInt64(0), allocation);
         bindings[op] = allocation;
         // if (next)
         //     next->codeGen();
     } 
-    return ret; // some arbitary pointer other than NULL
+    return (Value*)ret; // some arbitary pointer other than NULL
 }
 Value *NcompoundStatement::codeGen()
 {

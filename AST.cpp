@@ -205,7 +205,7 @@ void NunaryExpr::printNode(int indent)
 void NpostfixExpr::printNode(int indent)
 {
     // postfix_expr->printNode(indent);
-    PRINT_INDENT(indent, "NpostfixExpr("+dynamic_cast<Nidentifier *>(postfix_expr)->name+")");
+    PRINT_INDENT(indent, "NpostfixExpr(" + dynamic_cast<Nidentifier *>(postfix_expr)->name + ")");
     for(auto it:argument_expr_list){
         it->printNode(indent+1);
     }
