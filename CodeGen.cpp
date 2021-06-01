@@ -2,32 +2,6 @@
 #include "AST.hpp"
 using namespace std;
 using namespace llvm;
-// Value *FunctionAST::codeGen()
-// {
-//     Function *func = topModule->getFunction(op);
-//     if (!func)
-//     {
-//         vector<Type *> args(0, Type::getDoubleTy(context));
-//         FunctionType *ft = FunctionType::get(Type::getDoubleTy(context), args, false);
-//         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
-//     }
-
-//     BasicBlock *bb = BasicBlock::Create(context, "entry", func);
-//     builder.SetInsertPoint(bb);
-//     if (body)
-//     {
-//         if (auto ret = body->codeGen())
-//         {
-//             builder.CreateRet(ret);
-//             verifyFunction(*func);
-
-//             return ret;
-//         }
-//         if (func)
-//             func->eraseFromParent();
-//     }
-//     return NULL;
-// }
 Value *Nstatement::codeGen()
 {
     // auto tmp = expr->codeGen();
@@ -76,7 +50,6 @@ llvm::Value *Nconstant::codeGen()
     string op(value.string_literal_value);
 
     if(type!="string_literal")return ConstantFP::get(context, APFloat(value.double_value));
-
     auto str= ConstantDataArray::getString(context,op);
 	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");
     addr->setAlignment (1);		   	

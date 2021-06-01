@@ -622,6 +622,31 @@ public:
         this->value.string_literal_value = (char*)malloc(len);
         memset(this->value.string_literal_value, '\0', len);
         strncpy(this->value.string_literal_value, value, len - 1);
+        char *str=this->value.string_literal_value;
+        int j=0;
+        for(int i=0;i<len && i+j<len;i++){
+            if(str[i]=='\\'){
+                if(j+i<len-1)j++;
+                else printf("error: string end with dangling '\\'\n");
+                if(str[i+j]>='0' && str[i+j]<='9'){
+                    int tmp;
+                    sscanf(str+i+j,"%d",&tmp);
+                    if(tmp<256)str[i]=tmp;
+                    else printf("error: invalid ASCII\n");
+                }
+                else switch(str[i+j]){
+                    case 'n':
+                        str[i]='\n';break;
+                    case 't':
+                        str[i]='\t';break;
+                    case '\\':
+                        str[i]='\\';break;
+                    default:
+                        printf("error: char not recongnized\n");
+                }
+            }
+            else str[i]=str[i+j];
+        }
     }
     llvm::Value* codeGen();
     void printNode(int indent);
