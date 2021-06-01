@@ -57,6 +57,8 @@ Value *NbinaryExpr::codeGen()
         return builder.CreateFCmpUGT(l, r, "");
     case '<':
         return builder.CreateFCmpULT(l, r, "cmp");
+    default:
+        return NULL;
     }
 }
 // Value *CallExprAST::codeGen()
@@ -112,22 +114,34 @@ Value *NdeclarationSpecifiers::codeGen()
 }
 Value *Ndeclaration::codeGen()
 {
-    return NULL;
+    // Node *next=NULL;
+    void * ret;
+    for(auto it:init_declarator_list){
+        auto op=dynamic_cast<NdirectDeclarator*>(it)->identifier->name;
+        auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+        ret=allocation;
+        builder.CreateStore(builder.getInt64(0), allocation);
+        bindings[op] = allocation;
+        // if (next)
+        //     next->codeGen();
+    } 
+    return ret; // some arbitary pointer other than NULL
 }
 Value *NcompoundStatement::codeGen()
 {
+    Value *tmp;
     if(declaration_list.size())
         for(auto it=declaration_list.begin();it!=declaration_list.end();it++)
-            (*it)->codeGen();
+            tmp=(*it)->codeGen();
     if (statement_list.size())
         for(auto it=statement_list.begin();it!=statement_list.end();it++)
-            (*it)->codeGen();
-    return NULL;
+            tmp=(*it)->codeGen();
+    return tmp;
 }
 Value *NfunctionDefinition::codeGen()
 {
     string op="";
-    Node *body=NULL;
+    Node *body=compound_statement;
 
     Function *func = topModule->getFunction(op);
     if (!func)
@@ -149,23 +163,30 @@ Value *NfunctionDefinition::codeGen()
 
             return ret;
         }
-        if (func)
-            func->eraseFromParent();
+        // if (func)
+        //     func->eraseFromParent();
     }
     // funcStack.pop_back();
     return NULL;
 }
 Value *Nprogram::codeGen()
 {
+    for(auto it:external_declaration_list){
+        it->codeGen();
+    }
     return NULL;
 }
 Value *NexprStatement::codeGen()
 {
-    return NULL;
+    return expr->codeGen();
 }
 Value *Nexpr::codeGen()
 {
-    return NULL;
+    Value *tmp;
+    for(auto it:expr_list){
+        tmp=it->codeGen();
+    }
+    return tmp;
 }
 Value *NassignExpr::codeGen()
 {
@@ -189,13 +210,21 @@ Value *NpostfixExpr::codeGen()
 }
 Value *NparameterDeclaration::codeGen()
 {
-    string op="";
-    Node *next=NULL;
-
-    auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
-    builder.CreateStore(builder.getInt64(0), allocation);
-    bindings[op] = allocation;
-    if (next)
-        next->codeGen();
-    return allocation; // some arbitary pointer other than NULL
+    return NULL;
+}
+llvm::Function *CreatePrintf()
+{
+    std::vector<llvm::Type *> arg_types;
+    arg_types.push_back(builder.getInt8PtrTy());
+    auto printf_type = llvm::FunctionType::get(builder.getInt32Ty(), llvm::makeArrayRef(arg_types), true);
+    auto func = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, llvm::Twine("printf"), topModule);
+    func->setCallingConv(llvm::CallingConv::C);
+    return func;
+}
+llvm::Function *CreateScanf()
+{
+    auto scanf_type = llvm::FunctionType::get(builder.getInt32Ty(), true);
+    auto func = llvm::Function::Create(scanf_type, llvm::Function::ExternalLinkage, llvm::Twine("scanf"), topModule);
+    func->setCallingConv(llvm::CallingConv::C);
+    return func;
 }
