@@ -7,6 +7,8 @@
 #include <sstream>
 
 extern bool type_error_alarm;
+llvm::Function *CreateScanf();
+llvm::Function *CreatePrintf();
 extern std::map<std::string, std::string> binding_info_map;
 
 inline std::string INT2STRING(int x)

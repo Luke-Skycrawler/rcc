@@ -1,4 +1,4 @@
-int main(int argc){
+/*int main(int argc){
 	int a;
 	double b;
 	char c;
@@ -7,7 +7,7 @@ int main(int argc){
 	a + 3.14;
 	b + 2;
 	c + 1;
-}
+}*/
 
 int f()
 {

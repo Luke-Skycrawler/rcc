@@ -206,6 +206,16 @@ Value *NunaryExpr::codeGen()
 }
 Value *NpostfixExpr::codeGen()
 {
+    if(postfix_type==PARENTHESES){
+        string op=dynamic_cast<Nidentifier*>(postfix_expr)->name;
+        if(op=="printf")CreatePrintf();
+        Function *callee = topModule->getFunction(op);
+        vector<Value *> argv;
+        for(auto it:argument_expr_list){
+            argv.push_back(it->codeGen());
+        }
+        return builder.CreateCall(callee, argv, "call");
+    }
     return NULL;
 }
 Value *NparameterDeclaration::codeGen()
