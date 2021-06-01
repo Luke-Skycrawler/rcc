@@ -47,9 +47,9 @@ Value *NbinaryExpr::codeGen()
 // }
 llvm::Value *Nconstant::codeGen()
 {
-    string op(value.string_literal_value);
 
     if(type!="string_literal")return ConstantFP::get(context, APFloat(value.double_value));
+    string op(value.string_literal_value);
     auto str= ConstantDataArray::getString(context,op);
 	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");
     addr->setAlignment (1);		   	
