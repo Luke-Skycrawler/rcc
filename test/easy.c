@@ -1,7 +1,15 @@
-int main(){
+int main(int argc){
 	int a;
-	printf("ula!\n%d\n%d",0*0,1-20);
-	a+1;
-	2+1;
-	3*2;
+	double b;
+	char c;
+	a = 3 * 4;
+	a + 3;
+	a + 3.14;
+	b + 2;
+	c + 1;
+}
+
+int f()
+{
+	printf("Hello world!\n");
 }

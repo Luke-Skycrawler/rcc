@@ -87,21 +87,7 @@ void Ninitializer::printNode(int indent)
 
 void NtypeSpecifier::printNode(int indent)
 {
-    switch(type)
-    {
-        case RCC_CHAR:
-            PRINT_INDENT(indent, "NtypeSpecifier(char)");
-            break;
-        case RCC_INT:
-            PRINT_INDENT(indent, "NtypeSpecifier(int)");
-            break;
-        case RCC_DOUBLE:
-            PRINT_INDENT(indent, "NtypeSpecifier(double)");
-            break;
-        default:
-            PRINT_INDENT(indent, "NtypeSpecifier(NULL)");
-            break;
-    }
+    PRINT_INDENT(indent, "NtypeSpecifier(" + type + ")");
 }
 
 void NfunctionDefinition::printNode(int indent)
@@ -139,24 +125,33 @@ void Nidentifier::printNode(int indent)
 
 void Nconstant::printNode(int indent)
 {
-    switch(type)
+    if(type == "char")
     {
-        case RCC_CHAR:
-            PRINT_INDENT(indent, "Nconstant", false);
-            std::cout << "(char: " << "\'" << value.char_value << "\')" << std::endl;
-            break;
-        case RCC_INT:
-            PRINT_INDENT(indent, "Nconstant", false);
-            std::cout << "(int: " << value.int_value << ")" << std::endl;
-            break;
-        case RCC_DOUBLE:
-            PRINT_INDENT(indent, "Nconstant", false);
-            std::cout << "(double: " << value.double_value << ")" << std::endl;
-            break;
-        case RCC_STRING_LITERAL:
-            PRINT_INDENT(indent, "Nconstant", false);
-            std::cout << "(string literal: \"" << value.string_literal_value << "\")" << std::endl;
-            break;
+        PRINT_INDENT(indent, "Nconstant", false);
+        std::cout << "(char: " << "\'" << value.char_value << "\')" << std::endl;
+    }
+    else if(type == "int")
+    {
+        PRINT_INDENT(indent, "Nconstant", false);
+        std::cout << "(int: " << value.int_value << ")" << std::endl;
+    }
+    else if(type == "double")
+    {
+        PRINT_INDENT(indent, "Nconstant", false);
+        std::cout << "(double: " << value.double_value << ")" << std::endl;
+    }
+    else if(type == "string_literal")
+    {
+        PRINT_INDENT(indent, "Nconstant", false);
+        std::cout << "(string_literal: \"" << value.string_literal_value << "\")" << std::endl;
+    }
+    else if(type == "error")
+    {
+        PRINT_INDENT(indent, "Nconstant(error)");
+    }
+    else
+    {
+        PRINT_INDENT(indent, "Nconstant(NULL)");
     }
     
 }
@@ -183,16 +178,20 @@ void Nexpr::printNode(int indent)
 
 void NassignExpr::printNode(int indent)
 {
-    PRINT_INDENT(indent, "NassignExpr");
+    PRINT_INDENT(indent, "NassignExpr(type: " + type + ")");
 }
 
 void NcondExpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "NcondExpr");
 }
+
 void NbinaryExpr::printNode(int indent){
-    PRINT_INDENT(indent,"NbianryExpr("+op+")");
+    PRINT_INDENT(indent, "NbinaryExpr(op: " + op + ", type: " + type + ")");
+    if(lhs) lhs->printNode(indent + 1);
+    if(rhs) rhs->printNode(indent + 1);
 }
+
 void NcastExpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "NcastExpr");
@@ -208,3 +207,69 @@ void NpostfixExpr::printNode(int indent)
     PRINT_INDENT(indent, "NpostfixExpr");
 }
 
+void Ndeclaration::bind()
+{
+    // Binding!
+    std::string type = declaration_specifiers->type_specifier->type;
+
+    for(auto& init_declarator: init_declarator_list)
+    {
+        NdirectDeclarator* direct_declarator = init_declarator->declarator->direct_declarator;
+        direct_declarator->bind(type, "");
+    }
+}
+
+void NdirectDeclarator::bind(std::string type, std::string additional_info)
+{
+    if(direct_declarator_type == IDENTIFIER)
+    {
+        binding_info_map[identifier->name] = type + additional_info;
+        std::cout << std::endl << "Binding \'" << identifier->name << "\' -> \'" << type + additional_info << "\'...";
+    }
+    else if(direct_declarator_type == NESTED_DECLARATOR)
+    {
+        direct_declarator->bind(type, additional_info);
+    }
+    else if(direct_declarator_type == SQUARE_BRACKET_CONSTANT)
+    {
+        std::string tmp(INT2STRING(int_constant->value.int_value));
+        tmp = tmp + additional_info; // appending '[INT_CONSTANT]' in the front
+        tmp = "|" + tmp;
+        direct_declarator->bind(type, tmp);
+    }
+    else if(direct_declarator_type == SQUARE_BRACKET_EMPTY)
+    {
+        // Not implemented!
+        std::cout << "Unexpected error!" << std::endl;
+    }
+    else if(direct_declarator_type == PARENTHESES_PARAMETER_LIST)
+    {
+        //TODO: more to implement
+        additional_info += "|function";
+        direct_declarator->bind(type, additional_info);
+    }
+    else if(direct_declarator_type == PARENTHESES_IDENTIFIER_LIST)
+    {
+        //TODO: more to implement
+        additional_info += "|function";
+        direct_declarator->bind(type, additional_info);
+    }
+    else if(direct_declarator_type == PARENTHESES_EMPTY)
+    {
+        additional_info += "|function";
+        direct_declarator->bind(type, additional_info);
+    }
+    else
+    {
+        std::cout << "Unexpected error!" << std::endl;
+    }
+}
+
+void NfunctionDefinition::bind()
+{
+    // Binding!
+    std::string type = declaration_specifiers->type_specifier->type;
+
+    NdirectDeclarator* direct_declarator = declarator->direct_declarator;
+    direct_declarator->bind(type, "");
+}

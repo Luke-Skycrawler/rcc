@@ -4,6 +4,17 @@
 #include "CodeGen.h"
 #include <vector>
 #include <string>
+#include <sstream>
+
+extern bool type_error_alarm;
+extern std::map<std::string, std::string> binding_info_map;
+
+inline std::string INT2STRING(int x)
+{
+    std::stringstream ss;
+    ss << x;
+    return std::string(ss.str());
+}
 
 inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
 {
@@ -15,7 +26,7 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
     else std::cout << msg;
 }
 
-enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3, RCC_STRING_LITERAL = 4};
+// enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3, RCC_STRING_LITERAL = 4, RCC_ERROR = -1, RCC_NULL = 0};
 
 class Node;
 class Nprogram;
@@ -88,11 +99,12 @@ class Ndeclaration: public NexternalDeclaration {
 public:
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers, std::vector<NinitDeclarator*>& init_declarator_list):\
         declaration_specifiers(declaration_specifiers),
-        init_declarator_list(init_declarator_list) {}
+        init_declarator_list(init_declarator_list) { bind(); }
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
-        declaration_specifiers(declaration_specifiers) {}
+        declaration_specifiers(declaration_specifiers) { bind(); }
     llvm::Value* codeGen();
     virtual void printNode(int indent);
+    void bind();
 private:
     NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator*> init_declarator_list;
@@ -107,7 +119,7 @@ public:
     NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {}
     llvm::Value* codeGen();
     virtual void printNode(int indent);
-private:
+// private:
     NtypeSpecifier* type_specifier;
 };
 
@@ -146,9 +158,9 @@ public:
         IDENTIFIER = 0,
         NESTED_DECLARATOR = 1,
         SQUARE_BRACKET_CONSTANT = 2,
-        SQUARE_BRACKET_EMPTY = 3,
+        SQUARE_BRACKET_EMPTY = 3, // probably not used
         PARENTHESES_PARAMETER_LIST = 4,
-        PARENTHESES_IDENTIFIER_LIST = 5,
+        PARENTHESES_IDENTIFIER_LIST = 5, // probably not used
         PARENTHESES_EMPTY = 6
     };
     NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Nidentifier* identifier):\
@@ -174,7 +186,8 @@ public:
         identifier_list(identifier_list) {}
     llvm::Value* codeGen();
     virtual void printNode(int indent);
-private:
+    void bind(std::string type, std::string additional_info);
+// private:
     DIRECT_DECLARATOR_TYPE direct_declarator_type;
     Nidentifier* identifier;
     // Ndeclarator* declarator;
@@ -229,21 +242,22 @@ public:
         declaration_specifiers(declaration_specifiers),
         declarator(declarator),
         declaration_list(declaration_list),
-        compound_statement(compound_statement) {}
+        compound_statement(compound_statement) { bind();}
     NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* declarator, NcompoundStatement* compound_statement):\
         declaration_specifiers(declaration_specifiers),
         declarator(declarator),
-        compound_statement(compound_statement) {}
+        compound_statement(compound_statement) {bind();}
     NfunctionDefinition(NdirectDeclarator* declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
         declarator(declarator),
         declaration_list(declaration_list),
-        compound_statement(compound_statement) {}
+        compound_statement(compound_statement) {bind();}
     NfunctionDefinition(NdirectDeclarator* declarator, NcompoundStatement* compound_statement):\
         declarator(declarator),
-        compound_statement(compound_statement) {}
+        compound_statement(compound_statement) { bind(); }
     llvm::Value* codeGen();
     void printNode(int indent);
-private:
+    void bind();
+// private:
     NdeclarationSpecifiers* declaration_specifiers; // 'int'
     NdirectDeclarator* declarator; // 'f(int x, double y, char z)'
     std::vector<Ndeclaration*> declaration_list; // what for?
@@ -295,15 +309,15 @@ private:
 
 /**
  * `type_specifier` node -- 'char', 'int' or 'double'
- * @param type: RCC_CHAR, RCC_INT or RCC_DOUBLE (enum type)
+ * @param type: a std::string "char", "int" or "double"
  */
 class NtypeSpecifier: public Node {
 public:
-    NtypeSpecifier(RCC_TYPE type):type(type) {}
+    NtypeSpecifier(std::string type):type(type) {}
     llvm::Value* codeGen();
     virtual void printNode(int indent);
-private:
-    RCC_TYPE type;
+// private:
+    std::string type;
 };
 
 /**
@@ -320,8 +334,9 @@ public:
     void push_back(Nexpr* expr) {
         expr_list.push_back(expr);
     }
-    void printNode(int indent)=0;
+    void printNode(int indent);
     llvm::Value* codeGen()=0;
+    virtual std::string getType() {return "NULL";}
 private:
     std::vector<Nexpr*> expr_list;
 };
@@ -347,9 +362,54 @@ public:
     NassignExpr(Nexpr* unary_expr, ASSIGN_OP_TYPE assign_op, Nexpr* assign_expr):\
         unary_expr(unary_expr),
         assign_op(assign_op),
-        assign_expr(assign_expr) {}
+        assign_expr(assign_expr)    
+    {
+        // Calculate and check type
+        if(unary_expr->getType() == "int")
+        {
+            if(assign_expr->getType() != "int")
+            {
+                type = "error";
+                std::cout << "Type error!" << std::endl;
+            }
+            else
+            {
+                type = "int";
+            }
+        }
+        else if(unary_expr->getType() == "double")
+        {
+            if(assign_expr->getType() != "int" && assign_expr->getType() != "double")
+            {
+                type = "error";
+                std::cout << "Type error!" << std::endl;
+            }
+            else
+            {
+                type = "double";
+            }
+        }
+        else if(unary_expr->getType() == "char")
+        {
+            if(assign_expr->getType() != "char")
+            {
+                type = "error";
+                std::cout << "Type error!" << std::endl;
+            }
+            else
+            {
+                type = "char";
+            }
+        }
+        else
+        {
+            //TODO: more to implement (like array assignment)
+            type = "NULL";
+        }
+    }
     llvm::Value* codeGen();
     void printNode(int indent);
+    std::string type;
 private:
     Nexpr* unary_expr;
     ASSIGN_OP_TYPE assign_op;
@@ -378,12 +438,62 @@ private:
  */
 class NbinaryExpr: public Nexpr{
 public:
-    NbinaryExpr(const std::string &op,Nexpr *lhs,Nexpr *rhs):Nexpr(),op(op),lhs(lhs),rhs(rhs){}
+    NbinaryExpr(const std::string &op, Nexpr *lhs, Nexpr *rhs):op(op), lhs(lhs), rhs(rhs)
+    {
+        // Calculate and check type
+        if(op == "||" || op == "&&" || op == "|" || op == "^" || \
+        op == "&" || op == "==" || op == "!=" || op == "<" || \
+        op == ">" || op == ">=" || op == "<=" || op == "<<" || \
+        op == ">>")
+        {
+            if(lhs->getType() != "int" || rhs->getType() != "int")
+            {
+                if(type_error_alarm)
+                {
+                    std::cout << "Type error!" << std::endl;
+                    type_error_alarm = false;
+                }
+                type = "error";
+            }
+            else
+            {
+                type = "int";
+            }
+        }
+        else if(op == "+" || op == "-" || op == "*" || op == "/" ||\
+            op == "%")
+        {
+            if((lhs->getType() != "int" && lhs->getType() != "double") || (rhs->getType() != "int" && rhs->getType() != "double"))
+            {
+                    if(type_error_alarm)
+                    {
+                        std::cout << "Type error!" << std::endl;
+                        type_error_alarm = false;
+                    }
+                    type = "error";
+            }
+            else
+            {
+                if(lhs->getType() == "double" || rhs->getType() == "double")
+                    type = "double";
+                else type = "int";
+            }
+        }    
+        else
+        {
+            type = "NULL";
+        }
+    }
     std::string op;
-    llvm::Value *codeGen() override;
-    void printNode(int indent) override;
+    llvm::Value *codeGen();
+    void printNode(int indent);
+    std::string getType()
+    {
+        return type;
+    }
 private:
-    Nexpr *lhs,*rhs;
+    std::string type;
+    Nexpr *lhs, *rhs;
 };
 
 /**
@@ -487,21 +597,25 @@ public:
     Nidentifier(std::string& name):name(name) {}
     llvm::Value* codeGen();
     void printNode(int indent);
-private:
+    std::string getType()
+    {
+        std::string type = binding_info_map[name];
+        return type;
+    }
+// private:
     std::string name;
 };
 
 /**
  * `CONSTANT` node -- a constant
- * @param type: RCC_CHAR, RCC_INT or RCC_DOUBLE
- * @param value: a RCC_CHAR, RCC_INT or RCC_DOUBLE constant value
+ * @param type: a std::string "char", "int" or "double"
  */
 class Nconstant: public Nexpr {
 public:
-    Nconstant(RCC_TYPE type, char value):type(type) { this->value.char_value = value; }
-    Nconstant(RCC_TYPE type, int value):type(type) { this->value.int_value = value; }
-    Nconstant(RCC_TYPE type, double value):type(type) { this->value.double_value = value; }
-    Nconstant(RCC_TYPE type, char* value):type(type) {
+    Nconstant(std::string type, char value):type(type) { this->value.char_value = value; }
+    Nconstant(std::string type, int value):type(type) { this->value.int_value = value; }
+    Nconstant(std::string type, double value):type(type) { this->value.double_value = value; }
+    Nconstant(std::string type, char* value):type(type) {
         //Ignore the last \", so use `len` but not `len + 1`
         int len = strlen(value);
         this->value.string_literal_value = (char*)malloc(len);
@@ -510,8 +624,12 @@ public:
     }
     llvm::Value* codeGen();
     void printNode(int indent);
-private:
-    RCC_TYPE type;
+    std::string getType()
+    {
+        return type;
+    }
+// private:
+    std::string type;
     union Value {
         char char_value;
         int int_value;
