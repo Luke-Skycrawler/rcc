@@ -236,7 +236,7 @@ Value *NifStatement::codeGen()
 }
 Value *NfunctionDefinition::codeGen()
 {
-    string op = "";
+    string op = direct_declarator->identifier->name;
     Node *body = compound_statement;
 
     Function *func = topModule->getFunction(op);
@@ -244,11 +244,11 @@ Value *NfunctionDefinition::codeGen()
     {
         vector<Type *> args(0, Type::getDoubleTy(context));
         FunctionType *ft = FunctionType::get(Type::getDoubleTy(context), args, false);
-        func = Function::Create(ft, Function::ExternalLinkage, "main", topModule);
+        func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);
     }
 
-    BasicBlock *bb = BasicBlock::Create(context, "entry", func);
+    BasicBlock *bb = BasicBlock::Create(context, "entry@"+op, func);
     builder.SetInsertPoint(bb);
     if (body)
     {
