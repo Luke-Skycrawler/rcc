@@ -1,7 +1,8 @@
 #include "AST.hpp"
+#include <vector>
 using namespace std;
-extern NStruct *selfDefinedType;
-static map<string, NStruct *> structBindings;
+extern Nstruct *selfDefinedType;
+static map<string, Nstruct *> structBindings;
 void Nprogram::printNode(int indent = 0)
 {
     PRINT_INDENT(indent, "Nprogram");
@@ -14,18 +15,13 @@ void Nprogram::printNode(int indent = 0)
 void Ndeclaration::printNode(int indent)
 {
     PRINT_INDENT(indent, "Ndeclaration");
-    declaration_specifiers->printNode(indent + 1);
+    type_specifier->printNode(indent + 1);
     for (auto &init_declarator : init_declarator_list)
     {
         init_declarator->printNode(indent + 1);
     }
 }
 
-void NdeclarationSpecifiers::printNode(int indent)
-{
-    PRINT_INDENT(indent, "NdeclarationSpecifiers");
-    type_specifier->printNode(indent + 1);
-}
 
 void NinitDeclarator::printNode(int indent)
 {
@@ -111,8 +107,8 @@ void NtypeSpecifier::printNode(int indent)
 void NfunctionDefinition::printNode(int indent)
 {
     PRINT_INDENT(indent, "NfunctionDefinition");
-    if (declaration_specifiers)
-        declaration_specifiers->printNode(indent + 1);
+    if (type_specifier)
+        type_specifier->printNode(indent + 1);
     if (direct_declarator)
         direct_declarator->printNode(indent + 1);
     // if(!declaration_list.empty())
@@ -180,8 +176,8 @@ void Nconstant::printNode(int indent)
 void NparameterDeclaration::printNode(int indent)
 {
     PRINT_INDENT(indent, "NparameterDeclaration");
-    if (declaration_specifiers)
-        declaration_specifiers->printNode(indent + 1);
+    if (type_specifier)
+        type_specifier->printNode(indent + 1);
     if (direct_declarator)
         direct_declarator->printNode(indent + 1);
 }
@@ -241,7 +237,7 @@ void NpostfixExpr::printNode(int indent)
 void Ndeclaration::bind()
 {
     // Binding!
-    std::string type = declaration_specifiers->type_specifier->type;
+    std::string type = type_specifier->type;
 
     for (auto &init_declarator : init_declarator_list)
     {
@@ -297,7 +293,7 @@ void NdirectDeclarator::bind(std::string type)
 void NfunctionDefinition::bind()
 {
     // Binding!
-    std::string type = declaration_specifiers->type_specifier->type;
+    std::string type = type_specifier->type;
 
     if (direct_declarator)
         direct_declarator->bind(type);
@@ -329,7 +325,7 @@ void NdirectDeclarator::setIdentifierList(const std::vector<Nidentifier *> &iden
 {
     this->identifier_list = identifier_list;
 }
-NDerivedType::NDerivedType(char type) 
+NderivedType::NderivedType(char type) 
 {
     switch (type)
     {
@@ -347,13 +343,14 @@ NDerivedType::NDerivedType(char type)
         break;
     }
 }
-void NStruct::printNode(int indent)
+void Nstruct::printNode(int indent)
 {
     PRINT_INDENT(indent, "");
     if (content)
-        content->printNode(indent + 1);
+        for(auto it:*content)
+            it->printNode(indent + 1);
 }
-NStruct::NStruct(const std::string &name,Ndeclaration *content) : name(name), content(content)
+Nstruct::Nstruct(const std::string &name,vector<Ndeclaration *> *content) : name(name), content(content)
 {
     if (bindings.find(name) != bindings.end() || structBindings.find(name) != structBindings.end())
         error("struct name conflict");

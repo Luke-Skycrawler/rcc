@@ -95,17 +95,13 @@ Value *NdirectDeclarator::codeGen()
 // {
 //     return NULL;
 // }
-Value *NdeclarationSpecifiers::codeGen()
-{
-    return NULL;
-}
 Value *Ndeclaration::codeGen()
 {
     // Node *next=NULL;
     void * ret;
     for(auto it:init_declarator_list){
         auto op=dynamic_cast<NdirectDeclarator*>(it)->identifier->name;
-        auto type = declaration_specifiers->type_specifier->type;
+        auto type = type_specifier->type;
         AllocaInst * allocation;
         if(type=="double")
             allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
@@ -267,7 +263,7 @@ llvm::Function *CreateScanf()
     func->setCallingConv(llvm::CallingConv::C);
     return func;
 }
-llvm::Value *NDerivedType::codeGen()
+llvm::Value *NderivedType::codeGen()
 {
     return NULL;
 }
@@ -275,7 +271,7 @@ llvm::Value *NparameterList::codeGen()
 {
     return NULL;
 }
-llvm::Value *NStruct::codeGen()
+llvm::Value *Nstruct::codeGen()
 {
     return NULL;
 }

@@ -52,8 +52,8 @@ class NunaryExpr;
 class NpostfixExpr;
 class Nidentifier;
 class Nconstant;
-class NStruct;
-class NDerivedType;
+class Nstruct;
+class NderivedType;
 
 /**
  * Base class of AST node, for derivation and inheritation
@@ -92,9 +92,9 @@ private:
  */
 class NexternalDeclaration: public Node {
 };
-class NDerivedType : public Node
+class NderivedType : public Node
 {
-    NDerivedType(char type);
+    NderivedType(char type);
     void push(Nexpr *element) { arraySize.push_back(element); }
     llvm::Value* codeGen();
     void printNode(int indent){
@@ -102,14 +102,14 @@ class NDerivedType : public Node
     }
     std::string baseType;
     std::vector<Nexpr *> arraySize;
-    NDerivedType *next; // used for function parameter list only
+    NderivedType *next; // used for function parameter list only
 };
-struct NStruct : public Node
+struct Nstruct : public Node
 {
     // nearly the same as BlockAST
-    NStruct(const std::string &name, Ndeclaration *content = NULL);
+    Nstruct(const std::string &name, std::vector<Ndeclaration *>* content = NULL);
     std::string name;
-    Ndeclaration *content;
+    std::vector<Ndeclaration *>* content;
     llvm::Value* codeGen();
     void printNode(int indent);
 };
@@ -191,15 +191,15 @@ public:
 
 class NparameterDeclaration: public Node {
 public:
-    NparameterDeclaration(Ntypespecifier* type_specifier, NdirectDeclarator* direct_declarator):
+    NparameterDeclaration(NtypeSpecifier* type_specifier, NdirectDeclarator* direct_declarator):
         type_specifier(type_specifier),
         direct_declarator(direct_declarator) {}
-    NparameterDeclaration(Ntypespecifier* type_specifier):
+    NparameterDeclaration(NtypeSpecifier* type_specifier):
         type_specifier(type_specifier) {}
     llvm::Value* codeGen();
     void printNode(int indent);
 private:
-    Ntypespecifier* type_specifier;
+    NtypeSpecifier* type_specifier;
     NdirectDeclarator* direct_declarator;
 };
 
@@ -230,12 +230,12 @@ private:
  */
 class NfunctionDefinition: public NexternalDeclaration {
 public:
-    NfunctionDefinition(Ntypespecifier* type_specifier, NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
+    NfunctionDefinition(NtypeSpecifier* type_specifier, NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
         type_specifier(type_specifier),
         direct_declarator(direct_declarator),
         declaration_list(declaration_list),
         compound_statement(compound_statement) { bind();}
-    NfunctionDefinition(Ntypespecifier* type_specifier, NdirectDeclarator* direct_declarator, NcompoundStatement* compound_statement):\
+    NfunctionDefinition(NtypeSpecifier* type_specifier, NdirectDeclarator* direct_declarator, NcompoundStatement* compound_statement):\
         type_specifier(type_specifier),
         direct_declarator(direct_declarator),
         compound_statement(compound_statement) {bind();}
@@ -250,7 +250,7 @@ public:
     void printNode(int indent);
     void bind();
 // private:
-    Ntypespecifier* type_specifier; // 'int'
+    NtypeSpecifier* type_specifier; // 'int'
     NdirectDeclarator* direct_declarator; // 'f(int x, double y, char z)'
     std::vector<Ndeclaration*> declaration_list; // what for?
     NcompoundStatement* compound_statement; // '{...}'
