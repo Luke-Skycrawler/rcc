@@ -183,9 +183,42 @@ Value *Nexpr::codeGen()
     }
     return tmp;
 }
+inline Value *createOpNode(Value *l, Value *r, char op)
+{
+    switch (op)
+    {
+    case '+':
+        return builder.CreateFAdd(l, r, "add");
+    case '-':
+        return builder.CreateFSub(l, r, "sub");
+    case '*':
+        return builder.CreateFMul(l, r, "mult");
+    case '/':
+        return builder.CreateFDiv(l, r, "div");
+    case '|':
+        return builder.CreateOr(l, r, "or");
+    case '&':
+        return builder.CreateAnd(l, r, "and");
+    case '%':
+        return builder.CreateFRem(l, r, "");
+    default:
+        return NULL;
+    }
+}
 Value *NassignExpr::codeGen()
 {
-    return NULL;
+    Value *r = assign_expr->codeGen(), *l = NULL, *result = NULL;
+    auto storeAddr = bindings[dynamic_cast<Nidentifier*>(unary_expr)->name];
+    // FIXME: possible error here
+    if (assign_op[0] != '=')
+    {
+        l = unary_expr->codeGen();
+        result = createOpNode(l, r, assign_op[0]);
+    }
+    else
+        result = r;
+    builder.CreateStore(result, storeAddr);
+    return result;
 }
 Value *NcondExpr::codeGen()
 {
@@ -199,6 +232,7 @@ Value *NunaryExpr::codeGen()
 {
     return NULL;
 }
+
 Value *NpostfixExpr::codeGen()
 {
     if(postfix_type==PARENTHESES){
@@ -232,4 +266,16 @@ llvm::Function *CreateScanf()
     auto func = llvm::Function::Create(scanf_type, llvm::Function::ExternalLinkage, llvm::Twine("scanf"), topModule);
     func->setCallingConv(llvm::CallingConv::C);
     return func;
+}
+llvm::Value *NDerivedType::codeGen()
+{
+    return NULL;
+}
+llvm::Value *NparameterList::codeGen()
+{
+    return NULL;
+}
+llvm::Value *NStruct::codeGen()
+{
+    return NULL;
 }

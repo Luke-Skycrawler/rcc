@@ -53,6 +53,8 @@ class NunaryExpr;
 class NpostfixExpr;
 class Nidentifier;
 class Nconstant;
+class NStruct;
+class NDerivedType;
 
 /**
  * Base class of AST node, for derivation and inheritation
@@ -91,7 +93,37 @@ private:
  */
 class NexternalDeclaration: public Node {
 };
-
+class NDerivedType : public Node
+{
+    NDerivedType(char type);
+    void push(Nexpr *element) { arraySize.push_back(element); }
+    llvm::Value* codeGen();
+    void printNode(int indent){
+        if(next)next->printNode(indent);
+    }
+    std::string baseType;
+    std::vector<Nexpr *> arraySize;
+    NDerivedType *next; // used for function parameter list only
+};
+struct NStruct : public Node
+{
+    // nearly the same as BlockAST
+    NStruct(const std::string &name, Ndeclaration *content = NULL);
+    std::string name;
+    Ndeclaration *content;
+    llvm::Value* codeGen();
+    void printNode(int indent);
+};
+struct NparameterList: public Node {
+    NparameterList(const std::string &name):name(name){}
+    std::string name;
+    NparameterList *next;
+    llvm::Value* codeGen();
+    void printNode(int indent){
+        PRINT_INDENT(indent,"");
+        if(next)next->printNode(indent);
+    }
+};
 /**
  * `declaration` node -- a declaration looks like 'int x = 3', consisting of
  * @param declaration_specifiers: like type_specifier (TODO: storage_type like 'static' and type qualifier like 'const' should be implemented)
@@ -105,7 +137,7 @@ public:
     Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
         declaration_specifiers(declaration_specifiers) { bind(); }
     llvm::Value* codeGen();
-    virtual void printNode(int indent);
+    void printNode(int indent);
     void bind();
 private:
     NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
@@ -319,20 +351,7 @@ private:
  */
 class NassignExpr: public Nexpr {
 public:
-    enum ASSIGN_OP_TYPE {
-        EQUAL = 0,
-        MUL_ASSIGN = 1,
-        DIV_ASSIGN = 2,
-        MOD_ASSIGN = 3,
-        ADD_ASSIGN = 4,
-        SUB_ASSIGN = 5,
-        LEFT_ASSIGN = 6,
-        RIGHT_ASSIGN = 7,
-        AND_ASSIGN = 8,
-        XOR_ASSIGN = 9,
-        OR_ASSIGN = 10
-    };
-    NassignExpr(Nexpr* unary_expr, ASSIGN_OP_TYPE assign_op, Nexpr* assign_expr):\
+    NassignExpr(Nexpr* unary_expr, std::string assign_op, Nexpr* assign_expr):\
         unary_expr(unary_expr),
         assign_op(assign_op),
         assign_expr(assign_expr)    
@@ -385,7 +404,7 @@ public:
     std::string type;
 private:
     Nexpr* unary_expr;
-    ASSIGN_OP_TYPE assign_op;
+    std::string assign_op;
     Nexpr* assign_expr;
 };
 
@@ -634,5 +653,10 @@ public:
         char* string_literal_value;
     } value;
 };
+inline void error(const char *msg)
+{
+    printf("error:%s \n", msg);
+    exit(1);
+}
 
 #endif
