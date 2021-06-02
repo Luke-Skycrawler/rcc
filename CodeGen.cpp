@@ -153,7 +153,6 @@ Value *NdirectDeclarator::codeGen()
 // }
 Value *Ndeclaration::codeGen()
 {
-    // Node *next=NULL;
     void *ret;
     for (auto it : init_declarator_list)
     {
@@ -170,8 +169,6 @@ Value *Ndeclaration::codeGen()
         ret = allocation;
         builder.CreateStore(builder.getInt64(0), allocation);
         bindings[op] = allocation;
-        // if (next)
-        //     next->codeGen();
     }
     return (Value *)ret; // some arbitary pointer other than NULL
 }
@@ -234,21 +231,31 @@ Value *NifStatement::codeGen()
 
     return ret;
 }
+inline Type *string_to_Type(string type)
+{
+    if (type == "int")
+        return Type::getInt32Ty(context);
+    if (type == "double")
+        return Type::getDoubleTy(context);
+    if (type == "char")
+        return Type::getInt8Ty(context);
+}
 Value *NfunctionDefinition::codeGen()
 {
     string op = direct_declarator->identifier->name;
+    auto type = type_specifier->type;
     Node *body = compound_statement;
 
     Function *func = topModule->getFunction(op);
     if (!func)
     {
         vector<Type *> args(0, Type::getDoubleTy(context));
-        FunctionType *ft = FunctionType::get(Type::getDoubleTy(context), args, false);
+        FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);
     }
 
-    BasicBlock *bb = BasicBlock::Create(context, "entry@"+op, func);
+    BasicBlock *bb = BasicBlock::Create(context, "entry@" + op, func);
     builder.SetInsertPoint(bb);
     if (body)
     {
