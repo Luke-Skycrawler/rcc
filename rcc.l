@@ -23,7 +23,8 @@ void comment();
 %}
 
 %%
-"/*"			{ comment(); }
+"/*".*"*/"		{ count(); }
+"//".*\n		{ count(); }
 
 "char"			{ count(); return(token::CHAR); }
 "double"		{ count(); return(token::DOUBLE); }
@@ -31,8 +32,8 @@ void comment();
 "sizeof"		{ count(); return(token::SIZEOF); }
 
 \'.\'			{ count(); yylval->constant = new Nconstant("char", yytext[1]); return(token::CHAR_CONSTANT); }
-[0-9]+			{ count(); yylval->constant = new Nconstant("int", atoi(yytext)); return(token::INT_CONSTANT); }
-[0-9]+\.[0-9]+	{ count(); yylval->constant = new Nconstant("double", atof(yytext)); return(token::DOUBLE_CONSTANT); }   
+[+-]?[0-9]+			{ count(); yylval->constant = new Nconstant("int", atoi(yytext)); return(token::INT_CONSTANT); }
+[+-]?[0-9]+\.[0-9]+	{ count(); yylval->constant = new Nconstant("double", atof(yytext)); return(token::DOUBLE_CONSTANT); }   
 [a-zA-Z_][a-zA-Z0-9_]*    { count(); std::string tmp(yytext); yylval->identifier = new Nidentifier(tmp); return(token::IDENTIFIER); }
 \"(\\.|[^\\\"])*\"	{ count(); yylval->constant = new Nconstant("string_literal", yytext + 1); return(token::STRING_LITERAL); }
 

@@ -28,51 +28,66 @@ void NdeclarationSpecifiers::printNode(int indent)
 void NinitDeclarator::printNode(int indent)
 {
     PRINT_INDENT(indent, "NinitDeclarator");
-    declarator->printNode(indent + 1);
     if(initializer != nullptr)
         initializer->printNode(indent + 1);
 }
 
-// void Ndeclarator::printNode(int indent)
-// {
-//     PRINT_INDENT(indent, "Ndeclarator");
-//     direct_declarator->printNode(indent + 1);
-// }
-
 void NdirectDeclarator::printNode(int indent)
 {
-    PRINT_INDENT(indent, "NdirectDeclarator");
     switch(direct_declarator_type)
     {
         case IDENTIFIER:
+            PRINT_INDENT(indent, "NdirectDeclarator(IDENTIFIER)");
             identifier->printNode(indent + 1);
             break;
-        case NESTED_DECLARATOR:
-            declarator->printNode(indent + 1);
-            break;
         case SQUARE_BRACKET_CONSTANT:
-            direct_declarator->printNode(indent + 1);
-            int_constant->printNode(indent + 1);
+            identifier->printNode(indent + 1);
+            PRINT_INDENT(indent, "NdirectDeclarator(SQUARE_BRACKET_CONSTANT, ", false);
+            std::cout << "INT CONSTANT:";
+            if(!int_constant_list.empty())
+            {
+                for(auto& int_value: int_constant_list)
+                {
+                    std::cout << " " << int_value;
+                }
+            }
+            std::cout << ")" << std::endl;
+            break;
             break;
         case SQUARE_BRACKET_EMPTY:
-            direct_declarator->printNode(indent + 1);
+            identifier->printNode(indent + 1);
+            PRINT_INDENT(indent, "NdirectDeclarator(SQUARE_BRACKET_EMPTY, ", false);
+            std::cout << "INT CONSTANT:";
+            if(!int_constant_list.empty())
+            {
+                for(auto& int_value: int_constant_list)
+                {
+                    std::cout << " " << int_value;
+                }
+            }
+            std::cout << ")" << std::endl;
             break;
         case PARENTHESES_PARAMETER_LIST:
-            direct_declarator->printNode(indent + 1);
+            identifier->printNode(indent + 1);
+            PRINT_INDENT(indent, "NdirectDeclarator(PARENTHESES_PARAMETER_LIST)");
             for(auto& parameter: parameter_list)
                 parameter->printNode(indent + 1);
             break;
         case PARENTHESES_IDENTIFIER_LIST:
-            direct_declarator->printNode(indent + 1);
+            identifier->printNode(indent + 1);
+            PRINT_INDENT(indent, "NdirectDeclarator(PARENTHESES_IDENTIFIER_LIST)");
             for(auto& identifier: identifier_list)
                 identifier->printNode(indent + 1);
             break;
         case PARENTHESES_EMPTY:
-            direct_declarator->printNode(indent + 1);
+            identifier->printNode(indent + 1);
+            PRINT_INDENT(indent, "NdirectDeclarator(PARENTHESES_EMPTY)");
             break;
         default:
-            std::cout << "NONE" << std::endl;
+            PRINT_INDENT(indent, "NdirectDeclarator(ERROR)");
     }
+    if(initializer != nullptr)
+        initializer->printNode(indent + 1);
 }
 
 void Ninitializer::printNode(int indent)
@@ -94,7 +109,7 @@ void NfunctionDefinition::printNode(int indent)
 {
     PRINT_INDENT(indent, "NfunctionDefinition");
     if(declaration_specifiers) declaration_specifiers->printNode(indent + 1);
-    if(declarator) declarator->printNode(indent + 1);
+    if(direct_declarator) direct_declarator->printNode(indent + 1);
     // if(!declaration_list.empty())
     //     for(auto& declaration: declaration_list)
     //     {
@@ -120,7 +135,7 @@ void NcompoundStatement::printNode(int indent)
 void Nidentifier::printNode(int indent)
 {
     PRINT_INDENT(indent, "Nidentifier", false);
-    std::cout << "(" << name << ")" << std::endl;
+    std::cout << "(\'" << name << "\')" << std::endl;
 }
 
 void Nconstant::printNode(int indent)
@@ -160,7 +175,7 @@ void NparameterDeclaration::printNode(int indent)
 {
     PRINT_INDENT(indent, "NparameterDeclaration");
     if(declaration_specifiers) declaration_specifiers->printNode(indent + 1);
-    if(declarator) declarator->printNode(indent + 1);
+    if(direct_declarator) direct_declarator->printNode(indent + 1);
 }
 
 void NexprStatement::printNode(int indent)
@@ -218,30 +233,25 @@ void Ndeclaration::bind()
 
     for(auto& init_declarator: init_declarator_list)
     {
-        if(NdirectDeclarator* direct_declarator = dynamic_cast<NdirectDeclarator*>(init_declarator->declarator))
-            direct_declarator->bind(type, "");
+        if(NdirectDeclarator* direct_declarator = dynamic_cast<NdirectDeclarator*>(init_declarator))
+            direct_declarator->bind(type);
     }
 }
 
-void NdirectDeclarator::bind(std::string type, std::string additional_info)
+void NdirectDeclarator::bind(std::string type)
 {
     if(direct_declarator_type == IDENTIFIER)
     {
-        binding_info_map[identifier->name] = type + additional_info;
-        std::cout << std::endl << "Binding \'" << identifier->name << "\' -> \'" << type + additional_info << "\'...";
-    }
-    else if(direct_declarator_type == NESTED_DECLARATOR)
-    {
-        if(direct_declarator)
-            direct_declarator->bind(type, additional_info);
+        binding_info_map[identifier->name] = type;
+        std::cout << std::endl << "Binding \'" << identifier->name << "\' -> \'" << type << "\'...";
     }
     else if(direct_declarator_type == SQUARE_BRACKET_CONSTANT)
     {
-        std::string tmp(INT2STRING(int_constant->value.int_value));
-        tmp = tmp + additional_info; // appending '[INT_CONSTANT]' in the front
-        tmp = "|" + tmp;
-        if(direct_declarator)
-            direct_declarator->bind(type, tmp);
+        for(auto& int_value: int_constant_list)
+        {
+            type += "|" + INT2STRING(int_value);
+        }
+        binding_info_map[identifier->name] = type;
     }
     else if(direct_declarator_type == SQUARE_BRACKET_EMPTY)
     {
@@ -251,22 +261,19 @@ void NdirectDeclarator::bind(std::string type, std::string additional_info)
     else if(direct_declarator_type == PARENTHESES_PARAMETER_LIST)
     {
         //TODO: more to implement
-        additional_info += "|function";
-        if(direct_declarator)
-            direct_declarator->bind(type, additional_info);
+        type += "|function";
+        binding_info_map[identifier->name] = type;
     }
     else if(direct_declarator_type == PARENTHESES_IDENTIFIER_LIST)
     {
         //TODO: more to implement
-        additional_info += "|function";
-        if(direct_declarator)
-            direct_declarator->bind(type, additional_info);
+        type += "|function";
+        binding_info_map[identifier->name] = type;
     }
     else if(direct_declarator_type == PARENTHESES_EMPTY)
     {
-        additional_info += "|function";
-        if(direct_declarator)
-            direct_declarator->bind(type, additional_info);
+        type += "|function";
+        binding_info_map[identifier->name] = type;
     }
     else
     {
@@ -279,6 +286,33 @@ void NfunctionDefinition::bind()
     // Binding!
     std::string type = declaration_specifiers->type_specifier->type;
 
-    if(NdirectDeclarator* direct_declarator = declarator->direct_declarator)
-        direct_declarator->bind(type, "");
+    if(direct_declarator)
+        direct_declarator->bind(type);
+}
+
+void NdirectDeclarator::pushIntConstant(Nconstant* int_constant)
+{
+    // add the `int_value` of `int_constant` into the `int_constant_list`
+    int_constant_list.push_back(int_constant->value.int_value);
+}
+
+void NdirectDeclarator::updateType(DIRECT_DECLARATOR_TYPE direct_declarator_type)
+{
+    // update the type if necessary
+    // TODO: check declarator's syntax here!!!
+    if(this->direct_declarator_type != IDENTIFIER && this->direct_declarator_type != direct_declarator_type)
+    {
+        std::cout << "Latent Error: Mixed type in declarator!" << std::endl;
+    }
+    this->direct_declarator_type = direct_declarator_type;
+}
+
+void NdirectDeclarator::setParameterList(const std::vector<NparameterDeclaration*>& parameter_list)
+{
+    this->parameter_list = parameter_list;
+}
+
+void NdirectDeclarator::setIdentifierList(const std::vector<Nidentifier*>& identifier_list)
+{
+    this->identifier_list = identifier_list;
 }

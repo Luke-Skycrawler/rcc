@@ -34,7 +34,6 @@ extern Node* root;
 	NinitDeclarator* init_declarator;
 	Ninitializer* initializer;
 	std::vector<Ninitializer*>* initializer_list;
-	// Ndeclarator* declarator;
 	NdirectDeclarator* direct_declarator;
 	std::vector<NparameterDeclaration*>* parameter_list;
 	NparameterDeclaration* parameter_declaration;
@@ -79,7 +78,6 @@ extern Node* root;
 %type<init_declarator> init_declarator;
 %type<initializer> initializer;
 %type<initializer_list> initializer_list;
-%type<direct_declarator> declarator;
 %type<direct_declarator> direct_declarator;
 %type<parameter_list> parameter_list;
 %type<parameter_declaration> parameter_declaration;
@@ -171,35 +169,36 @@ init_declarator_list
 	;
 
 init_declarator
-	: declarator { $$ = $1; }
-	| declarator '=' initializer { $$ ->initializer= $3; }
+	: direct_declarator { $$ = $1; }
+	| direct_declarator '=' initializer { $$->initializer = $3; }
 	;
-
-declarator
-    : direct_declarator { $$ = $1; }
-    ;
 
 direct_declarator
 	: IDENTIFIER {
 		$$ = new NdirectDeclarator(NdirectDeclarator::IDENTIFIER, $1);
 	}
-	| '(' declarator ')' {
-		$$ = new NdirectDeclarator(NdirectDeclarator::NESTED_DECLARATOR, $2);
-	}
 	| direct_declarator '[' INT_CONSTANT ']' {
-		$$ = new NdirectDeclarator(NdirectDeclarator::SQUARE_BRACKET_CONSTANT, $1, $3);
+		$$ = $1;
+		$$->pushIntConstant($3);
+		$$->updateType(NdirectDeclarator::SQUARE_BRACKET_CONSTANT);
 	}
 	| direct_declarator '[' ']' {
-		$$ = new NdirectDeclarator(NdirectDeclarator::SQUARE_BRACKET_EMPTY, $1);
+		$$ = $1;
+		$$->updateType(NdirectDeclarator::SQUARE_BRACKET_EMPTY);
 	}
 	| direct_declarator '(' parameter_list ')' {
-		$$ = new NdirectDeclarator(NdirectDeclarator::PARENTHESES_PARAMETER_LIST, $1, *$3);
+		$$ = $1;
+		$$->updateType(NdirectDeclarator::PARENTHESES_PARAMETER_LIST);
+		$$->setParameterList(*$3);
 	}
 	| direct_declarator '(' identifier_list ')' {
-		$$ = new NdirectDeclarator(NdirectDeclarator::PARENTHESES_IDENTIFIER_LIST, $1, *$3);
+		$$ = $1;
+		$$->updateType(NdirectDeclarator::PARENTHESES_IDENTIFIER_LIST);
+		$$->setIdentifierList(*$3);
 	}
 	| direct_declarator '(' ')' {
-		$$ = new NdirectDeclarator(NdirectDeclarator::PARENTHESES_EMPTY, $1);
+		$$ = $1;
+		$$->updateType(NdirectDeclarator::PARENTHESES_EMPTY);
 	}
 	;
 
@@ -216,7 +215,7 @@ parameter_list
 	;
 
 parameter_declaration
-	: declaration_specifiers declarator {
+	: declaration_specifiers direct_declarator {
 		$$ = new NparameterDeclaration($1, $2);
 	}
 	// | declaration_specifiers abstract_declarator
@@ -261,16 +260,16 @@ initializer_list
 	;
 
 function_definition
-	: declaration_specifiers declarator declaration_list compound_statement {
+	: declaration_specifiers direct_declarator declaration_list compound_statement {
 		$$ = new NfunctionDefinition($1, $2, *$3, $4);
 	}
-	| declaration_specifiers declarator compound_statement {
+	| declaration_specifiers direct_declarator compound_statement {
 		$$ = new NfunctionDefinition($1, $2, $3);
 	}
-	| declarator declaration_list compound_statement {
+	| direct_declarator declaration_list compound_statement {
 		$$ = new NfunctionDefinition($1, *$2, $3);
 	}
-	| declarator compound_statement {
+	| direct_declarator compound_statement {
 		$$ = new NfunctionDefinition($1, $2);
 	}
 	;
