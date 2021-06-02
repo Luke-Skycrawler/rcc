@@ -41,6 +41,7 @@ extern Node* root;
 	std::vector<Nstatement*>* statement_list;
 	Nstatement* statement; 
 	NexprStatement* expr_statement;
+	NifStatement* if_statement;
 	Nexpr* expr;
 	NassignExpr::ASSIGN_OP_TYPE assign_op;
 	NunaryExpr::UNARY_OP unary_op;
@@ -59,12 +60,16 @@ extern Node* root;
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME
 %token CHAR INT DOUBLE
+%token STRUCT IF IFX ELSE FOR RETURN
 
 %token<identifier> IDENTIFIER
 %token<constant> CHAR_CONSTANT
 %token<constant> INT_CONSTANT
 %token<constant> DOUBLE_CONSTANT
 %token<constant> STRING_LITERAL
+
+%nonassoc IFX
+%nonassoc ELSE
 
 %type<program> program
 %type<external_declaration> external_declaration
@@ -85,6 +90,7 @@ extern Node* root;
 %type<statement_list> statement_list;
 %type<statement> statement;
 %type<expr_statement> expr_statement;
+%type<if_statement> if_statement;
 %type<expr> expr;
 %type<expr> assign_expr;
 %type<assign_op> assign_op;
@@ -300,6 +306,9 @@ statement
 	| compound_statement {
 		$$ = $1;
 	}
+	| if_statement {
+		$$ = $1;
+	}
 	;
 
 expr_statement
@@ -311,8 +320,14 @@ expr_statement
 	}
     ;
 
-
-
+if_statement
+	: IF '(' expr ')' statement %prec IFX {
+		$$ = new NifStatement($3, $5);
+	}
+	| IF '(' expr ')' statement ELSE statement {
+		$$ = new NifStatement($3, $5, $7);
+	}
+	;
 
 type_specifier
     : CHAR {
