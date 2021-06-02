@@ -22,7 +22,6 @@ void Ndeclaration::printNode(int indent)
     }
 }
 
-
 void NinitDeclarator::printNode(int indent)
 {
     PRINT_INDENT(indent, "NinitDeclarator");
@@ -193,7 +192,8 @@ void NifStatement::printNode(int indent)
     PRINT_INDENT(indent, "NifStatement");
     cond_expr->printNode(indent + 1);
     if_statement->printNode(indent + 1);
-    if(else_statement) else_statement->printNode(indent + 1);
+    if (else_statement)
+        else_statement->printNode(indent + 1);
 }
 
 void Nexpr::printNode(int indent)
@@ -333,7 +333,7 @@ void NdirectDeclarator::setIdentifierList(const std::vector<Nidentifier *> &iden
 {
     this->identifier_list = identifier_list;
 }
-NderivedType::NderivedType(char type) 
+NderivedType::NderivedType(char type)
 {
     switch (type)
     {
@@ -355,12 +355,58 @@ void Nstruct::printNode(int indent)
 {
     PRINT_INDENT(indent, "");
     if (content)
-        for(auto it:*content)
+        for (auto it : *content)
             it->printNode(indent + 1);
 }
-Nstruct::Nstruct(const std::string &name,vector<Ndeclaration *> *content) : name(name), content(content)
+Nstruct::Nstruct(const std::string &name, vector<Ndeclaration *> *content) : name(name), content(content)
 {
     if (bindings.find(name) != bindings.end() || structBindings.find(name) != structBindings.end())
         error("struct name conflict");
     structBindings[name] = this;
+}
+Nconstant::Nconstant(std::string type, char *value) : type(type)
+{
+    //Ignore the last \", so use `len` but not `len + 1`
+    int len = strlen(value);
+    this->value.string_literal_value = (char *)malloc(len);
+    memset(this->value.string_literal_value, '\0', len);
+    strncpy(this->value.string_literal_value, value, len - 1);
+    char *str = this->value.string_literal_value;
+    int j = 0;
+    for (int i = 0; i < len && i + j < len; i++)
+    {
+        if (str[i + j] == '\\')
+        {
+            if (j + i < len - 1)
+                j++;
+            else
+                printf("error: string end with dangling '\\'\n");
+            if (str[i + j] >= '0' && str[i + j] <= '9')
+            {
+                int tmp;
+                sscanf(str + i + j, "%d", &tmp);
+                if (tmp < 256)
+                    str[i] = tmp;
+                else
+                    printf("error: invalid ASCII\n");
+            }
+            else
+                switch (str[i + j])
+                {
+                case 'n':
+                    str[i] = '\n';
+                    break;
+                case 't':
+                    str[i] = '\t';
+                    break;
+                case '\\':
+                    str[i] = '\\';
+                    break;
+                default:
+                    printf("error: char not recongnized\n");
+                }
+        }
+        else
+            str[i] = str[i + j];
+    }
 }
