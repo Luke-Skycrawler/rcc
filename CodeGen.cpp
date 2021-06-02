@@ -250,12 +250,19 @@ Value *NfunctionDefinition::codeGen()
     if (!func)
     {
         vector<Type *> args;
+        vector<string> argNames;
         for(auto it:direct_declarator->parameter_list){
             args.push_back(string_to_Type(it->type_specifier->type));
+            argNames.push_back(it->direct_declarator->identifier->name);
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);
+        int i=0;
+        for(auto it=func->arg_begin();it!=func->arg_end();it++){
+            it->setName(argNames[i]);
+            i++;
+        }
     }
 
     BasicBlock *bb = BasicBlock::Create(context, "entry@" + op, func);
