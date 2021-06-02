@@ -249,7 +249,10 @@ Value *NfunctionDefinition::codeGen()
     Function *func = topModule->getFunction(op);
     if (!func)
     {
-        vector<Type *> args(0, Type::getDoubleTy(context));
+        vector<Type *> args;
+        for(auto it:direct_declarator->parameter_list){
+            args.push_back(string_to_Type(it->type_specifier->type));
+        }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);

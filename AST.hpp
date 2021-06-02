@@ -209,7 +209,7 @@ public:
     llvm::Value *codeGen();
     void printNode(int indent);
 
-private:
+// private:
     NtypeSpecifier *type_specifier;
     NdirectDeclarator *direct_declarator;
 };
