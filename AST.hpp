@@ -658,6 +658,16 @@ public:
         char *string_literal_value;
     } value;
 };
+class NreturnStatement : public Nstatement{
+public:
+    NreturnStatement(NexprStatement *expr=NULL) : expr(expr) {}
+    NexprStatement *expr;
+    llvm::Value *codeGen();
+    void printNode(int indent){
+        PRINT_INDENT(indent,"RETURN");
+        if(expr)expr->printNode(indent+1);
+    }
+};
 inline void error(const char *msg)
 {
     printf("error:%s \n", msg);

@@ -247,28 +247,32 @@ Value *NfunctionDefinition::codeGen()
     Node *body = compound_statement;
 
     Function *func = topModule->getFunction(op);
+    vector<Type *> args;
+    vector<string> argNames;
     if (!func)
     {
-        vector<Type *> args;
-        vector<string> argNames;
+        int i=0;
         for(auto it:direct_declarator->parameter_list){
             args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
+            binding_info_map[argNames[i++]]=it->type_specifier->type;
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);
+    }
+
+    if (body)
+    {
+        BasicBlock *bb = BasicBlock::Create(context, "entry@" + op, func);
+        builder.SetInsertPoint(bb);
         int i=0;
         for(auto it=func->arg_begin();it!=func->arg_end();it++){
             it->setName(argNames[i]);
-            i++;
+            auto allocation = builder.CreateAlloca(it->getType(), NULL, argNames[i]);
+            builder.CreateStore(it,allocation);
+            bindings[argNames[i++]]=allocation;
         }
-    }
-
-    BasicBlock *bb = BasicBlock::Create(context, "entry@" + op, func);
-    builder.SetInsertPoint(bb);
-    if (body)
-    {
         if (auto ret = body->codeGen())
         {
             builder.CreateRet(ret);
@@ -401,4 +405,10 @@ llvm::Value *NparameterList::codeGen()
 llvm::Value *Nstruct::codeGen()
 {
     return NULL;
+}
+llvm::Value *NreturnStatement::codeGen(){
+    if(expr){
+        return builder.CreateRet(expr->codeGen());
+    }
+    else return builder.CreateRet(NULL);
 }
