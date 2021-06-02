@@ -10,6 +10,7 @@ extern bool type_error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern std::map<std::string, std::string> binding_info_map;
+extern std::map<std::string, llvm::AllocaInst*> bindings;
 
 inline std::string INT2STRING(int x)
 {
@@ -28,6 +29,39 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
         std::cout << msg << std::endl;
     else
         std::cout << msg;
+}
+
+inline std::string GET_TYPE(std::string name)
+{
+    llvm::AllocaInst* inst = bindings[name];
+    if(!inst) return "NULL";
+    if(inst->getAllocatedType()->isIntegerTy())
+    {
+        int num_bit = inst->getAllocatedType()->getIntegerBitWidth();
+        if(num_bit == 8) return "char";
+        else if(num_bit == 32) return "int";
+    }
+    else if(inst->getAllocatedType()->isDoubleTy())
+    {
+        return "double";
+    }
+    return "NULL";
+}
+
+inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst* inst)
+{
+    if(!inst) return "NULL";
+    if(inst->getAllocatedType()->isIntegerTy())
+    {
+        int num_bit = inst->getAllocatedType()->getIntegerBitWidth();
+        if(num_bit == 8) return "char";
+        else if(num_bit == 32) return "int";
+    }
+    else if(inst->getAllocatedType()->isDoubleTy())
+    {
+        return "double";
+    }
+    return "NULL";
 }
 
 // enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3, RCC_STRING_LITERAL = 4, RCC_ERROR = -1, RCC_NULL = 0};
@@ -142,8 +176,8 @@ class Ndeclaration : public NexternalDeclaration
 {
 public:
     Ndeclaration(NtypeSpecifier *type_specifier, std::vector<NinitDeclarator *> &init_declarator_list) : type_specifier(type_specifier),
-                                                                                                         init_declarator_list(init_declarator_list) { bind(); }
-    Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier) { bind(); }
+                                                                                                         init_declarator_list(init_declarator_list) { }
+    Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier) { }
     llvm::Value *codeGen();
     void printNode(int indent);
     void bind();
@@ -247,15 +281,15 @@ public:
     NfunctionDefinition(NtypeSpecifier *type_specifier, NdirectDeclarator *direct_declarator, std::vector<Ndeclaration *> &declaration_list, NcompoundStatement *compound_statement) : type_specifier(type_specifier),
                                                                                                                                                                                        direct_declarator(direct_declarator),
                                                                                                                                                                                        declaration_list(declaration_list),
-                                                                                                                                                                                       compound_statement(compound_statement) { bind(); }
+                                                                                                                                                                                       compound_statement(compound_statement) {}
     NfunctionDefinition(NtypeSpecifier *type_specifier, NdirectDeclarator *direct_declarator, NcompoundStatement *compound_statement) : type_specifier(type_specifier),
                                                                                                                                         direct_declarator(direct_declarator),
-                                                                                                                                        compound_statement(compound_statement) { bind(); }
+                                                                                                                                        compound_statement(compound_statement) {}
     NfunctionDefinition(NdirectDeclarator *direct_declarator, std::vector<Ndeclaration *> &declaration_list, NcompoundStatement *compound_statement) : direct_declarator(direct_declarator),
                                                                                                                                                        declaration_list(declaration_list),
-                                                                                                                                                       compound_statement(compound_statement) { bind(); }
+                                                                                                                                                       compound_statement(compound_statement) {}
     NfunctionDefinition(NdirectDeclarator *direct_declarator, NcompoundStatement *compound_statement) : direct_declarator(direct_declarator),
-                                                                                                        compound_statement(compound_statement) { bind(); }
+                                                                                                        compound_statement(compound_statement) {}
     llvm::Value *codeGen();
     void printNode(int indent);
     void bind();
@@ -384,48 +418,7 @@ public:
                                                                                 assign_op(assign_op),
                                                                                 assign_expr(assign_expr)
     {
-        // Calculate and check type
-        if (unary_expr->getType() == "int")
-        {
-            if (assign_expr->getType() != "int")
-            {
-                type = "error";
-                std::cout << "Type error!" << std::endl;
-            }
-            else
-            {
-                type = "int";
-            }
-        }
-        else if (unary_expr->getType() == "double")
-        {
-            if (assign_expr->getType() != "int" && assign_expr->getType() != "double")
-            {
-                type = "error";
-                std::cout << "Type error!" << std::endl;
-            }
-            else
-            {
-                type = "double";
-            }
-        }
-        else if (unary_expr->getType() == "char")
-        {
-            if (assign_expr->getType() != "char")
-            {
-                type = "error";
-                std::cout << "Type error!" << std::endl;
-            }
-            else
-            {
-                type = "char";
-            }
-        }
-        else
-        {
-            //TODO: more to implement (like array assignment)
-            type = "NULL";
-        }
+        type = "NULL";
     }
     llvm::Value *codeGen();
     void printNode(int indent);
@@ -463,49 +456,7 @@ class NbinaryExpr : public Nexpr
 public:
     NbinaryExpr(const std::string &op, Nexpr *lhs, Nexpr *rhs) : op(op), lhs(lhs), rhs(rhs)
     {
-        // Calculate and check type
-        if (op == "||" || op == "&&" || op == "|" || op == "^" ||
-            op == "&" || op == "==" || op == "!=" || op == "<" ||
-            op == ">" || op == ">=" || op == "<=" || op == "<<" ||
-            op == ">>" || op == "%")
-        {
-            if (lhs->getType() != "int" || rhs->getType() != "int")
-            {
-                if (type_error_alarm)
-                {
-                    std::cout << "Type error!" << std::endl;
-                    type_error_alarm = false;
-                }
-                type = "error";
-            }
-            else
-            {
-                type = "int";
-            }
-        }
-        else if (op == "+" || op == "-" || op == "*" || op == "/")
-        {
-            if ((lhs->getType() != "int" && lhs->getType() != "double") || (rhs->getType() != "int" && rhs->getType() != "double"))
-            {
-                if (type_error_alarm)
-                {
-                    std::cout << "Type error!" << std::endl;
-                    type_error_alarm = false;
-                }
-                type = "error";
-            }
-            else
-            {
-                if (lhs->getType() == "double" || rhs->getType() == "double")
-                    type = "double";
-                else
-                    type = "int";
-            }
-        }
-        else
-        {
-            type = "NULL";
-        }
+        type = "NULL";
     }
     std::string op;
     llvm::Value *codeGen();
@@ -624,8 +575,7 @@ public:
     void printNode(int indent);
     std::string getType()
     {
-        std::string type = binding_info_map[name];
-        return type;
+        return GET_TYPE(name);
     }
     // private:
     std::string name;

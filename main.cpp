@@ -33,11 +33,11 @@ int main(int argc, char **argv)
     int v = parser.parse();
     if (v == 0 && root)
     {
+        root->codeGen();
+        topModule->print(errs(), nullptr);
         printf("\n//--------------------visual-------------------\n");
         root->printNode(0);
         printf("\n//--------------------visual-------------------\n");
-        root->codeGen();
-        topModule->print(errs(), nullptr);
     }
     else
         printf("terminated\n");
