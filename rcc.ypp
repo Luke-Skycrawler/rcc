@@ -29,7 +29,6 @@ NStruct *selfDefinedType=NULL;
 	NcompoundStatement* compound_statement;
 	Ndeclaration* declaration;
 	std::vector<Ndeclaration*>* declaration_list;
-	NdeclarationSpecifiers* declaration_specifiers;
 	std::vector<NinitDeclarator*>* init_declarator_list;
 	NtypeSpecifier* type_specifier;
 	NinitDeclarator* init_declarator;
@@ -73,7 +72,6 @@ NStruct *selfDefinedType=NULL;
 %type<compound_statement> compound_statement
 %type<declaration> declaration;
 %type<declaration_list> declaration_list;
-%type<declaration_specifiers> declaration_specifiers;
 %type<init_declarator_list> init_declarator_list;
 %type<type_specifier> type_specifier;
 %type<init_declarator> init_declarator;
@@ -143,19 +141,14 @@ declaration_list
 	;
 
 declaration
-	: declaration_specifiers ';' {
+	: type_specifier ';' {
 		$$ = new Ndeclaration($1);
 	}
-	| declaration_specifiers init_declarator_list ';' {
+	| type_specifier init_declarator_list ';' {
 		$$ = new Ndeclaration($1, *$2);
 	}
 	;
 
-declaration_specifiers
-    : type_specifier {
-		$$ = new NdeclarationSpecifiers($1);
-	}
-    ; // TODO: struct declaration specifiers
 
 init_declarator_list
     : init_declarator {
@@ -216,11 +209,11 @@ parameter_list
 	;
 
 parameter_declaration
-	: declaration_specifiers direct_declarator {
+	: type_specifier direct_declarator {
 		$$ = new NparameterDeclaration($1, $2);
 	}
 	// | declaration_specifiers abstract_declarator
-	| declaration_specifiers {
+	| type_specifier {
 		$$ = new NparameterDeclaration($1);
 	}
 	;
@@ -261,10 +254,10 @@ initializer_list
 	;
 
 function_definition
-	: declaration_specifiers direct_declarator declaration_list compound_statement {
+	: type_specifier direct_declarator declaration_list compound_statement {
 		$$ = new NfunctionDefinition($1, $2, *$3, $4);
 	}
-	| declaration_specifiers direct_declarator compound_statement {
+	| type_specifier direct_declarator compound_statement {
 		$$ = new NfunctionDefinition($1, $2, $3);
 	}
 	| direct_declarator declaration_list compound_statement {

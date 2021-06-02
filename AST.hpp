@@ -34,7 +34,6 @@ class Node;
 class Nprogram;
 class NexternalDeclaration;
 class Ndeclaration;
-class NdeclarationSpecifiers;
 class NinitDeclarator;
 // class Ndeclarator;
 class NdirectDeclarator;
@@ -126,36 +125,24 @@ struct NparameterList: public Node {
 };
 /**
  * `declaration` node -- a declaration looks like 'int x = 3', consisting of
- * @param declaration_specifiers: like type_specifier (TODO: storage_type like 'static' and type qualifier like 'const' should be implemented)
+ * @param type_specifier: like type_specifier (TODO: storage_type like 'static' and type qualifier like 'const' should be implemented)
  * @param init_declarator_list
  */
 class Ndeclaration: public NexternalDeclaration {
 public:
-    Ndeclaration(NdeclarationSpecifiers* declaration_specifiers, std::vector<NinitDeclarator*>& init_declarator_list):\
-        declaration_specifiers(declaration_specifiers),
+    Ndeclaration(NtypeSpecifier* type_specifier, std::vector<NinitDeclarator*>& init_declarator_list):\
+        type_specifier(type_specifier),
         init_declarator_list(init_declarator_list) { bind(); }
-    Ndeclaration(NdeclarationSpecifiers* declaration_specifiers):\
-        declaration_specifiers(declaration_specifiers) { bind(); }
+    Ndeclaration(NtypeSpecifier* type_specifier):\
+        type_specifier(type_specifier) { bind(); }
     llvm::Value* codeGen();
     void printNode(int indent);
     void bind();
 private:
-    NdeclarationSpecifiers* declaration_specifiers; // like 'int' in 'int x = 3'
+    NtypeSpecifier* type_specifier; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator*> init_declarator_list;
 };
 
-/**
- * `declaration_specifiers` node -- a declaration specifer looks like `static int` or `int` or `const int`
- * TODO: implement it with full feature
- */
-class NdeclarationSpecifiers: public Node {
-public:
-    NdeclarationSpecifiers(NtypeSpecifier* type_specifier):type_specifier(type_specifier) {}
-    llvm::Value* codeGen();
-    virtual void printNode(int indent);
-// private:
-    NtypeSpecifier* type_specifier;
-};
 
 /**
  * `init_declarator` node -- a init declarator looks like 'x = 3' or 'x'
@@ -204,15 +191,15 @@ public:
 
 class NparameterDeclaration: public Node {
 public:
-    NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* direct_declarator):
-        declaration_specifiers(declaration_specifiers),
+    NparameterDeclaration(Ntypespecifier* type_specifier, NdirectDeclarator* direct_declarator):
+        type_specifier(type_specifier),
         direct_declarator(direct_declarator) {}
-    NparameterDeclaration(NdeclarationSpecifiers* declaration_specifiers):
-        declaration_specifiers(declaration_specifiers) {}
+    NparameterDeclaration(Ntypespecifier* type_specifier):
+        type_specifier(type_specifier) {}
     llvm::Value* codeGen();
     void printNode(int indent);
 private:
-    NdeclarationSpecifiers* declaration_specifiers;
+    Ntypespecifier* type_specifier;
     NdirectDeclarator* direct_declarator;
 };
 
@@ -236,20 +223,20 @@ private:
 /**
  * `function_definition` node -- a function definition like 'int f(int x, double y, char z) {...}'
  * or maybe a function call?
- * @param declaration_specifiers: 'int'
+ * @param type_specifier: 'int'
  * @param direct_declarator: 'f(int x, double y, char z)'
  * @param declaration_list: what for?
  * @param compound_statement: '{...}'
  */
 class NfunctionDefinition: public NexternalDeclaration {
 public:
-    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
-        declaration_specifiers(declaration_specifiers),
+    NfunctionDefinition(Ntypespecifier* type_specifier, NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
+        type_specifier(type_specifier),
         direct_declarator(direct_declarator),
         declaration_list(declaration_list),
         compound_statement(compound_statement) { bind();}
-    NfunctionDefinition(NdeclarationSpecifiers* declaration_specifiers, NdirectDeclarator* direct_declarator, NcompoundStatement* compound_statement):\
-        declaration_specifiers(declaration_specifiers),
+    NfunctionDefinition(Ntypespecifier* type_specifier, NdirectDeclarator* direct_declarator, NcompoundStatement* compound_statement):\
+        type_specifier(type_specifier),
         direct_declarator(direct_declarator),
         compound_statement(compound_statement) {bind();}
     NfunctionDefinition(NdirectDeclarator* direct_declarator, std::vector<Ndeclaration*>& declaration_list, NcompoundStatement* compound_statement):\
@@ -263,7 +250,7 @@ public:
     void printNode(int indent);
     void bind();
 // private:
-    NdeclarationSpecifiers* declaration_specifiers; // 'int'
+    Ntypespecifier* type_specifier; // 'int'
     NdirectDeclarator* direct_declarator; // 'f(int x, double y, char z)'
     std::vector<Ndeclaration*> declaration_list; // what for?
     NcompoundStatement* compound_statement; // '{...}'
