@@ -23,7 +23,8 @@ void comment();
 %}
 
 %%
-"/*"			{ comment(); }
+"/*".*"*/"		{ count(); }
+"//".*\n		{ count(); }
 
 "char"			{ count(); return(token::CHAR); }
 "double"		{ count(); return(token::DOUBLE); }
