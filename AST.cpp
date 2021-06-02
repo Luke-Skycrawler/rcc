@@ -188,6 +188,14 @@ void NexprStatement::printNode(int indent)
     expr->printNode(indent + 1);
 }
 
+void NifStatement::printNode(int indent)
+{
+    PRINT_INDENT(indent, "NifStatement");
+    cond_expr->printNode(indent + 1);
+    if_statement->printNode(indent + 1);
+    if(else_statement) else_statement->printNode(indent + 1);
+}
+
 void Nexpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "Nexpr");

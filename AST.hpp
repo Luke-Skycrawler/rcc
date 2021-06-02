@@ -300,6 +300,29 @@ private:
 };
 
 /**
+ * `if_statement` node -- an if-else statement
+ * @param cond_expr
+ * @param if_statement
+ * @param else_statement
+ */
+class NifStatement: public Nstatement {
+public:
+    NifStatement(Nexpr* cond_expr, Nstatement* if_statement):\
+        cond_expr(cond_expr),
+        if_statement(if_statement) {}
+    NifStatement(Nexpr* cond_expr, Nstatement* if_statement, Nstatement* else_statement):\
+        cond_expr(cond_expr),
+        if_statement(if_statement),
+        else_statement(else_statement) {}
+    llvm::Value* codeGen();
+    void printNode(int indent);
+private:
+    Nexpr* cond_expr; // the condition expression
+    Nstatement* if_statement; // IF-statement
+    Nstatement* else_statement; // ELSE-statement
+};
+
+/**
  * `type_specifier` node -- 'char', 'int' or 'double'
  * @param type: a std::string "char", "int" or "double"
  */

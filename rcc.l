@@ -31,6 +31,11 @@ void comment();
 "int"			{ count(); return(token::INT); }
 "sizeof"		{ count(); return(token::SIZEOF); }
 "struct"		{ count(); return(token::STRUCT); }
+"if"			{ count(); return(token::IF); }
+"else"			{ count(); return(token::ELSE); }
+"for"			{ count(); return(token::FOR); }
+"return"		{ count(); return(token::RETURN); }
+
 \'.\'			{ count(); yylval->constant = new Nconstant("char", yytext[1]); return(token::CHAR_CONSTANT); }
 [+-]?[0-9]+			{ count(); yylval->constant = new Nconstant("int", atoi(yytext)); return(token::INT_CONSTANT); }
 [+-]?[0-9]+\.[0-9]+	{ count(); yylval->constant = new Nconstant("double", atof(yytext)); return(token::DOUBLE_CONSTANT); }   
