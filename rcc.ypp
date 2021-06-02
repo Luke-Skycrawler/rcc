@@ -11,6 +11,9 @@
 #include "rcc.tab.hpp"
 using namespace std;
 extern int yylex(struct PrototypeAST **yylval,yy::rcc::location_type *yylloc,rccGlobal &global);
+
+static StructAST *selfDefinedType;
+static string assignOp="=";
 %}
 %parse-param {rccGlobal &global}
 %lex-param {rccGlobal &global}
@@ -145,21 +148,21 @@ conditional_expression : additive_expression {$$=$1;};
 
 assignment_expression
 	: conditional_expression                                    	{$$=$1;}
-	| unary_expression assignment_operator assignment_expression	{$$=new BinaryExprAST("=",nullptr,nullptr);}
+	| unary_expression assignment_operator assignment_expression	{$$=new AssignAST(assignOp,dynamic_cast<VarAST*>($1),dynamic_cast<ExprAST*>($2));}
 	;
 
 assignment_operator
-	: '='
-	| MUL_ASSIGN
-	| DIV_ASSIGN
-	| MOD_ASSIGN
-	| ADD_ASSIGN
-	| SUB_ASSIGN
-	| LEFT_ASSIGN
-	| RIGHT_ASSIGN
-	| AND_ASSIGN
-	| XOR_ASSIGN
-	| OR_ASSIGN
+	: '='         								{assignOp="=";}
+	| MUL_ASSIGN  								{assignOp="*";}
+	| DIV_ASSIGN  								{assignOp="/";}
+	| MOD_ASSIGN  								{assignOp="%";}
+	| ADD_ASSIGN  								{assignOp="+";}
+	| SUB_ASSIGN  								{assignOp="-";}
+	/* | LEFT_ASSIGN 								{assignOp='<';}
+	| RIGHT_ASSIGN								{assignOp='>';} */
+	| AND_ASSIGN  								{assignOp="&";}
+	| XOR_ASSIGN  								{assignOp="^";}
+	| OR_ASSIGN   								{assignOp="|";}
 	;
 
 expression
@@ -196,13 +199,6 @@ init_declarator
 	| declarator '=' initializer						{$$=$1;dynamic_cast<DecAST*>($1)->init=dynamic_cast<ExprAST*>($2);}
 	;
 
-storage_class_specifier
-	: TYPEDEF
-	| EXTERN
-	| STATIC
-	| AUTO
-	| REGISTER
-	;
 
 type_specifier
 	: VOID
@@ -214,83 +210,81 @@ type_specifier
 	| DOUBLE  											{global.buf.type='f';}
 	| SIGNED  											{global.buf.type='i';}
 	| UNSIGNED											{global.buf.type='u';}
-	| struct_or_union_specifier
-	| enum_specifier
-	| TYPE_NAME
+	| struct_or_union_specifier							{selfDefinedType=dynamic_cast<StructAST*>($1);}
+	//| enum_specifier
+	//| TYPE_NAME
 	;
 
 struct_or_union_specifier
-	: struct_or_union IDENTIFIER '{' struct_declaration_list '}'
-	| struct_or_union '{' struct_declaration_list '}'
-	| struct_or_union IDENTIFIER
+	: struct_or_union IDENTIFIER '{' struct_declaration_list '}' {$$=new StructAST(global.buf.val.u8,dynamic_cast<DecAST*>($4));}
+	| struct_or_union '{' struct_declaration_list '}'            {$$=new StructAST("@tmp1",dynamic_cast<DecAST*>($3));}
+	| struct_or_union IDENTIFIER                                 {$$=new StructAST(global.buf.val.u8);}
 	;
 
 struct_or_union
-	: STRUCT
-	| UNION
+	: STRUCT											{global.buf.type='t';}
+	/* | UNION */
 	;
 
 struct_declaration_list
-	: struct_declaration
-	| struct_declaration_list struct_declaration
+	: struct_declaration                        			{$$=$1;}
+	| struct_declaration_list struct_declaration			{$$=$1;dynamic_cast<DecAST*>($1)->next=$2;}
 	;
 
 struct_declaration
-	: specifier_qualifier_list struct_declarator_list ';'
+	: type_specifier struct_declarator_list ';'
+	//: specifier_qualifier_list struct_declarator_list ';'
 	;
 
-specifier_qualifier_list
+/* specifier_qualifier_list
 	: type_specifier specifier_qualifier_list
 	| type_specifier
-	/* | type_qualifier specifier_qualifier_list
-	| type_qualifier */
-	;
+	//| type_qualifier specifier_qualifier_list
+	//| type_qualifier
+	; */
 
 struct_declarator_list
-	: struct_declarator
-	| struct_declarator_list ',' struct_declarator
+	: declaration_list										{$$=$1;}
+	/* : struct_declarator                           			{$$=$1;} */
+	/* | struct_declarator_list ',' struct_declarator			{$$=$1;dynamic_cast<DecAST*>($1)->next=$3;} */
 	;
 
 struct_declarator
-	: declarator
-	| ':' constant_expression
-	| declarator ':' constant_expression
+	: declarator											{$$=$1;}
+	/* | ':' constant_expression
+	| declarator ':' constant_expression */
 	;
 
-enum_specifier
-	: ENUM '{' enumerator_list '}'
-	| ENUM IDENTIFIER '{' enumerator_list '}'
-	| ENUM IDENTIFIER
+translation_unit
+	: external_declaration                 					
+	| translation_unit external_declaration					
 	;
 
-enumerator_list
-	: enumerator
-	| enumerator_list ',' enumerator
+external_declaration
+	: function_definition									{root.push_back($1);}
+	| declaration        									{root.push_back($1);}
 	;
 
-enumerator
-	: IDENTIFIER
-	| IDENTIFIER '=' constant_expression
+function_definition
+	: declaration_specifiers declarator declaration_list compound_statement {$$=new FunctionAST(dynamic_cast<BlockAST*>($4),$2->op);}
+	| declaration_specifiers declarator compound_statement                  {$$=new FunctionAST(dynamic_cast<BlockAST*>($3),$2->op);}
+	| declarator declaration_list compound_statement                        {$$=new FunctionAST(dynamic_cast<BlockAST*>($3),$1->op);}
+	| declarator compound_statement                                         {$$=new FunctionAST(dynamic_cast<BlockAST*>($2),$1->op);}
 	;
-
-/* type_qualifier
-	: CONST
-	| VOLATILE
-	; */
 
 declarator
-	: '*' declarator									{$$=$2;$2->op="*"+$2->op;}
+	: '*' declarator									{$$=$2;dynamic_cast<DecAST*>($2)->fullType.push(NULL);}
 	| direct_declarator        							{$$=$1;}
 	;
 
 direct_declarator
 	: IDENTIFIER                                   		{$$=new DecAST(global.buf);bindings[$$->op]=NULL;}
 	| '(' declarator ')'                           		{$$=$2;}
-	| direct_declarator '[' constant_expression ']'		{$$=$1;$1->op+="[]";/*size can only be decided in runtime*/}
-	| direct_declarator '[' ']'                    		{$$=$1;$1->op+="[]";}
+	| direct_declarator '[' constant_expression ']'		{$$=$1;dynamic_cast<DecAST*>($1)->fullType.push(dynamic_cast<ExprAST*>($3));/*size can only be decided in runtime*/}
+	| direct_declarator '[' ']'                    		{$$=$1;dynamic_cast<DecAST*>($1)->fullType.push(NULL);}
 	| direct_declarator '(' parameter_type_list ')'		{$$=$1;$1->op+="()";}
 	| direct_declarator '(' ')'                    		{$$=$1;$1->op+="()";}
-	/* | direct_declarator '(' identifier_list ')'    		{$$=$1;} */
+	/* | direct_declarator '(' identifier_list ')'    		{$$=$1;} */	// looks like an error
 	;
 
 /* pointer
@@ -300,10 +294,6 @@ direct_declarator
 	| '*' type_qualifier_list pointer
 	; */
 
-/* type_qualifier_list
-	: type_qualifier
-	| type_qualifier_list type_qualifier
-	; */
 
 
 parameter_type_list
@@ -318,7 +308,7 @@ parameter_list
 
 parameter_declaration
 	: declaration_specifiers declarator
-	| declaration_specifiers abstract_declarator
+	/* | declaration_specifiers abstract_declarator */
 	| declaration_specifiers
 	;
 
@@ -328,27 +318,11 @@ parameter_declaration
 	; */
 
 type_name
-	: specifier_qualifier_list
-	| specifier_qualifier_list abstract_declarator
+	: type_specifier
+	//: specifier_qualifier_list
+	//| specifier_qualifier_list abstract_declarator
 	;
 
-abstract_declarator
-	: '*' abstract_declarator
-	| direct_abstract_declarator
-	/* | pointer direct_abstract_declarator */
-	;
-
-direct_abstract_declarator
-	: '(' abstract_declarator ')'
-	| '[' ']'
-	| '[' constant_expression ']'
-	| direct_abstract_declarator '[' ']'
-	| direct_abstract_declarator '[' constant_expression ']'
-	| '(' ')'
-	| '(' parameter_type_list ')'
-	| direct_abstract_declarator '(' ')'
-	| direct_abstract_declarator '(' parameter_type_list ')'
-	;
 
 initializer
 	: assignment_expression       						{$$=$1;}
@@ -362,8 +336,8 @@ initializer_list
 	;
 
 statement
-	: expression_statement	{$$=$1;}
-	| compound_statement	{$$=$1;};
+	: expression_statement								{$$=$1;}
+	| compound_statement								{$$=$1;};
 	/* : labeled_statement
 	| compound_statement
 	| expression_statement
@@ -420,24 +394,53 @@ jump_statement
 	| RETURN ';'
 	| RETURN expression ';'
 	;
-
-translation_unit
-	: external_declaration
-	| translation_unit external_declaration
+/* enum_specifier
+	: ENUM '{' enumerator_list '}'
+	| ENUM IDENTIFIER '{' enumerator_list '}'
+	| ENUM IDENTIFIER
 	;
 
-external_declaration
-	: function_definition
-	| declaration
+enumerator_list
+	: enumerator
+	| enumerator_list ',' enumerator
 	;
 
-function_definition
-	: declaration_specifiers declarator declaration_list compound_statement {root=new FunctionAST(dynamic_cast<BlockAST*>($4));$$=root;}
-	| declaration_specifiers declarator compound_statement                  {root=new FunctionAST(dynamic_cast<BlockAST*>($3));$$=root;}
-	| declarator declaration_list compound_statement                        {root=new FunctionAST(dynamic_cast<BlockAST*>($3));$$=root;}
-	| declarator compound_statement                                         {root=new FunctionAST(dynamic_cast<BlockAST*>($2));$$=root;}
-	;
+enumerator
+	: IDENTIFIER
+	| IDENTIFIER '=' constant_expression
+	; */
 
+/* type_qualifier
+	: CONST
+	| VOLATILE
+	; */
+/* storage_class_specifier
+	: TYPEDEF
+	| EXTERN
+	| STATIC
+	| AUTO
+	| REGISTER
+	; */
+/* type_qualifier_list
+	: type_qualifier
+	| type_qualifier_list type_qualifier
+	; */
+/* abstract_declarator
+	: '*' abstract_declarator
+	| direct_abstract_declarator
+	; */
+
+/* direct_abstract_declarator
+	: '(' abstract_declarator ')'
+	| '[' ']'
+	| '[' constant_expression ']'
+	| direct_abstract_declarator '[' ']'
+	| direct_abstract_declarator '[' constant_expression ']'
+	| '(' ')'
+	| '(' parameter_type_list ')'
+	| direct_abstract_declarator '(' ')'
+	| direct_abstract_declarator '(' parameter_type_list ')'
+	; */
 %%
 /* using namespace std;
 /* extern char yytext[]; */

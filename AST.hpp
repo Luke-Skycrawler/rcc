@@ -4,9 +4,13 @@
 #define _AST_H
 #include "codegen.h"
 #include "RccGlobal.hpp"
+#include <vector>
 struct ExprAST;
 struct PrototypeAST;
-extern PrototypeAST *root;
+struct DecAST;
+struct VarAST;
+
+extern std::vector<PrototypeAST *>root;
 extern int indent;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
@@ -97,11 +101,45 @@ struct IfAST : public PrototypeAST
     }
     // FIXME:
 };
+struct DerivedTypeAST:public PrototypeAST{
+    DerivedTypeAST(const std::string &op):PrototypeAST(op){printf("DerivedType\n");}
+    DerivedTypeAST(char type):PrototypeAST("int"){
+        switch(type){
+            case 'c':op="char";break;
+            // case 'i':op="int";break;
+            case 'd':op="double";break;
+        }
+        printf("DerivedType\n");
+    }
+    void push(ExprAST *element){arraySize.push_back(element);}
+    llvm::Value *codegen();
+    void traverse() override{
+        print(indent,op);
+        visit(NULL,NULL,next);
+    }
+    std::vector<ExprAST *> arraySize;
+    DerivedTypeAST* next;   // used for function parameter list only
+    // VarAST *parameterAlias; // for funtion definition
+};
+struct StructAST : public PrototypeAST
+{
+    // nearly the same as BlockAST
+    StructAST(const std::string &op,DecAST *content = NULL)
+        : PrototypeAST(op+"{"), content(content){ printf("%s", "StructAST\n"); }
+    llvm::Value *codegen() /*override*/{return NULL;}
+
+    DecAST *content;
+    void traverse() override
+    {
+        print(indent, op);
+        visit(content);
+    }
+};
 
 struct DecAST : public PrototypeAST
 {
     // DecAST(const std::string &op);
-    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8), baseType(buf.type) { printf("%s", "DecAST\n"); }
+    DecAST(const Buffer &buf) : PrototypeAST(buf.val.u8), baseType(buf.type),fullType(buf.type) { printf("%s", "DecAST\n"); }
 
     llvm::Value *codegen() /*override*/;
     void traverse() override
@@ -111,6 +149,9 @@ struct DecAST : public PrototypeAST
     }
 
     PrototypeAST *next;
+    ExprAST *init;
+    DerivedTypeAST fullType;
+    char baseType;
     DecAST *tail()
     {
         if (!next)
@@ -123,41 +164,44 @@ struct DecAST : public PrototypeAST
         }
         return p;
     }
-    char baseType;
-    ExprAST *init;
 };
 
-struct TypeAST : public PrototypeAST
-{
-    TypeAST(const std::string &op);
-    llvm::Value *codegen() /*override*/;
-    void traverse() override
-    {
-        print(indent, op);
-        visit(NULL);
-    }
-    //
-};
+// struct TypeAST : public PrototypeAST
+// {
+//     TypeAST(const std::string &op);
+//     llvm::Value *codegen() /*override*/;
+//     void traverse() override
+//     {
+//         print(indent, op);
+//         visit(NULL);
+//     }
+//     //
+// };
 struct FunctionAST : public PrototypeAST
 {
-    FunctionAST(BlockAST *body, DecAST *list = NULL, TypeAST *type = NULL)
-        : PrototypeAST("()"), type(type), body(body), args(list) { printf("Defined Function %s", op.data()); }
+    FunctionAST(BlockAST *body,const std::string &op="", DerivedTypeAST *retType = NULL, DerivedTypeAST *list = NULL)
+        : PrototypeAST(op+"()"), retType(retType), body(body), argsDec(list) { printf("Defined Function %s", op.data()); }
+    FunctionAST(BlockAST *body,const std::string &op, DecAST *list ,DerivedTypeAST *retType = NULL)
+        : PrototypeAST(op+"()"), retType(retType), body(body), argsImplement(list) { printf("Defined Function %s", op.data()); }
     llvm::Value *codegen() /*override*/;
 
     BlockAST *body;
-    DecAST *args;
-    TypeAST *type;
+    DerivedTypeAST *argsDec, *retType;
+    DecAST *argsImplement;
     void traverse() override
     {
         print(indent, op);
-        visit(args, body);
+        if(argsDec)
+            visit(argsDec, body);
+        else 
+            visit(argsImplement,body);
     }
     // FIXME:
 };
-
 struct ExprAST : public PrototypeAST
 {
-    ExprAST(const std::string &op) : PrototypeAST(op) {}
+    ExprAST(const std::string &op,char compatible='d') : PrototypeAST(op),compatible(compatible) {}
+    char compatible;    // least compatible type 
     virtual llvm::Value *codegen() = 0;
     ExprAST *next;  // only used in a string of comma expressions
 };
@@ -205,17 +249,26 @@ struct BinaryExprAST : public ExprAST
         visit(lhs, rhs, next);
     }
 };
+struct AssignAST:public ExprAST{
+    AssignAST(const std::string op,VarAST *lhs,ExprAST *rhs):lhs(lhs),rhs(rhs),ExprAST(op){}
+    llvm::Value *codegen() override;
+    VarAST *lhs;
+    ExprAST *rhs;
+    void traverse() override{
+        print(indent,op);
+        visit(lhs,rhs,next);
+    }
+};
 struct LiteralAST : public ExprAST
 {
-    LiteralAST(const std::string &op, float val) : ExprAST(op), val(val) { printf("%s", "LiteralAST\n"); }
-    LiteralAST(const std::string &op):ExprAST(op){printf("String Literal\n");}
-    LiteralAST(const rccGlobal &global):ExprAST(global.buf.advice=='s'?global.buf.val.u8:"foo"),compatible(global.buf.advice){
+    // LiteralAST(const std::string &op, float val) : ExprAST(op), val(val) { printf("%s", "LiteralAST\n"); }
+    // LiteralAST(const std::string &op):ExprAST(op){printf("String Literal\n");}
+    LiteralAST(const rccGlobal &global):ExprAST(global.buf.advice=='s'?global.buf.val.u8:"foo",global.buf.advice){
         if(global.buf.advice!='s')val=global.buf.val.f64;
     }
     llvm::Value *codegen() override;
 
     double val;
-    char compatible;
     void traverse() override
     {
         if(op!="foo")

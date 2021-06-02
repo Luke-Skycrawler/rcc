@@ -1,9 +1,13 @@
 # rcc
-Retarded C Compiler
-
+a tiny C Compiler(R for either Remarkable or Retarded)
 runs on linux or WSL
-### prequisites
+### prerequisites
 - bison
 - flex
+- llvm
 ### INSTALL
+```bash
 make
+g++ output.o
+./a.out
+```

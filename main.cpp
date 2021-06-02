@@ -11,7 +11,8 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
-
+#include <vector>
+using namespace std;
 using namespace llvm;
 using namespace llvm::sys;
 
@@ -23,14 +24,15 @@ int main(int argc, char **argv)
     topModule = new Module("retarded", context);
     yy::rcc parser(global);
     int v = parser.parse();
-    if (v == 0 && root)
-    {
-        printf("\n//--------------------visual-------------------\n");
-        root->traverse();
-        printf("\n//--------------------visual-------------------\n");
-        root->codegen();
-        topModule->print(errs(), nullptr);
-    }
+    if (v == 0)
+        for(auto it:root)
+        {
+            printf("\n//--------------------visual-------------------\n");
+            it->traverse();
+            printf("\n//--------------------visual-------------------\n");
+            it->codegen();
+            topModule->print(errs(), nullptr);
+        }
     else
         printf("terminated\n");
 

@@ -76,11 +76,8 @@ Value *StmtAST::codegen()
 inline char typeCheck(ExprAST *lhs,ExprAST *rhs,const string &op){
     return 'd';
 }
-Value *BinaryExprAST::codegen()
-{
-    Value *l = lhs->codegen(), *r = rhs->codegen();
-    char type=typeCheck(lhs,rhs,op);
-    switch (op[0])
+inline Value *createOpNode(Value *l,Value *r,char op){
+    switch (op)
     {
     case '+':
         return builder.CreateFAdd(l, r, "add");
@@ -101,6 +98,23 @@ Value *BinaryExprAST::codegen()
     default:
         return NULL;
     }
+}
+Value *BinaryExprAST::codegen()
+{
+    Value *l = lhs->codegen(), *r = rhs->codegen();
+    char type=typeCheck(lhs,rhs,op);
+    return createOpNode(l,r,op[0]);
+}
+Value *AssignAST::codegen(){
+    Value *r=rhs->codegen(),*l=NULL,*result=NULL;
+    auto storeAddr=bindings[lhs->op];
+    if(op[0]!='='){
+        l=lhs->codegen();
+        result=createOpNode(l,r,op[0]);
+    }
+    else result=r;
+    builder.CreateStore(result,storeAddr);
+    return result;
 }
 Value *CallExprAST::codegen()
 {
@@ -140,6 +154,18 @@ Value *BlockAST::codegen()
         next->codegen();
     return ret;
 }
+llvm::Value *DerivedTypeAST::codegen(){
+    return NULL;
+}
+// Value *FunctionDecAST::codegen(){
+//     std::vector<llvm::Type *> arg_types;
+//     arg_types.push_back(builder.getInt8PtrTy());
+//     auto printf_type = llvm::FunctionType::get(builder.getInt32Ty(), llvm::makeArrayRef(arg_types), true);
+//     auto func = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, llvm::Twine("op"), topModule);
+//     func->setCallingConv(llvm::CallingConv::C);
+//     return func;
+// }
+
 // llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction, llvm::StringRef VarName, llvm::Type* type)
 // {
 //   llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
