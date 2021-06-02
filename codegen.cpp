@@ -37,20 +37,30 @@ Value *DecAST::codegen()
 {
     auto t = funcStack[funcStack.size() - 1];
     // llvm::IRBuilder<> builder(&t->getEntryBlock(), t->getEntryBlock().begin());
-    auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
-    switch(baseType){
-        case 'd':
-            allocation = builder.CreateAlloca(Type::getDoubleTy(context),NULL,op);
-            if(init)builder.CreateStore(init->codegen(),allocation);
-            break;
-        case 'i':
-            allocation = builder.CreateAlloca(Type::getInt32Ty(context),NULL,op);
-            builder.CreateStore(init?init->codegen():builder.getInt32(0),allocation);
-            break;
-        case 'c':
-            allocation = builder.CreateAlloca(Type::getInt8Ty(context),NULL,op);
-            builder.CreateStore(init?init->codegen():builder.getInt8(0),allocation);
-            break;
+    AllocaInst *allocation;
+    // Value *size=builder.getInt32(1);
+    // for (auto it=fullType.begin();it!=fullType.end();it++){
+    //     if(!*it)error("unspecified type is not supported in this version");
+    //     Value *tmp=it->codegen();           // FIXME: negative size
+    //     size=builder.CreateIMul(size,tmp);
+    //     Value *p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+    //     builder.CreaetAlloca(Type::getGEP(context),size,op);
+    // }
+    switch (baseType)
+    {
+    case 'd':
+        allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+        if (init)
+            builder.CreateStore(init->codegen(), allocation);
+        break;
+    case 'i':
+        allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, op);
+        builder.CreateStore(init ? init->codegen() : builder.getInt32(0), allocation);
+        break;
+    case 'c':
+        allocation = builder.CreateAlloca(Type::getInt8Ty(context), NULL, op);
+        builder.CreateStore(init ? init->codegen() : builder.getInt8(0), allocation);
+        break;
     }
     // builder.CreateStore(builder.getInt64(0), allocation);
     bindings[op] = allocation;
@@ -73,10 +83,12 @@ Value *StmtAST::codegen()
         next->codegen();
     return tmp;
 }
-inline char typeCheck(ExprAST *lhs,ExprAST *rhs,const string &op){
+inline char typeCheck(ExprAST *lhs, ExprAST *rhs, const string &op)
+{
     return 'd';
 }
-inline Value *createOpNode(Value *l,Value *r,char op){
+inline Value *createOpNode(Value *l, Value *r, char op)
+{
     switch (op)
     {
     case '+':
@@ -102,41 +114,46 @@ inline Value *createOpNode(Value *l,Value *r,char op){
 Value *BinaryExprAST::codegen()
 {
     Value *l = lhs->codegen(), *r = rhs->codegen();
-    char type=typeCheck(lhs,rhs,op);
-    return createOpNode(l,r,op[0]);
+    char type = typeCheck(lhs, rhs, op);
+    return createOpNode(l, r, op[0]);
 }
-Value *AssignAST::codegen(){
-    Value *r=rhs->codegen(),*l=NULL,*result=NULL;
-    auto storeAddr=bindings[lhs->op];
-    if(op[0]!='='){
-        l=lhs->codegen();
-        result=createOpNode(l,r,op[0]);
+Value *AssignAST::codegen()
+{
+    Value *r = rhs->codegen(), *l = NULL, *result = NULL;
+    auto storeAddr = bindings[lhs->op];
+    if (op[0] != '=')
+    {
+        l = lhs->codegen();
+        result = createOpNode(l, r, op[0]);
     }
-    else result=r;
-    builder.CreateStore(result,storeAddr);
+    else
+        result = r;
+    builder.CreateStore(result, storeAddr);
     return result;
 }
 Value *CallExprAST::codegen()
 {
-    if(op=="printf")CreatePrintf();
+    if (op == "printf")
+        CreatePrintf();
     Function *callee = topModule->getFunction(op);
     vector<Value *> argv;
-    for(auto it=args;it!=NULL;it=it->next){
+    for (auto it = args; it != NULL; it = it->next)
+    {
         argv.push_back(it->codegen());
     }
     return builder.CreateCall(callee, argv, "call");
-    
 }
 Value *LiteralAST::codegen()
 {
-    if(op[0]!='"')return ConstantFP::get(context, APFloat(val));
-    auto str= ConstantDataArray::getString(context,op);
-	auto addr= builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()),"str_addr");
-    addr->setAlignment (1);		   	
-	Value* p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
-	builder.CreateStore(str, p)->setAlignment(1);
+    if (op[0] != '"')
+        return ConstantFP::get(context, APFloat(val));
+    auto str = ConstantDataArray::getString(context, op);
+    auto addr = builder.CreateAlloca(str->getType(), ConstantExpr::getSizeOf(str->getType()), "str_addr");
+    addr->setAlignment(1);
+    Value *p = builder.CreateGEP(addr, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+    builder.CreateStore(str, p)->setAlignment(1);
     return p;
-    // return builder.CreateInBoundsGEP( str->getType(), addr, index_vector, "tmpstr");    
+    // return builder.CreateInBoundsGEP( str->getType(), addr, index_vector, "tmpstr");
 }
 Value *VarAST::codegen()
 {
@@ -154,17 +171,14 @@ Value *BlockAST::codegen()
         next->codegen();
     return ret;
 }
-llvm::Value *DerivedTypeAST::codegen(){
+llvm::Value *DerivedTypeAST::codegen()
+{
     return NULL;
 }
-// Value *FunctionDecAST::codegen(){
-//     std::vector<llvm::Type *> arg_types;
-//     arg_types.push_back(builder.getInt8PtrTy());
-//     auto printf_type = llvm::FunctionType::get(builder.getInt32Ty(), llvm::makeArrayRef(arg_types), true);
-//     auto func = llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage, llvm::Twine("op"), topModule);
-//     func->setCallingConv(llvm::CallingConv::C);
-//     return func;
-// }
+llvm::Value *ParameterListAST::codegen()
+{
+    return NULL;
+}
 
 // llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction, llvm::StringRef VarName, llvm::Type* type)
 // {
