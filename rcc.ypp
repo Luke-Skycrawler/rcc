@@ -13,6 +13,7 @@
 using namespace std;
 extern int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global);
 extern Node* root;
+NStruct *selfDefinedType=NULL;
 %}
 
 %parse-param {RccGlobal &global}
@@ -43,7 +44,7 @@ extern Node* root;
 	NexprStatement* expr_statement;
 	NifStatement* if_statement;
 	Nexpr* expr;
-	NassignExpr::ASSIGN_OP_TYPE assign_op;
+	std::string* assign_op;
 	NunaryExpr::UNARY_OP unary_op;
 	std::vector<Nexpr*>* argument_expr_list;
 	// char char_value;
@@ -357,22 +358,22 @@ expr
 assign_expr
     : cond_expr { $$ = $1; }
     | unary_expr assign_op assign_expr {
-		$$ = new NassignExpr($1, $2, $3);
+		$$ = new NassignExpr($1, *$2, $3);
 	}
     ;
 
 assign_op
-	: '=' {$$ = NassignExpr::EQUAL;}
-	| MUL_ASSIGN {$$ = NassignExpr::MUL_ASSIGN;}
-	| DIV_ASSIGN {$$ = NassignExpr::DIV_ASSIGN;}
-	| MOD_ASSIGN {$$ = NassignExpr::MOD_ASSIGN;}
-	| ADD_ASSIGN {$$ = NassignExpr::ADD_ASSIGN;}
-	| SUB_ASSIGN {$$ = NassignExpr::SUB_ASSIGN;}
-	| LEFT_ASSIGN {$$ = NassignExpr::LEFT_ASSIGN;}
-	| RIGHT_ASSIGN {$$ = NassignExpr::RIGHT_ASSIGN;}
-	| AND_ASSIGN {$$ = NassignExpr::AND_ASSIGN;}
-	| XOR_ASSIGN {$$ = NassignExpr::XOR_ASSIGN;}
-	| OR_ASSIGN {$$ = NassignExpr::OR_ASSIGN;}
+	: '=' 			{$$ = new std::string("=");}
+	| MUL_ASSIGN 	{$$ = new std::string("*");}
+	| DIV_ASSIGN 	{$$ = new std::string("/");}
+	| MOD_ASSIGN 	{$$ = new std::string("%");}
+	| ADD_ASSIGN 	{$$ = new std::string("+");}
+	| SUB_ASSIGN 	{$$ = new std::string("-");}
+	| LEFT_ASSIGN 	{$$ = new std::string("<<");}
+	| RIGHT_ASSIGN 	{$$ = new std::string(">>");}
+	| AND_ASSIGN 	{$$ = new std::string("&");}
+	| XOR_ASSIGN 	{$$ = new std::string("^");}
+	| OR_ASSIGN 	{$$ = new std::string("|");}
 	;
 
 cond_expr

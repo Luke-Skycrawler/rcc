@@ -69,16 +69,6 @@ Value *NbinaryExpr::codeGen()
     }
     return NULL;
 }
-// Value *CallExprAST::codeGen()
-// {
-//     Function *callee = topModule->getFunction(op);
-
-//     vector<Value *> argv;
-//     // for(auto it=args;it!=nullptr;it=it->next){
-//     //     argv.push_back(it);
-//     // }
-//     return builder.CreateCall(callee, argv, "call");
-// }
 llvm::Value *Nconstant::codeGen()
 {
     if(type == "char") return builder.getInt8(value.char_value);
@@ -142,7 +132,15 @@ Value *Ndeclaration::codeGen()
     void * ret;
     for(auto it:init_declarator_list){
         auto op=dynamic_cast<NdirectDeclarator*>(it)->identifier->name;
-        auto allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+        auto type = declaration_specifiers->type_specifier->type;
+        AllocaInst * allocation;
+        if(type=="double")
+            allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+        else if(type=="int")
+            allocation=builder.CreateAlloca(Type::getInt32Ty(context),NULL,op);
+        else if(type=="char")
+            allocation=builder.CreateAlloca(Type::getInt8Ty(context),NULL,op);
+        
         ret = allocation;
         builder.CreateStore(builder.getInt64(0), allocation);
         bindings[op] = allocation;
@@ -258,9 +256,42 @@ Value *Nexpr::codeGen()
     }
     return tmp;
 }
+inline Value *createOpNode(Value *l, Value *r, char op)
+{
+    switch (op)
+    {
+    case '+':
+        return builder.CreateFAdd(l, r, "add");
+    case '-':
+        return builder.CreateFSub(l, r, "sub");
+    case '*':
+        return builder.CreateFMul(l, r, "mult");
+    case '/':
+        return builder.CreateFDiv(l, r, "div");
+    case '|':
+        return builder.CreateOr(l, r, "or");
+    case '&':
+        return builder.CreateAnd(l, r, "and");
+    case '%':
+        return builder.CreateFRem(l, r, "");
+    default:
+        return NULL;
+    }
+}
 Value *NassignExpr::codeGen()
 {
-    return NULL;
+    Value *r = assign_expr->codeGen(), *l = NULL, *result = NULL;
+    auto storeAddr = bindings[dynamic_cast<Nidentifier*>(unary_expr)->name];
+    // FIXME: possible error here
+    if (assign_op[0] != '=')
+    {
+        l = unary_expr->codeGen();
+        result = createOpNode(l, r, assign_op[0]);
+    }
+    else
+        result = r;
+    builder.CreateStore(result, storeAddr);
+    return result;
 }
 Value *NcondExpr::codeGen()
 {
@@ -274,6 +305,7 @@ Value *NunaryExpr::codeGen()
 {
     return NULL;
 }
+
 Value *NpostfixExpr::codeGen()
 {
     if(postfix_type==PARENTHESES){
@@ -307,4 +339,16 @@ llvm::Function *CreateScanf()
     auto func = llvm::Function::Create(scanf_type, llvm::Function::ExternalLinkage, llvm::Twine("scanf"), topModule);
     func->setCallingConv(llvm::CallingConv::C);
     return func;
+}
+llvm::Value *NDerivedType::codeGen()
+{
+    return NULL;
+}
+llvm::Value *NparameterList::codeGen()
+{
+    return NULL;
+}
+llvm::Value *NStruct::codeGen()
+{
+    return NULL;
 }
