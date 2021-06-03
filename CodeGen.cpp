@@ -215,7 +215,7 @@ Value *Nidentifier::codeGen()
 }
 Value *Ninitializer::codeGen()
 {
-    return NULL;
+    return assign_expr->codeGen();
 }
 Value *NtypeSpecifier::codeGen()
 {

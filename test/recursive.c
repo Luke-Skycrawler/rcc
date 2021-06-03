@@ -1,7 +1,7 @@
 // #include <stdio.h>
 int fib(int k){
     int t;
-    printf("k = %d\n", k);
+    // printf("k = %d\n", k);
     if(k == 0 | k == 1){
         return 1;
     }

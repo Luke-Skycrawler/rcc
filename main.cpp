@@ -102,5 +102,6 @@ int main(int argc, char **argv)
     dest.flush();
 
     outs() << "Wrote " << Filename << "\n";
+    system("g++ output.o");
     return v;
 }
