@@ -21,7 +21,7 @@ Module *topModule;
 // std::map<std::string, std::string> function_bindings;
 std::map<std::string, AllocaInst*> bindings;
 Node *root;
-bool type_error_alarm = true;
+bool error_alarm = true;
 
 int main(int argc, char **argv)
 {

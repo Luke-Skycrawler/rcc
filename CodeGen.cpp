@@ -20,7 +20,7 @@ Value *NbinaryExpr::codeGen()
     if (lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double")
     {
         if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-            std::cout << "Type error in binary expression $lhs " << op << " $rhs : $lhs is \'" << lhs_type << "\' while rhs is \'" << rhs_type << "\'." << std::endl;
+            LOG_ERROR("type error in binary expression $lhs " + op + " $rhs : $lhs is \'" + lhs_type + "\' while rhs is \'" + rhs_type + "\'");
         type = "error";
         return NULL;
     }
@@ -207,7 +207,7 @@ Value *Nidentifier::codeGen()
 {
     if (!bindings[name])
     {
-        std::cout << "Undeclared identifier \'" << name << "\'." << std::endl;
+        std::cout << "Error: Undeclared identifier \'" << name << "\'." << std::endl;
         return NULL;
     }
     type = GET_TYPE(name);
@@ -302,7 +302,8 @@ Value *Ndeclaration::codeGen()
         }
         else if (it->op[0] == '(')
         {
-            error("function defination in fuction not allowed");
+            LOG_ERROR("function definition in function is not allowed");
+            return NULL;
         }
     }
     return (Value *)ret; // some arbitary pointer other than NULL
@@ -368,14 +369,106 @@ Value *NifStatement::codeGen()
 
     return ret;
 }
-inline Type *string_to_Type(string type)
+Value *NforStatement::codeGen()
 {
-    if (type == "int")
-        return Type::getInt32Ty(context);
-    if (type == "double")
-        return Type::getDoubleTy(context);
-    if (type == "char")
-        return Type::getInt8Ty(context);
+    std::string identifier_name = identifier->name;
+
+    Value* start_val = start_expr->codeGen();
+    Value* end_val = end_expr->codeGen();
+    if(!start_val)
+    {
+        std::cout << "Error: Invalid start expression in FOR statement!" << std::endl;
+        return NULL;
+    }
+    if(!end_val)
+    {
+        std::cout << "Error: Invalid end expression in FOR statement!" << std::endl;
+        return NULL;
+    }
+    if(GET_VALUE_TYPE(start_val) != "int")
+    {
+        std::cout << "Error: Start expression in FOR statement should be of type \'int\'!" << std::endl;
+        return NULL;
+    }
+    if(GET_VALUE_TYPE(end_val) != "int")
+    {
+        std::cout << "Error: End expression in FOR statement should be of type \'int\'!" << std::endl;
+        return NULL;
+    }
+
+    Function *the_function = builder.GetInsertBlock()->getParent();
+    BasicBlock *preheader_bb = builder.GetInsertBlock();
+    BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
+    
+    // Unconditional branch to `loop_bb`
+    builder.CreateBr(loop_bb);
+    
+    // Set insert point to `loop_bb`
+    builder.SetInsertPoint(loop_bb);
+    
+    // Create a PHI node for the variable
+    PHINode *variable = builder.CreatePHI(Type::getInt32Ty(context), 2, identifier_name);
+    variable->addIncoming(start_val, preheader_bb);
+
+    // Fetch the variable's allocation
+    llvm::AllocaInst *variable_allocation = NULL, *old_variable_allocation = NULL;
+    if(bindings[identifier_name] != NULL) // If there is already a binding, save the old allocation
+    {
+        std::cout << "Variable \'" << identifier_name << "\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
+        old_variable_allocation = bindings[identifier_name];
+    }
+    // Allocate a new space for the loop variable
+    variable_allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, identifier_name);
+    // Add to binding map
+    bindings[identifier_name] = variable_allocation;
+    // Store initial value
+    builder.CreateStore(variable, variable_allocation);
+    // Set the identifier's `type` (IMPORTANT but ugly)
+    identifier->type = "int";
+
+    // Body statement `codeGen()`
+    if(!statement->codeGen())
+    {
+        std::cout << "Warning: Empty body statement in FOR statement!" << std::endl;
+        // return NULL;
+    }
+
+    // Step is 1
+    Value *step_val = builder.getInt32(1);
+
+    // Next Variable
+    Value *next_variable = inc?builder.CreateAdd(variable, step_val, "next_variable"):\
+                               builder.CreateSub(variable, step_val, "next_variable");
+
+    // Convert condition to a bool by comparing non-equal to 0
+    Value* end_cond;
+    end_cond = inc?builder.CreateICmpSGT(next_variable, end_val):\
+                   builder.CreateICmpSLT(next_variable, end_val);
+    end_cond = builder.CreateICmpEQ(end_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "loopcond");
+    
+    // Create 2 new blocks
+    BasicBlock *loopend_bb = builder.GetInsertBlock();
+    BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
+
+    // Insert the conditional branch into the end of `loopend_bb`
+    Value* ret = builder.CreateCondBr(end_cond, loop_bb, after_bb);
+
+    // Any new code will be inserted in `after_bb`
+    builder.SetInsertPoint(after_bb);
+    // Add the other incoming
+    variable->addIncoming(next_variable, loopend_bb);
+
+    if (old_variable_allocation) // Restore the unshadowed variable ('s allocation)
+    {
+        std::cout << "(debug) Restoring variable \'" << identifier_name << "\'" << std::endl;
+        bindings[identifier_name] = old_variable_allocation;
+    }
+    else // No need to restore, just erase the loop variable
+    {
+        std::cout << "(debug) No need to restore variable \'" << identifier_name << "\'" << std::endl;
+        bindings.erase(identifier_name);
+    }
+    return ret;
 }
 Value *NfunctionDefinition::codeGen()
 {
@@ -391,11 +484,11 @@ Value *NfunctionDefinition::codeGen()
         int i = 0;
         for (auto it : direct_declarator->parameter_list)
         {
-            args.push_back(string_to_Type(it->type_specifier->type));
+            args.push_back(TRANSLATE_STRING2LLVMTYPE(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
             GET_TYPE(argNames[i++]) = it->type_specifier->type;
         }
-        FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
+        FunctionType *ft = FunctionType::get(TRANSLATE_STRING2LLVMTYPE(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         GET_TYPE(op) = type;
         // funcStack.push_back(func);
@@ -473,7 +566,8 @@ Value *NpostfixExpr::codeGen()
 {
     if (!name)
     {
-        error("reference not defined");
+        LOG_ERROR("the reference in postfix expression is not defined");
+        return NULL;
     }
     string &op = name->name;
 
@@ -484,11 +578,15 @@ Value *NpostfixExpr::codeGen()
             CreatePrintf();
         Function *callee = topModule->getFunction(op);
         vector<Value *> argv;
-        std::cout << type << " " << name->name << "'s Args: ";
         for (auto it : argument_expr_list)
         {
-            std::cout << it->type << " ";
-            argv.push_back(it->codeGen());
+            Value* arg_val = it->codeGen();
+            if(arg_val == NULL)
+            {
+                LOG_ERROR("invalid argument in function \'" + op + "\'");
+                return NULL;
+            }
+            argv.push_back(arg_val);
         }
         std::cout << std::endl;
         return builder.CreateCall(callee, argv, "call");
@@ -497,7 +595,12 @@ Value *NpostfixExpr::codeGen()
     {
         type = GET_TYPE(op); // bind type
         Value* addr= getAccess();
-        return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
+        if(!addr)
+        {
+            LOG_ERROR("undeclared identifier \'" + name->name + "\'");
+            return NULL;
+        }
+        return builder.CreateLoad(TRANSLATE_STRING2LLVMTYPE(GET_TYPE(op)),addr);
         // vector<Value *> ref;
         // ref.push_back(builder.getInt32(0));
         // ref.push_back(expr->codeGen());
@@ -505,7 +608,7 @@ Value *NpostfixExpr::codeGen()
 
         // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
         // auto addr = builder.CreateInsertElement(bindings[op]->getType(), (Constant*)bindings[op], expr->codeGen());
-        // return builder.CreateLoad(string_to_Type(GET_TYPE(op)), addr);
+        // return builder.CreateLoad(TRANSLATE_STRING2LLVMTYPE(GET_TYPE(op)), addr);
     }
     return NULL;
 }
@@ -524,7 +627,10 @@ Value *NpostfixExpr::getAccess()
         // return builder.CreateInBoundsGEP(bindings[op],ref );
     }
     else
+    {
         return bindings[op];
+    }
+    return NULL;
 }
 Value *NassignExpr::codeGen()
 {
@@ -554,7 +660,7 @@ Value *NassignExpr::codeGen()
         else if (lhs_type != rhs_type) // check for type error
         {
             if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-                std::cout << "Type error in assignment expression $lhs = $rhs: $lhs is \'" << lhs_type << "\' while $rhs is \'" << rhs_type << "\'." << std::endl;
+                LOG_ERROR("type error in assignment expression $lhs = $rhs: $lhs is \'" + lhs_type + "\' while $rhs is \'" + rhs_type + "\'");
             type = "error";
             return NULL;
         }

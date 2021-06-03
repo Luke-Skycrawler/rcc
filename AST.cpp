@@ -173,6 +173,16 @@ void NifStatement::printNode(int indent)
         else_statement->printNode(indent + 1);
 }
 
+void NforStatement::printNode(int indent)
+{
+    if(inc) PRINT_INDENT(indent, "NforStatement(increment)");
+    else PRINT_INDENT(indent, "NforStatement(decrement)");
+    identifier->printNode(indent + 1);
+    start_expr->printNode(indent + 1);
+    end_expr->printNode(indent + 1);
+    statement->printNode(indent + 1);
+}
+
 void Nexpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "Nexpr");
@@ -232,7 +242,10 @@ void NdirectDeclarator::updateType(const string &op)
     // update the type if necessary
     // TODO: check declarator's syntax here!!!
     if (this->op != "" && this->op != op)
-        error("Latent Error: Mixed type in declarator!");
+    {
+        LOG_ERROR("(latent) mixed type in declarator");
+        exit(-1);
+    }
     this->op = op;
 }
 
@@ -259,7 +272,10 @@ NderivedType::NderivedType(char type)
     case 't':
         baseType = selfDefinedType->name;
         if (structBindings.find(baseType) == structBindings.end())
-            error("struct not defined");
+        {
+            LOG_ERROR("struct not defined");
+            exit(-1);
+        }
         break;
     }
 }
@@ -273,7 +289,10 @@ void Nstruct::printNode(int indent)
 Nstruct::Nstruct(const std::string &name, vector<Ndeclaration *> *content) : name(name), content(content)
 {
     if (bindings.find(name) != bindings.end() || structBindings.find(name) != structBindings.end())
-        error("struct name conflict");
+    {
+        LOG_ERROR("struct name conflict");
+        exit(-1);
+    }
     structBindings[name] = this;
 }
 Nconstant::Nconstant(const std::string &type, char *value) 
