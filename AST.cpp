@@ -42,9 +42,9 @@ void NdirectDeclarator::printNode(int indent)
             identifier->printNode(indent + 1);
             PRINT_INDENT(indent, "NdirectDeclarator(SQUARE_BRACKET_CONSTANT, ", false);
             std::cout << "INT CONSTANT:";
-            if (!int_constant_list.empty())
+            if (!dimensions.empty())
             {
-                for (auto it : int_constant_list)
+                for (auto it : dimensions)
                 {
                     // std::cout << " " << int_value;
                     if(it)it->printNode(indent+1);
@@ -185,7 +185,7 @@ void Nexpr::printNode(int indent)
 void NassignExpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "NassignExpr(type: " + type + ")");
-    unary_expr->printNode(indent + 1);
+    lhs->printNode(indent + 1);
     assign_expr->printNode(indent + 1);
 }
 
@@ -216,7 +216,7 @@ void NunaryExpr::printNode(int indent)
 void NpostfixExpr::printNode(int indent)
 {
     // postfix_expr->printNode(indent);
-    PRINT_INDENT(indent, "NpostfixExpr(" + dynamic_cast<Nidentifier *>(postfix_expr)->name + ")");
+    PRINT_INDENT(indent, "NpostfixExpr(" + name->name + " type: "+type+")");
     for (auto it : argument_expr_list)
     {
         it->printNode(indent + 1);
@@ -246,7 +246,7 @@ void NdirectDeclarator::bind(std::string type)
     }
     else if (op=="[]")
     {
-        for (auto int_value : int_constant_list)
+        for (auto int_value : dimensions)
         {
             type += "|" + INT2STRING(int_value->value.int_value);
         }
@@ -275,8 +275,8 @@ void NfunctionDefinition::bind()
 
 void NdirectDeclarator::pushIntConstant(Nconstant *int_constant)
 {
-    // add the `int_value` of `int_constant` into the `int_constant_list`
-    int_constant_list.push_back(int_constant);
+    // add the `int_value` of `int_constant` into the `dimensions`
+    dimensions.push_back(int_constant);
 }
 
 void NdirectDeclarator::updateType(const string &op)

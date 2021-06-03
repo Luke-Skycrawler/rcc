@@ -229,7 +229,7 @@ public:
     virtual void printNode(int indent);
     void bind(std::string type);
     void pushIntConstant(Nconstant *int_constant);
-void updateType(const std::string &op);
+    void updateType(const std::string &op);
     void setParameterList(const std::vector<NparameterDeclaration *> &parameter_list);
     void setIdentifierList(const std::vector<Nidentifier *> &identifier_list);
     // private:
@@ -237,7 +237,7 @@ void updateType(const std::string &op);
     std::string op;
     std::vector<NparameterDeclaration *> parameter_list;
     std::vector<Nidentifier *> identifier_list;
-    std::vector<Nconstant *> int_constant_list;
+    std::vector<Nconstant *> dimensions;
 };
 
 class NparameterDeclaration : public Node
@@ -404,6 +404,7 @@ public:
     Nexpr(std::vector<Nexpr *> &expr_list) : expr_list(expr_list) {}
     void push_back(Nexpr *expr)
     {
+        type = "NULL";
         expr_list.push_back(expr);
     }
     void printNode(int indent);
@@ -421,7 +422,7 @@ private:
 class NassignExpr : public Nexpr
 {
 public:
-    NassignExpr(Nexpr *unary_expr, std::string assign_op, Nexpr *assign_expr) : unary_expr(unary_expr),
+    NassignExpr(NpostfixExpr *lhs, std::string assign_op, Nexpr *assign_expr) : lhs(lhs),
                                                                                 assign_op(assign_op),
                                                                                 assign_expr(assign_expr)
     {
@@ -431,7 +432,7 @@ public:
     void printNode(int indent);
 
 private:
-    Nexpr *unary_expr;
+    NpostfixExpr *lhs;
     std::string assign_op;
     Nexpr *assign_expr;
 };
@@ -539,28 +540,39 @@ public:
         DOT = 2,
         PTR_OP = 3,
         INC_OP = 4,
-        DEC_OP = 5
+        DEC_OP = 5,
+        NONE = 6
     };
-    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr *postfix_expr, Nexpr *expr) : postfix_expr(postfix_expr),
-                                                                                postfix_type(postfix_type),
-                                                                                expr(expr) {}
-    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr *postfix_expr, std::vector<Nexpr *> &argument_expr_list) : postfix_expr(postfix_expr),
-                                                                                                             postfix_type(postfix_type),
-                                                                                                             argument_expr_list(argument_expr_list) {}
-    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr *postfix_expr, Nidentifier *identifier) : postfix_expr(postfix_expr),
-                                                                                            postfix_type(postfix_type),
-                                                                                            identifier(identifier) {}
-    NpostfixExpr(POSTFIX_TYPE postfix_type, Nexpr *postfix_expr) : postfix_expr(postfix_expr),
-                                                                   postfix_type(postfix_type) {}
+    void set(POSTFIX_TYPE postfix_type, Nexpr *expr)
+    {
+        this->postfix_type = postfix_type;
+        this->expr = expr;
+    }
+    void set(POSTFIX_TYPE postfix_type, std::vector<Nexpr *> &argument_expr_list)
+    {
+        this->postfix_type = postfix_type;
+        this->argument_expr_list = argument_expr_list;
+    }
+    void set(POSTFIX_TYPE postfix_type, Nidentifier *identifier)
+    {
+        this->postfix_type = postfix_type;
+        this->identifier = identifier;
+    }
+    void set(POSTFIX_TYPE postfix_type)
+    {
+        this->postfix_type = postfix_type;
+    }
+    NpostfixExpr(POSTFIX_TYPE postfix_type, Nidentifier *name) : name(name),
+                                                                 postfix_type(postfix_type) {}
     llvm::Value *codeGen();
     void printNode(int indent);
+    llvm::Value *getAccess();
+    // private:
 
-private:
     POSTFIX_TYPE postfix_type;
-    Nexpr *postfix_expr;
     Nexpr *expr;                             // valid when postfix_type = SUQARE_BRACKETS
     std::vector<Nexpr *> argument_expr_list; // valid when postfix_type = PARENTHESES, could be a nullptr!
-    Nidentifier *identifier;                 // valid when postfix_type = DOT or PTR_OP
+    Nidentifier *identifier, *name;          // valid when postfix_type = DOT or PTR_OP
     // when postfix_type = INC_OP or DEC_OP, none of the 3 upon would be used!
 };
 

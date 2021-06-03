@@ -199,7 +199,7 @@ Value *Ndeclaration::codeGen()
             Value *size = ConstantInt::get(Type::getInt32Ty(context), 1);
             AllocaInst *allocation;
             int i = 0;
-            for (auto constant : it->int_constant_list)
+            for (auto constant : it->dimensions)
             {
                 if (constant)
                 {
@@ -228,7 +228,7 @@ Value *Ndeclaration::codeGen()
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
             ret = p;
-            bindings[op] = p;
+            bindings[op] = allocation;
         }
         else if (it->op[0] == '(')
         {
@@ -321,11 +321,11 @@ Value *NfunctionDefinition::codeGen()
         {
             args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
-            binding_info_map[argNames[i++]] = it->type_specifier->type;
+            GET_TYPE(argNames[i++]) = it->type_specifier->type;
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
-        binding_info_map[op] = type;
+        GET_TYPE(op) = type;
         // funcStack.push_back(func);
     }
 
@@ -397,9 +397,55 @@ inline Value *createOpNode(Value *l, Value *r, char op)
         return NULL;
     }
 }
+Value *NpostfixExpr::codeGen()
+{
+    if (!name){
+        error("reference not defined");
+    }
+    string &op = name->name;
+    type = GET_TYPE(op);
+    if (postfix_type == PARENTHESES)
+    {
+        if (op == "printf")
+            CreatePrintf();
+        Function *callee = topModule->getFunction(op);
+        vector<Value *> argv;
+        for (auto it : argument_expr_list)
+        {
+            argv.push_back(it->codeGen());
+        }
+        return builder.CreateCall(callee, argv, "call");
+    }
+    else if (postfix_type == SQUARE_BRACKETS)
+    {
+        Value* addr= getAccess();
+        return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
+        // vector<Value *> ref;
+        // ref.push_back(builder.getInt32(0));
+        // ref.push_back(expr->codeGen());
+        // auto addr=builder.CreateInBoundsGEP(bindings[op],ref );
+        
+        // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
+        // auto addr = builder.CreateInsertElement(bindings[op]->getType(), (Constant*)bindings[op], expr->codeGen());
+        // return builder.CreateLoad(string_to_Type(GET_TYPE(op)), addr);
+    }
+    return NULL;
+}
+Value *NpostfixExpr::getAccess()
+{
+    string &op = name->name;
+    if(expr){
+        vector<Value *> ref;
+        ref.push_back(builder.getInt32(0));
+        ref.push_back(expr->codeGen());
+        return builder.CreateInBoundsGEP(bindings[op],ref );
+    }
+    else 
+        return bindings[op];
+}
 Value *NassignExpr::codeGen()
 {
-    Value *r = assign_expr->codeGen(), *l = unary_expr->codeGen(), *result = NULL;
+    Value *r = assign_expr->codeGen(), *l = lhs->codeGen(), *result = NULL;
     // FIXME: possible error here
     if (assign_op[0] != '=') // TODO: extension
     {
@@ -408,12 +454,13 @@ Value *NassignExpr::codeGen()
     }
     if (assign_op[0] == '=')
     {
-        auto storeAddr = bindings[dynamic_cast<Nidentifier *>(unary_expr)->name];
+        // auto storeAddr = bindings[lhs->identifier->name];
+        auto storeAddr = lhs->getAccess();
         // We should NOT directly search in the bindings
         // We shall use some virtual method, which would automatically fetch the `storeAddr` and related info (like the size of an array)
         // Or just give up assigning to an array... :)
         result = r;
-        std::string lhs_type = unary_expr->type;
+        std::string lhs_type = lhs->type;
         std::string rhs_type = assign_expr->type;
         if (lhs_type == "double" && rhs_type == "int") // automatic conversion from when doing 'double' = 'int' assignment
         {
@@ -448,24 +495,6 @@ Value *NunaryExpr::codeGen()
     return NULL;
 }
 
-Value *NpostfixExpr::codeGen()
-{
-    if (postfix_type == PARENTHESES)
-    {
-        string op = dynamic_cast<Nidentifier *>(postfix_expr)->name;
-        if (op == "printf")
-            CreatePrintf();
-        Function *callee = topModule->getFunction(op);
-        vector<Value *> argv;
-        for (auto it : argument_expr_list)
-        {
-            argv.push_back(it->codeGen());
-        }
-        type = binding_info_map[op];
-        return builder.CreateCall(callee, argv, "call");
-    }
-    return NULL;
-}
 Value *NparameterDeclaration::codeGen()
 {
     return NULL;
