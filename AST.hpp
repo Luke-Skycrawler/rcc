@@ -402,8 +402,8 @@ public:
     }
     void printNode(int indent);
     llvm::Value *codeGen() = 0;
-    virtual std::string getType() { return "NULL"; }
-
+    // virtual std::string getType() { return "NULL"; }
+    std::string type;
 private:
     std::vector<Nexpr *> expr_list;
 };
@@ -422,7 +422,6 @@ public:
     }
     llvm::Value *codeGen();
     void printNode(int indent);
-    std::string type;
 
 private:
     Nexpr *unary_expr;
@@ -461,13 +460,8 @@ public:
     std::string op;
     llvm::Value *codeGen();
     void printNode(int indent);
-    std::string getType()
-    {
-        return type;
-    }
 
 private:
-    std::string type;
     Nexpr *lhs, *rhs;
 };
 
@@ -573,10 +567,6 @@ public:
     Nidentifier(std::string &name) : name(name) {}
     llvm::Value *codeGen();
     void printNode(int indent);
-    std::string getType()
-    {
-        return GET_TYPE(name);
-    }
     // private:
     std::string name;
 };
@@ -588,18 +578,13 @@ public:
 class Nconstant : public Nexpr
 {
 public:
-    Nconstant(std::string type, char value) : type(type) { this->value.char_value = value; }
-    Nconstant(std::string type, int value) : type(type) { this->value.int_value = value; }
-    Nconstant(std::string type, double value) : type(type) { this->value.double_value = value; }
-    Nconstant(std::string type, char *value);
+    Nconstant(const std::string &type, char value) { this->type=type;this->value.char_value = value; }
+    Nconstant(const std::string &type, int value) { this->type=type;this->value.int_value = value; }
+    Nconstant(const std::string &type, double value) { this->type=type;this->value.double_value = value; }
+    Nconstant(const std::string &type, char *value);
     llvm::Value *codeGen();
     void printNode(int indent);
-    std::string getType()
-    {
-        return type;
-    }
     // private:
-    std::string type;
     union Value
     {
         char char_value;

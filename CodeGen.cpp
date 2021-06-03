@@ -14,8 +14,8 @@ Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen();
     bool double_flag;
-    std::string lhs_type = lhs->getType();
-    std::string rhs_type = rhs->getType();
+    std::string lhs_type = lhs->type;
+    std::string rhs_type = rhs->type;
     //Check for type error
     if(lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double" )
     {
@@ -146,6 +146,7 @@ Value *Nidentifier::codeGen()
         std::cout << "Undeclared identifier \'" << name << "\'." << std::endl;
         return NULL;
     }
+    type=GET_TYPE(name);
     return builder.CreateLoad(bindings[name]);
 }
 Value *Ninitializer::codeGen()
@@ -276,6 +277,7 @@ Value *NfunctionDefinition::codeGen()
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
+        binding_info_map[op]=type;
         // funcStack.push_back(func);
     }
 
@@ -348,11 +350,10 @@ inline Value *createOpNode(Value *l, Value *r, char op)
 }
 Value *NassignExpr::codeGen()
 {
-    Value *r = assign_expr->codeGen(), *l = NULL, *result = NULL;
+    Value *r = assign_expr->codeGen(), *l = unary_expr->codeGen(), *result = NULL;
     // FIXME: possible error here
     if (assign_op[0] != '=') // TODO: extension
     {
-        l = unary_expr->codeGen();
         result = createOpNode(l, r, assign_op[0]);
         return result;
     }
@@ -363,8 +364,8 @@ Value *NassignExpr::codeGen()
             // We shall use some virtual method, which would automatically fetch the `storeAddr` and related info (like the size of an array)
             // Or just give up assigning to an array... :)
         result = r;
-        std::string lhs_type = unary_expr->getType();
-        std::string rhs_type = assign_expr->getType();
+        std::string lhs_type = unary_expr->type;
+        std::string rhs_type = assign_expr->type;
         if (lhs_type == "double" && rhs_type == "int") // automatic conversion from when doing 'double' = 'int' assignment
         {
             // std::cout << "Warning(debug): Automatic conversion when assigning \'int\' to \'double\'..." << std::endl;
@@ -410,6 +411,7 @@ Value *NpostfixExpr::codeGen()
         {
             argv.push_back(it->codeGen());
         }
+        type=binding_info_map[op];
         return builder.CreateCall(callee, argv, "call");
     }
     return NULL;

@@ -367,9 +367,10 @@ Nstruct::Nstruct(const std::string &name, vector<Ndeclaration *> *content) : nam
         error("struct name conflict");
     structBindings[name] = this;
 }
-Nconstant::Nconstant(std::string type, char *value) : type(type)
+Nconstant::Nconstant(const std::string &type, char *value) 
 {
     //Ignore the last \", so use `len` but not `len + 1`
+    this->type=type;
     int len = strlen(value);
     this->value.string_literal_value = (char *)malloc(len);
     memset(this->value.string_literal_value, '\0', len);
