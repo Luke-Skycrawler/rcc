@@ -51,6 +51,27 @@ inline std::string GET_TYPE(std::string name)
     return "NULL";
 }
 
+inline std::string GET_VALUE_TYPE(llvm::Value* value)
+{
+    if (!value)
+    {
+        return "NULL";
+    }
+    if (value->getType()->isIntegerTy())
+    {
+        int num_bit = value->getType()->getIntegerBitWidth();
+        if (num_bit == 8)
+            return "char";
+        else if (num_bit == 32)
+            return "int";
+    }
+    else if (value->getType()->isDoubleTy())
+    {
+        return "double";
+    }
+    return "NULL";
+}
+
 inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst *inst)
 {
     if (!inst)

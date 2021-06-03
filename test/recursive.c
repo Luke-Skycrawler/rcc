@@ -1,8 +1,8 @@
 int fib(int k){
-    if(k == 0 | k==1){  // bugs: 1. change | to ||
+    if(k == 0 || k == 1){
         return 1;
     }
-    return fib(k- 1)+fib(k- 2); // bugs 2: delete space before 1 or 2
+    return fib(k-1) + fib(k-2);
 }
 int main(){
     printf("%d",fib(5));

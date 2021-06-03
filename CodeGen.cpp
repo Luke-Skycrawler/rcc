@@ -12,7 +12,7 @@ Value *Nstatement::codeGen()
 }
 Value *NbinaryExpr::codeGen()
 {
-    Value *l = lhs->codeGen(), *r = rhs->codeGen();
+    Value *l = lhs->codeGen(), *r = rhs->codeGen(), *ret = NULL;
     bool double_flag;
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
@@ -42,46 +42,81 @@ Value *NbinaryExpr::codeGen()
     {
         switch (op[0])
         {
-        case '+':
-            return builder.CreateAdd(l, r);
-        case '-':
-            return builder.CreateSub(l, r);
-        case '*':
-            return builder.CreateMul(l, r);
-        case '/':
-            return builder.CreateSDiv(l, r);
-        case '%':
-            return builder.CreateSRem(l, r);
-        case '&':
-            if (op.size() == 1)
-                return builder.CreateAnd(l, r);
-            else
-                return builder.CreateICmpUGT(builder.CreateAnd(l, r), ConstantInt::get(Type::getInt32Ty(context), 0));
-        case '|':
-            if (op.size() == 1)
-                return builder.CreateOr(l, r);
-            else
-                return builder.CreateICmpUGT(builder.CreateOr(l, r), ConstantInt::get(Type::getInt32Ty(context), 0));
-        case '^':
-            return builder.CreateXor(l, r);
-        case '<':
-            if (op.size() == 1)
-                return builder.CreateICmpSLT(l, r);
-            else if (op[1] == '=')
-                return builder.CreateICmpSLE(l, r);
-            else if (op[1] == '<')
-                return builder.CreateShl(l, r);
-        case '>':
-            if (op.size() == 1)
-                return builder.CreateICmpSGT(l, r);
-            else if (op[1] == '=')
-                return builder.CreateICmpSGE(l, r);
-            else if (op[1] == '>')
-                return builder.CreateAShr(l, r);
-        case '=':
-            return builder.CreateICmpEQ(l, r);
-        case '!':
-            return builder.CreateICmpNE(l, r);
+            case '+':
+                return builder.CreateAdd(l, r);
+            case '-':
+                return builder.CreateSub(l, r);
+            case '*':
+                return builder.CreateMul(l, r);
+            case '/':
+                return builder.CreateSDiv(l, r);
+            case '%':
+                return builder.CreateSRem(l, r);
+            case '&':
+                if (op.size() == 1)
+                    return builder.CreateAnd(l, r);
+                else
+                {
+                    ret = builder.CreateICmpUGT(builder.CreateAnd(l, r), ConstantInt::get(Type::getInt32Ty(context), 0));
+                    ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                    return ret;
+                }
+            case '|':
+                if (op.size() == 1) return builder.CreateOr(l, r);
+                else
+                {
+                    ret = builder.CreateICmpUGT(builder.CreateOr(l, r), ConstantInt::get(Type::getInt32Ty(context), 0));
+                    ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                    return ret;
+                }
+            case '^':
+                return builder.CreateXor(l, r);
+            case '<':
+                if (op.size() == 1)
+                {
+                    ret = builder.CreateICmpSLT(l, r);
+                    ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                    return ret;
+                }
+                else if (op[1] == '=')
+                {
+                    ret = builder.CreateICmpSLE(l, r);
+                    ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                    return ret;
+                }
+                else if (op[1] == '<')
+                {
+                    return builder.CreateShl(l, r);
+                }
+            case '>':
+                if (op.size() == 1)
+                {
+                    ret = builder.CreateICmpSGT(l, r);
+                    ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                    return ret;
+                }
+                else if (op[1] == '=')
+                {
+                    ret = builder.CreateICmpSGE(l, r);
+                    ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                    return ret;
+                }
+                else if (op[1] == '>')
+                    return builder.CreateAShr(l, r);
+            case '=':
+            {
+                ret = builder.CreateICmpEQ(l, r)
+                ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                // ret = builder.CreateUIToFP(ret, Type::getDoubleTy(context));
+                // ret = builder.CreateFPToSI(ret, Type::getInt32Ty(context));
+                return ret;
+            }
+            case '!':
+            {
+                ret = builder.CreateICmpNE(l, r)
+                ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                return ret;
+            }
         }
     }
     else
@@ -98,18 +133,43 @@ Value *NbinaryExpr::codeGen()
             return builder.CreateFDiv(l, r, "div");
         case '>':
             if (op.size() == 1)
-                return builder.CreateFCmpUGT(l, r, "");
+            {
+                ret = builder.CreateFCmpUGT(l, r, "")
+                ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                return ret;
+            }
+            else if(op[1] == '=')
+            {
+                ret = builder.CreateFCmpUGE(l, r, "")
+                ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                return ret;
+            }
             else
-                return builder.CreateFCmpUGE(l, r, "");
+            {
+                printf("Error: shift operator \'>>\' not applicable to type \'double\'!\n");
+            }
         case '<':
             if (op.size() == 1)
-                return builder.CreateFCmpULT(l, r, "cmp");
-            return builder.CreateFCmpULE(l, r, "cmp");
+            {
+                ret = builder.CreateFCmpULT(l, r, "cmp")
+                ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                return ret;
+            }
+            else if(op[1] == '=')
+            {
+                ret = builder.CreateFCmpULE(l, r, "cmp")
+                ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
+                return ret;
+            }
+            else
+            {
+                printf("Error: shift operator \'<<\' not applicable to type \'double\'!\n");
+            }
         default:
             return NULL;
         }
     }
-    return NULL;
+    return ret;
 }
 llvm::Value *Nconstant::codeGen()
 {
@@ -251,7 +311,6 @@ Value *NcompoundStatement::codeGen()
 Value *NifStatement::codeGen()
 {
     Value *cond_val = cond_expr->codeGen();
-    printf("Hola2\n");
     if (!cond_val)
     {
         printf("Error: conditional expression is not valid!\n");
@@ -260,7 +319,10 @@ Value *NifStatement::codeGen()
 
     // If the expr is not a double, convert it to a double
     if (!cond_val->getType()->isDoubleTy())
+    {
+        // std::cout << "Warning: condition expression in IF-ELSE statement is of type \'" << GET_VALUE_TYPE(cond_val) << "\'" << std::endl;
         cond_val = builder.CreateSIToFP(cond_val, Type::getDoubleTy(context));
+    }
 
     // cond_val = builder.CreateICmpNE(cond_val, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "ifcond");
     cond_val = builder.CreateFCmpONE(cond_val, ConstantFP::get(context, APFloat(0.0)), "ifcond");
