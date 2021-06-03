@@ -177,30 +177,31 @@ init_declarator
 
 direct_declarator
 	: IDENTIFIER {
-		$$ = new NdirectDeclarator(NdirectDeclarator::IDENTIFIER, $1);
+		$$ = new NdirectDeclarator("", $1);
 	}
 	| direct_declarator '[' INT_CONSTANT ']' {
 		$$ = $1;
 		$$->pushIntConstant($3);
-		$$->updateType(NdirectDeclarator::SQUARE_BRACKET_CONSTANT);
+		$$->updateType("[]");
 	}
 	| direct_declarator '[' ']' {
 		$$ = $1;
-		$$->updateType(NdirectDeclarator::SQUARE_BRACKET_EMPTY);
+		$$->pushIntConstant(NULL);
+		$$->updateType("[]");
 	}
 	| direct_declarator '(' parameter_list ')' {
 		$$ = $1;
-		$$->updateType(NdirectDeclarator::PARENTHESES_PARAMETER_LIST);
+		$$->updateType("()");
 		$$->setParameterList(*$3);
 	}
-	| direct_declarator '(' identifier_list ')' {
+	/* | direct_declarator '(' identifier_list ')' {
 		$$ = $1;
-		$$->updateType(NdirectDeclarator::PARENTHESES_IDENTIFIER_LIST);
+		$$->updateType("()");
 		$$->setIdentifierList(*$3);
-	}
+	} */
 	| direct_declarator '(' ')' {
 		$$ = $1;
-		$$->updateType(NdirectDeclarator::PARENTHESES_EMPTY);
+		$$->updateType("()");
 	}
 	;
 

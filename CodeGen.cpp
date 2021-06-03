@@ -17,23 +17,26 @@ Value *NbinaryExpr::codeGen()
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
     //Check for type error
-    if(lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double" )
+    if (lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double")
     {
-        if(lhs_type != "error" && rhs_type != "error") // Blocking cascade error
+        if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
             std::cout << "Type error in binary expression $lhs " << op << " $rhs : $lhs is \'" << lhs_type << "\' while rhs is \'" << rhs_type << "\'." << std::endl;
         type = "error";
         return NULL;
     }
     // If one is double, the op should also be a double op
-    if(lhs_type == "double" || rhs_type == "double")  double_flag = true;
+    if (lhs_type == "double" || rhs_type == "double")
+        double_flag = true;
     // If only one is double but the other is int, convert the int -> double...
     if (double_flag && lhs_type != "double")
         l = builder.CreateSIToFP(l, Type::getDoubleTy(context));
     if (double_flag && rhs_type != "double")
         r = builder.CreateSIToFP(r, Type::getDoubleTy(context));
     // Record `type`
-    if(double_flag) type = "double";
-    else type = "int";
+    if (double_flag)
+        type = "double";
+    else
+        type = "int";
 
     if (!double_flag)
     {
@@ -141,12 +144,12 @@ llvm::Value *Nconstant::codeGen()
 }
 Value *Nidentifier::codeGen()
 {
-    if(!bindings[name])
+    if (!bindings[name])
     {
         std::cout << "Undeclared identifier \'" << name << "\'." << std::endl;
         return NULL;
     }
-    type=GET_TYPE(name);
+    type = GET_TYPE(name);
     return builder.CreateLoad(bindings[name]);
 }
 Value *Ninitializer::codeGen()
@@ -172,21 +175,65 @@ Value *NdirectDeclarator::codeGen()
 Value *Ndeclaration::codeGen()
 {
     void *ret;
-    for (auto it : init_declarator_list)
+    auto type = type_specifier->type;
+    for (auto iterator : init_declarator_list)
     {
-        auto op = dynamic_cast<NdirectDeclarator *>(it)->identifier->name;
-        auto type = type_specifier->type;
-        AllocaInst *allocation;
-        if (type == "double")
-            allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
-        else if (type == "int")
-            allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, op);
-        else if (type == "char")
-            allocation = builder.CreateAlloca(Type::getInt8Ty(context), NULL, op);
+        NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
+        auto op = it->identifier->name;
+        if (it->op == "")
+        {
+            AllocaInst *allocation;
+            if (type == "double")
+                allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+            else if (type == "int")
+                allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, op);
+            else if (type == "char")
+                allocation = builder.CreateAlloca(Type::getInt8Ty(context), NULL, op);
 
-        ret = allocation;
-        builder.CreateStore(builder.getInt64(0), allocation);
-        bindings[op] = allocation;
+            ret = allocation;
+            builder.CreateStore(builder.getInt64(0), allocation);
+            bindings[op] = allocation;
+        }
+        else if (it->op[0] == '[')
+        {
+            Value *size = ConstantInt::get(Type::getInt32Ty(context), 1);
+            AllocaInst *allocation;
+            int i = 0;
+            for (auto constant : it->int_constant_list)
+            {
+                if (constant)
+                {
+                    size = builder.CreateMul(size, constant->codeGen());
+                    // FIXME: negative size
+                }
+                i++;
+            }
+            llvm::Value *p;
+            vector<Value *> arrayRef;
+            arrayRef.push_back(allocation);
+            arrayRef.push_back(size);
+            if (type == "double")
+            {
+                allocation = builder.CreateAlloca(Type::getDoubleTy(context), size, op);
+                p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+            }
+            else if (type == "int")
+            {
+                allocation = builder.CreateAlloca(Type::getInt32Ty(context), size, op);
+                p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+            }
+            else if (type == "char")
+            {
+                allocation = builder.CreateAlloca(Type::getInt8Ty(context), size, op);
+                p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
+            }
+            ret = p;
+            bindings[op] = p;
+        }
+        else if (it->op[0] == '(')
+        {
+            error("function defination in fuction not allowed");
+        }
     }
     return (Value *)ret; // some arbitary pointer other than NULL
 }
@@ -269,15 +316,16 @@ Value *NfunctionDefinition::codeGen()
     vector<string> argNames;
     if (!func)
     {
-        int i=0;
-        for(auto it:direct_declarator->parameter_list){
+        int i = 0;
+        for (auto it : direct_declarator->parameter_list)
+        {
             args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
-            binding_info_map[argNames[i++]]=it->type_specifier->type;
+            binding_info_map[argNames[i++]] = it->type_specifier->type;
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
-        binding_info_map[op]=type;
+        binding_info_map[op] = type;
         // funcStack.push_back(func);
     }
 
@@ -285,12 +333,13 @@ Value *NfunctionDefinition::codeGen()
     {
         BasicBlock *bb = BasicBlock::Create(context, "entry@" + op, func);
         builder.SetInsertPoint(bb);
-        int i=0;
-        for(auto it=func->arg_begin();it!=func->arg_end();it++){
+        int i = 0;
+        for (auto it = func->arg_begin(); it != func->arg_end(); it++)
+        {
             it->setName(argNames[i]);
             auto allocation = builder.CreateAlloca(it->getType(), NULL, argNames[i]);
-            builder.CreateStore(it,allocation);
-            bindings[argNames[i++]]=allocation;
+            builder.CreateStore(it, allocation);
+            bindings[argNames[i++]] = allocation;
         }
         if (auto ret = body->codeGen())
         {
@@ -357,12 +406,12 @@ Value *NassignExpr::codeGen()
         result = createOpNode(l, r, assign_op[0]);
         return result;
     }
-    if(assign_op[0] == '=')
+    if (assign_op[0] == '=')
     {
         auto storeAddr = bindings[dynamic_cast<Nidentifier *>(unary_expr)->name];
-            // We should NOT directly search in the bindings
-            // We shall use some virtual method, which would automatically fetch the `storeAddr` and related info (like the size of an array)
-            // Or just give up assigning to an array... :)
+        // We should NOT directly search in the bindings
+        // We shall use some virtual method, which would automatically fetch the `storeAddr` and related info (like the size of an array)
+        // Or just give up assigning to an array... :)
         result = r;
         std::string lhs_type = unary_expr->type;
         std::string rhs_type = assign_expr->type;
@@ -372,14 +421,15 @@ Value *NassignExpr::codeGen()
             result = builder.CreateSIToFP(result, Type::getDoubleTy(context));
             type = "double";
         }
-        else if(lhs_type != rhs_type) // check for type error
+        else if (lhs_type != rhs_type) // check for type error
         {
-            if(lhs_type != "error" && rhs_type != "error") // Blocking cascade error
+            if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
                 std::cout << "Type error in assignment expression $lhs = $rhs: $lhs is \'" << lhs_type << "\' while $rhs is \'" << rhs_type << "\'." << std::endl;
             type = "error";
             return NULL;
         }
-        else type = lhs_type;
+        else
+            type = lhs_type;
         builder.CreateStore(result, storeAddr);
         return result;
     }
@@ -411,7 +461,7 @@ Value *NpostfixExpr::codeGen()
         {
             argv.push_back(it->codeGen());
         }
-        type=binding_info_map[op];
+        type = binding_info_map[op];
         return builder.CreateCall(callee, argv, "call");
     }
     return NULL;
@@ -448,9 +498,12 @@ llvm::Value *Nstruct::codeGen()
 {
     return NULL;
 }
-llvm::Value *NreturnStatement::codeGen(){
-    if(expr){
+llvm::Value *NreturnStatement::codeGen()
+{
+    if (expr)
+    {
         return builder.CreateRet(expr->codeGen());
     }
-    else return builder.CreateRet(NULL);
+    else
+        return builder.CreateRet(NULL);
 }

@@ -10,7 +10,7 @@ extern bool type_error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern std::map<std::string, std::string> binding_info_map;
-extern std::map<std::string, llvm::AllocaInst*> bindings;
+extern std::map<std::string, llvm::AllocaInst *> bindings;
 
 inline std::string INT2STRING(int x)
 {
@@ -33,31 +33,37 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
 
 inline std::string GET_TYPE(std::string name)
 {
-    llvm::AllocaInst* inst = bindings[name];
-    if(!inst) return "NULL";
-    if(inst->getAllocatedType()->isIntegerTy())
+    llvm::AllocaInst *inst = bindings[name];
+    if (!inst)
+        return "NULL";
+    if (inst->getAllocatedType()->isIntegerTy())
     {
         int num_bit = inst->getAllocatedType()->getIntegerBitWidth();
-        if(num_bit == 8) return "char";
-        else if(num_bit == 32) return "int";
+        if (num_bit == 8)
+            return "char";
+        else if (num_bit == 32)
+            return "int";
     }
-    else if(inst->getAllocatedType()->isDoubleTy())
+    else if (inst->getAllocatedType()->isDoubleTy())
     {
         return "double";
     }
     return "NULL";
 }
 
-inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst* inst)
+inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst *inst)
 {
-    if(!inst) return "NULL";
-    if(inst->getAllocatedType()->isIntegerTy())
+    if (!inst)
+        return "NULL";
+    if (inst->getAllocatedType()->isIntegerTy())
     {
         int num_bit = inst->getAllocatedType()->getIntegerBitWidth();
-        if(num_bit == 8) return "char";
-        else if(num_bit == 32) return "int";
+        if (num_bit == 8)
+            return "char";
+        else if (num_bit == 32)
+            return "int";
     }
-    else if(inst->getAllocatedType()->isDoubleTy())
+    else if (inst->getAllocatedType()->isDoubleTy())
     {
         return "double";
     }
@@ -176,8 +182,8 @@ class Ndeclaration : public NexternalDeclaration
 {
 public:
     Ndeclaration(NtypeSpecifier *type_specifier, std::vector<NinitDeclarator *> &init_declarator_list) : type_specifier(type_specifier),
-                                                                                                         init_declarator_list(init_declarator_list) { }
-    Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier) { }
+                                                                                                         init_declarator_list(init_declarator_list) {}
+    Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier) {}
     llvm::Value *codeGen();
     void printNode(int indent);
     void bind();
@@ -217,21 +223,21 @@ public:
         PARENTHESES_IDENTIFIER_LIST = 4, // probably not used
         PARENTHESES_EMPTY = 5
     };
-    NdirectDeclarator(DIRECT_DECLARATOR_TYPE direct_declarator_type, Nidentifier *identifier) : direct_declarator_type(direct_declarator_type),
-                                                                                                identifier(identifier) {}
+    NdirectDeclarator(std::string op, Nidentifier *identifier) : op(op),
+                                                                 identifier(identifier) {}
     llvm::Value *codeGen();
     virtual void printNode(int indent);
     void bind(std::string type);
     void pushIntConstant(Nconstant *int_constant);
-    void updateType(DIRECT_DECLARATOR_TYPE direct_declarator_type);
+void updateType(const std::string &op);
     void setParameterList(const std::vector<NparameterDeclaration *> &parameter_list);
     void setIdentifierList(const std::vector<Nidentifier *> &identifier_list);
     // private:
-    DIRECT_DECLARATOR_TYPE direct_declarator_type;
     Nidentifier *identifier;
+    std::string op;
     std::vector<NparameterDeclaration *> parameter_list;
     std::vector<Nidentifier *> identifier_list;
-    std::vector<int> int_constant_list;
+    std::vector<Nconstant *> int_constant_list;
 };
 
 class NparameterDeclaration : public Node
@@ -243,7 +249,7 @@ public:
     llvm::Value *codeGen();
     void printNode(int indent);
 
-// private:
+    // private:
     NtypeSpecifier *type_specifier;
     NdirectDeclarator *direct_declarator;
 };
@@ -404,6 +410,7 @@ public:
     llvm::Value *codeGen() = 0;
     // virtual std::string getType() { return "NULL"; }
     std::string type;
+
 private:
     std::vector<Nexpr *> expr_list;
 };
@@ -578,9 +585,21 @@ public:
 class Nconstant : public Nexpr
 {
 public:
-    Nconstant(const std::string &type, char value) { this->type=type;this->value.char_value = value; }
-    Nconstant(const std::string &type, int value) { this->type=type;this->value.int_value = value; }
-    Nconstant(const std::string &type, double value) { this->type=type;this->value.double_value = value; }
+    Nconstant(const std::string &type, char value)
+    {
+        this->type = type;
+        this->value.char_value = value;
+    }
+    Nconstant(const std::string &type, int value)
+    {
+        this->type = type;
+        this->value.int_value = value;
+    }
+    Nconstant(const std::string &type, double value)
+    {
+        this->type = type;
+        this->value.double_value = value;
+    }
     Nconstant(const std::string &type, char *value);
     llvm::Value *codeGen();
     void printNode(int indent);
@@ -593,9 +612,10 @@ public:
         char *string_literal_value;
     } value;
 };
-class NreturnStatement : public NexprStatement{
+class NreturnStatement : public NexprStatement
+{
 public:
-    NreturnStatement(Nexpr *expr=NULL) : NexprStatement(expr) {}
+    NreturnStatement(Nexpr *expr = NULL) : NexprStatement(expr) {}
     llvm::Value *codeGen() override;
 };
 inline void error(const char *msg)
