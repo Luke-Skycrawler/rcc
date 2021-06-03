@@ -105,7 +105,7 @@ Value *NbinaryExpr::codeGen()
                     return builder.CreateAShr(l, r);
             case '=':
             {
-                ret = builder.CreateICmpEQ(l, r)
+                ret = builder.CreateICmpEQ(l, r);
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 // ret = builder.CreateUIToFP(ret, Type::getDoubleTy(context));
                 // ret = builder.CreateFPToSI(ret, Type::getInt32Ty(context));
@@ -113,7 +113,7 @@ Value *NbinaryExpr::codeGen()
             }
             case '!':
             {
-                ret = builder.CreateICmpNE(l, r)
+                ret = builder.CreateICmpNE(l, r);
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
@@ -134,13 +134,13 @@ Value *NbinaryExpr::codeGen()
         case '>':
             if (op.size() == 1)
             {
-                ret = builder.CreateFCmpUGT(l, r, "")
+                ret = builder.CreateFCmpUGT(l, r, "");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
             else if(op[1] == '=')
             {
-                ret = builder.CreateFCmpUGE(l, r, "")
+                ret = builder.CreateFCmpUGE(l, r, "");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
@@ -151,13 +151,13 @@ Value *NbinaryExpr::codeGen()
         case '<':
             if (op.size() == 1)
             {
-                ret = builder.CreateFCmpULT(l, r, "cmp")
+                ret = builder.CreateFCmpULT(l, r, "cmp");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
             else if(op[1] == '=')
             {
-                ret = builder.CreateFCmpULE(l, r, "cmp")
+                ret = builder.CreateFCmpULE(l, r, "cmp");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
