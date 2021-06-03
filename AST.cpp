@@ -219,6 +219,10 @@ void NpostfixExpr::printNode(int indent)
     {
         it->printNode(indent + 1);
     }
+    for (auto it : expr)
+    {
+        it->printNode(indent + 1);
+    }
 }
 
 void NdirectDeclarator::pushIntConstant(Nconstant *int_constant)

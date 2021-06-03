@@ -11,7 +11,13 @@ llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern llvm::Module *topModule;
 extern std::map<std::string, llvm::AllocaInst *> bindings;
-
+extern llvm::LLVMContext context;
+extern llvm::IRBuilder<> builder;
+inline void error(const char *msg)
+{
+    printf("error:%s \n", msg);
+    exit(1);
+}
 inline std::string INT2STRING(int x)
 {
     std::stringstream ss;
@@ -585,7 +591,7 @@ public:
     void set(POSTFIX_TYPE postfix_type, Nexpr *expr)
     {
         this->postfix_type = postfix_type;
-        this->expr = expr;
+        this->expr.push_back(expr);
     }
     void set(POSTFIX_TYPE postfix_type, std::vector<Nexpr *> &argument_expr_list)
     {
@@ -609,7 +615,7 @@ public:
     // private:
 
     POSTFIX_TYPE postfix_type;
-    Nexpr *expr;                             // valid when postfix_type = SUQARE_BRACKETS
+    std::vector<Nexpr *> expr;                             // valid when postfix_type = SUQARE_BRACKETS
     std::vector<Nexpr *> argument_expr_list; // valid when postfix_type = PARENTHESES, could be a nullptr!
     Nidentifier *identifier, *name;          // valid when postfix_type = DOT or PTR_OP
     // when postfix_type = INC_OP or DEC_OP, none of the 3 upon would be used!
@@ -669,10 +675,5 @@ public:
     NreturnStatement(Nexpr *expr = NULL) : NexprStatement(expr) {}
     llvm::Value *codeGen() override;
 };
-inline void error(const char *msg)
-{
-    printf("error:%s \n", msg);
-    exit(1);
-}
 
 #endif

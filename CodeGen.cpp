@@ -240,10 +240,10 @@ Value *Ndeclaration::codeGen()
     for (auto iterator : init_declarator_list)
     {
         NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
+        AllocaInst *allocation;
         auto op = it->identifier->name;
         if (it->op == "")
         {
-            AllocaInst *allocation;
             if (type == "double")
             {
                 allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
@@ -262,12 +262,10 @@ Value *Ndeclaration::codeGen()
             }
             ret = allocation;
             // builder.CreateStore(builder.getInt64(0), allocation);
-            bindings[op] = allocation;
         }
         else if (it->op[0] == '[')
         {
             Value *size = ConstantInt::get(Type::getInt32Ty(context), 1);
-            AllocaInst *allocation;
             int i = 0;
             for (auto constant : it->dimensions)
             {
@@ -278,10 +276,7 @@ Value *Ndeclaration::codeGen()
                 }
                 i++;
             }
-            llvm::Value *p;
-            vector<Value *> arrayRef;
-            arrayRef.push_back(allocation);
-            arrayRef.push_back(size);
+            Value *p;
             if (type == "double")
             {
                 allocation = builder.CreateAlloca(Type::getDoubleTy(context), size, op);
@@ -298,12 +293,12 @@ Value *Ndeclaration::codeGen()
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
             ret = p;
-            bindings[op] = allocation;
         }
         else if (it->op[0] == '(')
         {
             error("function defination in fuction not allowed");
         }
+        bindings[op]=allocation;
     }
     return (Value *)ret; // some arbitary pointer other than NULL
 }
@@ -393,11 +388,11 @@ Value *NfunctionDefinition::codeGen()
         {
             args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
-            GET_TYPE(argNames[i++]) = it->type_specifier->type;
+            // GET_TYPE(argNames[i++]) = it->type_specifier->type;
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
-        GET_TYPE(op) = type;
+        // GET_TYPE(op) = type;
         // funcStack.push_back(func);
     }
 
@@ -498,27 +493,19 @@ Value *NpostfixExpr::codeGen()
         type = GET_TYPE(op); // bind type
         Value* addr= getAccess();
         return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
-        // vector<Value *> ref;
-        // ref.push_back(builder.getInt32(0));
-        // ref.push_back(expr->codeGen());
-        // auto addr=builder.CreateInBoundsGEP(bindings[op],ref );
-
-        // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
-        // auto addr = builder.CreateInsertElement(bindings[op]->getType(), (Constant*)bindings[op], expr->codeGen());
-        // return builder.CreateLoad(string_to_Type(GET_TYPE(op)), addr);
     }
     return NULL;
 }
 Value *NpostfixExpr::getAccess()
 {
     string &op = name->name;
-    if (expr)
+    if (expr.size())
     {
         // vector<Value *> ref;
         // ref.push_back(builder.getInt32(0));
         // ref.push_back(expr->codeGen());
         ConstantFolder tmp;
-        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], expr->codeGen());
+        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], expr[0]->codeGen());
         // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
         // return builder.CreateExtractValue((Value *)bindings[op],expr->codeGen(),"tmp");
         // return builder.CreateInBoundsGEP(bindings[op],ref );
