@@ -9,7 +9,7 @@
 extern bool type_error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
-extern std::map<std::string, std::string> binding_info_map;
+extern llvm::Module *topModule;
 extern std::map<std::string, llvm::AllocaInst *> bindings;
 
 inline std::string INT2STRING(int x)
@@ -45,6 +45,28 @@ inline std::string GET_TYPE(std::string name)
             return "int";
     }
     else if (inst->getAllocatedType()->isDoubleTy())
+    {
+        return "double";
+    }
+    return "NULL";
+}
+
+inline std::string GET_FUNCTION_TYPE(std::string name)
+{
+    llvm::Function* function = topModule->getFunction(name);
+    if (!function)
+    {
+        return "NULL";
+    }
+    if (function->getReturnType()->isIntegerTy())
+    {
+        int num_bit = function->getReturnType()->getIntegerBitWidth();
+        if (num_bit == 8)
+            return "char";
+        else if (num_bit == 32)
+            return "int";
+    }
+    else if (function->getReturnType()->isDoubleTy())
     {
         return "double";
     }
@@ -207,7 +229,6 @@ public:
     Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier) {}
     llvm::Value *codeGen();
     void printNode(int indent);
-    void bind();
 
 private:
     NtypeSpecifier *type_specifier; // like 'int' in 'int x = 3'
@@ -225,7 +246,6 @@ public:
     NinitDeclarator() {}
     llvm::Value *codeGen();
     virtual void printNode(int indent);
-    virtual void bind(std::string type) { initializer = nullptr; }; // Do nothing
     Ninitializer *initializer;
 };
 
@@ -248,7 +268,6 @@ public:
                                                                  identifier(identifier) {}
     llvm::Value *codeGen();
     virtual void printNode(int indent);
-    void bind(std::string type);
     void pushIntConstant(Nconstant *int_constant);
     void updateType(const std::string &op);
     void setParameterList(const std::vector<NparameterDeclaration *> &parameter_list);
@@ -319,7 +338,6 @@ public:
                                                                                                         compound_statement(compound_statement) {}
     llvm::Value *codeGen();
     void printNode(int indent);
-    void bind();
     // private:
     NtypeSpecifier *type_specifier;               // 'int'
     NdirectDeclarator *direct_declarator;         // 'f(int x, double y, char z)'

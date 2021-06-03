@@ -221,56 +221,6 @@ void NpostfixExpr::printNode(int indent)
     }
 }
 
-void Ndeclaration::bind()
-{
-    // Binding!
-    std::string type = type_specifier->type;
-
-    for (auto &init_declarator : init_declarator_list)
-    {
-        if (NdirectDeclarator *direct_declarator = dynamic_cast<NdirectDeclarator *>(init_declarator))
-            direct_declarator->bind(type);
-    }
-}
-
-void NdirectDeclarator::bind(std::string type)
-{
-    printf("Warning: Deprecated NdirecDeclarator::bind()!\n");
-    if (op=="")
-    {
-        binding_info_map[identifier->name] = type;
-        std::cout << std::endl
-                  << "Binding \'" << identifier->name << "\' -> \'" << type << "\'...";
-    }
-    else if (op=="[]")
-    {
-        for (auto int_value : dimensions)
-        {
-            type += "|" + INT2STRING(int_value->value.int_value);
-        }
-        binding_info_map[identifier->name] = type;
-    }
-    else if (op=="()")
-    {
-        //TODO: more to implement
-        type += "|function";
-        binding_info_map[identifier->name] = type;
-    }
-    else
-    {
-        std::cout << "Unexpected error!" << std::endl;
-    }
-}
-
-void NfunctionDefinition::bind()
-{
-    // Binding!
-    std::string type = type_specifier->type;
-
-    if (direct_declarator)
-        direct_declarator->bind(type);
-}
-
 void NdirectDeclarator::pushIntConstant(Nconstant *int_constant)
 {
     // add the `int_value` of `int_constant` into the `dimensions`

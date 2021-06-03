@@ -465,21 +465,26 @@ Value *NpostfixExpr::codeGen()
         error("reference not defined");
     }
     string &op = name->name;
-    type = GET_TYPE(op);
+
     if (postfix_type == PARENTHESES)
     {
+        type = GET_FUNCTION_TYPE(op); // bind type
         if (op == "printf")
             CreatePrintf();
         Function *callee = topModule->getFunction(op);
         vector<Value *> argv;
+        std::cout << type << " " << name->name << "'s Args: ";
         for (auto it : argument_expr_list)
         {
+            std::cout << it->type << " ";
             argv.push_back(it->codeGen());
         }
+        std::cout << std::endl;
         return builder.CreateCall(callee, argv, "call");
     }
     else if (postfix_type == SQUARE_BRACKETS || postfix_type == NONE)
     {
+        type = GET_TYPE(op); // bind type
         Value* addr= getAccess();
         return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
         // vector<Value *> ref;
