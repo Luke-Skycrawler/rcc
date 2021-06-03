@@ -40,8 +40,7 @@ void NdirectDeclarator::printNode(int indent)
     {
         case '[':
             identifier->printNode(indent + 1);
-            PRINT_INDENT(indent, "NdirectDeclarator(SQUARE_BRACKET_CONSTANT, ", false);
-            std::cout << "INT CONSTANT:";
+            PRINT_INDENT(indent, "NdirectDeclarator(SQUARE_BRACKET_CONSTANT)");
             if (!dimensions.empty())
             {
                 for (auto it : dimensions)
@@ -51,7 +50,6 @@ void NdirectDeclarator::printNode(int indent)
                     else PRINT_INDENT(indent+1,"[]");
                 }
             }
-            std::cout << ")" << std::endl;
             break;
         case '(':
             identifier->printNode(indent + 1);

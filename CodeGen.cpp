@@ -105,7 +105,7 @@ Value *NbinaryExpr::codeGen()
                     return builder.CreateAShr(l, r);
             case '=':
             {
-                ret = builder.CreateICmpEQ(l, r)
+                ret = builder.CreateICmpEQ(l, r);
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 // ret = builder.CreateUIToFP(ret, Type::getDoubleTy(context));
                 // ret = builder.CreateFPToSI(ret, Type::getInt32Ty(context));
@@ -113,7 +113,7 @@ Value *NbinaryExpr::codeGen()
             }
             case '!':
             {
-                ret = builder.CreateICmpNE(l, r)
+                ret = builder.CreateICmpNE(l, r);
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
@@ -134,13 +134,13 @@ Value *NbinaryExpr::codeGen()
         case '>':
             if (op.size() == 1)
             {
-                ret = builder.CreateFCmpUGT(l, r, "")
+                ret = builder.CreateFCmpUGT(l, r, "");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
             else if(op[1] == '=')
             {
-                ret = builder.CreateFCmpUGE(l, r, "")
+                ret = builder.CreateFCmpUGE(l, r, "");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
@@ -151,13 +151,13 @@ Value *NbinaryExpr::codeGen()
         case '<':
             if (op.size() == 1)
             {
-                ret = builder.CreateFCmpULT(l, r, "cmp")
+                ret = builder.CreateFCmpULT(l, r, "cmp");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
             else if(op[1] == '=')
             {
-                ret = builder.CreateFCmpULE(l, r, "cmp")
+                ret = builder.CreateFCmpULE(l, r, "cmp");
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false); 
                 return ret;
             }
@@ -478,7 +478,7 @@ Value *NpostfixExpr::codeGen()
         }
         return builder.CreateCall(callee, argv, "call");
     }
-    else if (postfix_type == SQUARE_BRACKETS)
+    else if (postfix_type == SQUARE_BRACKETS || postfix_type == NONE)
     {
         Value* addr= getAccess();
         return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
@@ -497,10 +497,14 @@ Value *NpostfixExpr::getAccess()
 {
     string &op = name->name;
     if(expr){
-        vector<Value *> ref;
-        ref.push_back(builder.getInt32(0));
-        ref.push_back(expr->codeGen());
-        return builder.CreateInBoundsGEP(bindings[op],ref );
+        // vector<Value *> ref;
+        // ref.push_back(builder.getInt32(0));
+        // ref.push_back(expr->codeGen());
+        ConstantFolder tmp;
+        return tmp.CreateGetElementPtr(bindings[op]->getType(),(Constant*)bindings[op],expr->codeGen());
+        // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
+        // return builder.CreateExtractValue((Value *)bindings[op],expr->codeGen(),"tmp");
+        // return builder.CreateInBoundsGEP(bindings[op],ref );
     }
     else 
         return bindings[op];
