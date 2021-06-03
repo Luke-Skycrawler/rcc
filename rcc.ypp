@@ -305,7 +305,8 @@ statement
 	| if_statement {
 		$$ = $1;
 	}
-	| RETURN expr_statement		{$$=new NreturnStatement($2);}
+	| RETURN expr ';'		{$$=new NreturnStatement($2);}
+	| RETURN ';'			{$$=new NreturnStatement(NULL);}
 	;
 
 expr_statement

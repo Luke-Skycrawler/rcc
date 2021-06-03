@@ -343,7 +343,7 @@ public:
     llvm::Value *codeGen();
     void printNode(int indent);
 
-private:
+protected:
     Nexpr *expr;
 };
 
@@ -608,15 +608,10 @@ public:
         char *string_literal_value;
     } value;
 };
-class NreturnStatement : public Nstatement{
+class NreturnStatement : public NexprStatement{
 public:
-    NreturnStatement(NexprStatement *expr=NULL) : expr(expr) {}
-    NexprStatement *expr;
-    llvm::Value *codeGen();
-    void printNode(int indent){
-        PRINT_INDENT(indent,"RETURN");
-        if(expr)expr->printNode(indent+1);
-    }
+    NreturnStatement(Nexpr *expr=NULL) : NexprStatement(expr) {}
+    llvm::Value *codeGen() override;
 };
 inline void error(const char *msg)
 {
