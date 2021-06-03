@@ -7,6 +7,7 @@ int main(int argc){
 	a + 3.14;
 	b + 2;
 	c + 1;
+	printf("%d\n",argc);
 	return 0;
 }
 
