@@ -14,7 +14,7 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 
 CXX = g++
 all: rcc
-%.o: %.cpp
+%.o: %.cpp AST.hpp
 	${CXX} -c ${DEFINE} ${CXXFLAGS} -g -o $@ $<
 	@echo "CXX $< => $@"
 rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o

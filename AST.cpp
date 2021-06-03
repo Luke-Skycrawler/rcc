@@ -206,6 +206,8 @@ void Nexpr::printNode(int indent)
 void NassignExpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "NassignExpr(type: " + type + ")");
+    unary_expr->printNode(indent + 1);
+    assign_expr->printNode(indent + 1);
 }
 
 void NcondExpr::printNode(int indent)
@@ -256,6 +258,7 @@ void Ndeclaration::bind()
 
 void NdirectDeclarator::bind(std::string type)
 {
+    printf("Warning: Deprecated NdirecDeclarator::bind()!\n");
     if (direct_declarator_type == IDENTIFIER)
     {
         binding_info_map[identifier->name] = type;

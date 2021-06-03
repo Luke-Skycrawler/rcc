@@ -13,15 +13,27 @@ Value *Nstatement::codeGen()
 Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen();
+    bool double_flag;
+    std::string lhs_type = lhs->getType();
+    std::string rhs_type = rhs->getType();
+    //Check for type error
+    if(lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double" )
+    {
+        if(lhs_type != "error" && rhs_type != "error") // Blocking cascade error
+            std::cout << "Type error in binary expression $lhs " << op << " $rhs : $lhs is \'" << lhs_type << "\' while rhs is \'" << rhs_type << "\'." << std::endl;
+        type = "error";
+        return NULL;
+    }
     // If one is double, the op should also be a double op
-    bool double_flag = l->getType()->isDoubleTy() || r->getType()->isDoubleTy();
-    std::cout << "LHS is double?: " << l->getType()->isDoubleTy() << std::endl;
-    std::cout << "RHS is double?: " << r->getType()->isDoubleTy() << std::endl;
+    if(lhs_type == "double" || rhs_type == "double")  double_flag = true;
     // If only one is double but the other is int, convert the int -> double...
-    if (double_flag && !l->getType()->isDoubleTy())
+    if (double_flag && lhs_type != "double")
         l = builder.CreateSIToFP(l, Type::getDoubleTy(context));
-    if (double_flag && !r->getType()->isDoubleTy())
+    if (double_flag && rhs_type != "double")
         r = builder.CreateSIToFP(r, Type::getDoubleTy(context));
+    // Record `type`
+    if(double_flag) type = "double";
+    else type = "int";
 
     if (!double_flag)
     {
@@ -129,6 +141,11 @@ llvm::Value *Nconstant::codeGen()
 }
 Value *Nidentifier::codeGen()
 {
+    if(!bindings[name])
+    {
+        std::cout << "Undeclared identifier \'" << name << "\'." << std::endl;
+        return NULL;
+    }
     return builder.CreateLoad(bindings[name]);
 }
 Value *Ninitializer::codeGen()
@@ -332,17 +349,40 @@ inline Value *createOpNode(Value *l, Value *r, char op)
 Value *NassignExpr::codeGen()
 {
     Value *r = assign_expr->codeGen(), *l = NULL, *result = NULL;
-    auto storeAddr = bindings[dynamic_cast<Nidentifier *>(unary_expr)->name];
     // FIXME: possible error here
-    if (assign_op[0] != '=')
+    if (assign_op[0] != '=') // TODO: extension
     {
         l = unary_expr->codeGen();
         result = createOpNode(l, r, assign_op[0]);
+        return result;
     }
-    else
+    if(assign_op[0] == '=')
+    {
+        auto storeAddr = bindings[dynamic_cast<Nidentifier *>(unary_expr)->name];
+            // We should NOT directly search in the bindings
+            // We shall use some virtual method, which would automatically fetch the `storeAddr` and related info (like the size of an array)
+            // Or just give up assigning to an array... :)
         result = r;
-    builder.CreateStore(result, storeAddr);
-    return result;
+        std::string lhs_type = unary_expr->getType();
+        std::string rhs_type = assign_expr->getType();
+        if (lhs_type == "double" && rhs_type == "int") // automatic conversion from when doing 'double' = 'int' assignment
+        {
+            // std::cout << "Warning(debug): Automatic conversion when assigning \'int\' to \'double\'..." << std::endl;
+            result = builder.CreateSIToFP(result, Type::getDoubleTy(context));
+            type = "double";
+        }
+        else if(lhs_type != rhs_type) // check for type error
+        {
+            if(lhs_type != "error" && rhs_type != "error") // Blocking cascade error
+                std::cout << "Type error in assignment expression $lhs = $rhs: $lhs is \'" << lhs_type << "\' while $rhs is \'" << rhs_type << "\'." << std::endl;
+            type = "error";
+            return NULL;
+        }
+        else type = lhs_type;
+        builder.CreateStore(result, storeAddr);
+        return result;
+    }
+    return NULL;
 }
 Value *NcondExpr::codeGen()
 {
