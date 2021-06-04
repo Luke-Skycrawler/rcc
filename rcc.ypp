@@ -19,7 +19,7 @@ Nstruct *selfDefinedType=NULL;
 %parse-param {RccGlobal &global}
 %lex-param {RccGlobal &global}
 %initial-action {
-	@$.begin.filename=@$.end.filename=new std::string("stdin");
+	@$.begin.filename=@$.end.filename=(global.in=="")?new std::string("stdin"):&global.in;
 }
 
 %union {
@@ -617,7 +617,9 @@ char *s;
 
 namespace yy
 {
+	#include "AST.hpp"
 	void rcc::error(location const &loc, const string &s){
-		cerr << "error at " << loc << ": " << s << endl;	
+		printf("\n\e[1m%s:%d:%d: \e[0m",loc.begin.filename->data(),loc.begin.line,loc.end.line);
+		printf("\e[31;40m\e[1merror: \e[0m%s\n", s.data());
 	}
 }

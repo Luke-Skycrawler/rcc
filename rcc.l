@@ -15,16 +15,19 @@ IS			(u|U|l|L)*
 #include "rcc.tab.hpp"
 #define YY_DECL int yylex(yy::rcc::semantic_type *yylval, yy::rcc::location_type *yylloc, RccGlobal &global)
 // make location include the current token
-# define YY_USER_ACTION yylloc->columns (yyleng);
+# define YY_USER_ACTION yylloc->columns(yyleng);
 typedef yy::rcc::token token;
 void count();
 int check_type();
 void comment();
 %}
-
 %%
+%{
+	yylloc->step();	
+%}
+	
 "/*".*"*/"		{ count(); }
-"//".*\n		{ count(); }
+"//".*\n		{ yylloc->lines(1); }
 
 "char"			{ count(); return(token::CHAR); }
 "double"		{ count(); return(token::DOUBLE); }
@@ -91,8 +94,9 @@ void comment();
 "|"			{ count(); return('|'); }
 "?"			{ count(); return('?'); }
 
-[ \t\v\n\f]		{ count(); }
-.			{ /* ignore bad characters */ }
+[\t ]		{yylloc->step();}
+[\n]		{yylloc->lines(1);}
+.			{printf("unknown character %c, skipped",*yytext); }
 
 %%
 void comment()
@@ -134,32 +138,7 @@ void count()
 
 int check_type()
 {
-/*
-* pseudo code --- this is what it should check
-*
-*	if (yytext == type_name)
-*		return(TYPE_NAME);
-*
-*	return(IDENTIFIER);
-*/
-
-/*
-*	it actually will only return IDENTIFIER
-*/
 
 	return(token::IDENTIFIER);
 }
 
-
-// {L}({L}|{D})*		{ count(); return(check_type()); }
-
-// 0[xX]{H}+{IS}?		{ count(); return(token::CONSTANT); }
-// 0{D}+{IS}?		{ count(); return(token::CONSTANT); }
-// {D}+{IS}?		{ count(); return(token::CONSTANT); }
-// L?'(\\.|[^\\'])+'	{ count(); return(token::CONSTANT); }
-
-// {D}+{E}{FS}?		{ count(); return(token::CONSTANT); }
-// {D}*"."{D}+({E})?{FS}?	{ count(); return(token::CONSTANT); }
-// {D}+"."{D}*({E})?{FS}?	{ count(); return(token::CONSTANT); }
-
-// L?\"(\\.|[^\\"])*\"	{ count(); return(token::STRING_LITERAL); }
