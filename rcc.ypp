@@ -42,6 +42,7 @@ Nstruct *selfDefinedType=NULL;
 	Nstatement* statement; 
 	NexprStatement* expr_statement;
 	NifStatement* if_statement;
+	NforStatement* for_statement;
 	Nexpr* expr;
 	std::string* assign_op;
 	NunaryExpr::UNARY_OP unary_op;
@@ -62,7 +63,7 @@ Nstruct *selfDefinedType=NULL;
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME
 %token CHAR INT DOUBLE
-%token STRUCT IF IFX ELSE FOR RETURN
+%token STRUCT IF IFX ELSE FOR INCTO DECTO RETURN
 
 %token<identifier> IDENTIFIER
 %token<constant> CHAR_CONSTANT
@@ -92,6 +93,7 @@ Nstruct *selfDefinedType=NULL;
 %type<statement> statement;
 %type<expr_statement> expr_statement;
 %type<if_statement> if_statement;
+%type<for_statement> for_statement;
 %type<expr> expr;
 %type<expr> assign_expr;
 %type<assign_op> assign_op;
@@ -307,6 +309,9 @@ statement
 	| if_statement {
 		$$ = $1;
 	}
+	| for_statement {
+		$$ = $1;
+	}
 	| RETURN expr ';'		{$$=new NreturnStatement($2);}
 	| RETURN ';'			{$$=new NreturnStatement(NULL);}
 	;
@@ -326,6 +331,15 @@ if_statement
 	}
 	| IF '(' expr ')' statement ELSE statement {
 		$$ = new NifStatement($3, $5, $7);
+	}
+	;
+
+for_statement
+	: FOR '(' IDENTIFIER ':' expr INCTO expr ')' statement {
+		$$ = new NforStatement($3, $5, true, $7, $9);
+	}
+	| FOR '(' IDENTIFIER ':' expr DECTO expr ')' statement {
+		$$ = new NforStatement($3, $5, false, $7, $9);
 	}
 	;
 

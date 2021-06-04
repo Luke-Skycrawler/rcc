@@ -34,6 +34,8 @@ void comment();
 "if"			{ count(); return(token::IF); }
 "else"			{ count(); return(token::ELSE); }
 "for"			{ count(); return(token::FOR); }
+"incto"			{ count(); return(token::INCTO); }
+"decto"			{ count(); return(token::DECTO); }
 "return"		{ count(); return(token::RETURN); }
 
 \'.\'			{ count(); yylval->constant = new Nconstant("char", yytext[1]); return(token::CHAR_CONSTANT); }

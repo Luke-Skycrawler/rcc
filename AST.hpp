@@ -29,7 +29,7 @@ class Nidentifier;
 class Nconstant;
 class Nstruct;
 class NderivedType;
-extern bool type_error_alarm;
+extern bool error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern llvm::Module *topModule;
@@ -63,6 +63,7 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
 
 inline std::string GET_TYPE(std::string name)
 {
+    if(bindings.find(name) == bindings.end()) return "NULL";
     llvm::AllocaInst *inst = bindings[name];
     if (!inst)
         return "NULL";
@@ -143,7 +144,15 @@ inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst *inst)
     return "NULL";
 }
 
-// enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3, RCC_STRING_LITERAL = 4, RCC_ERROR = -1, RCC_NULL = 0};
+inline llvm::Type *string_to_Type(std::string type)
+{
+    if (type == "int")
+        return llvm::Type::getInt32Ty(context);
+    if (type == "double")
+        return llvm::Type::getDoubleTy(context);
+    if (type == "char")
+        return llvm::Type::getInt8Ty(context);
+}
 
 
 /**
@@ -422,6 +431,34 @@ private:
 };
 
 /**
+ * `for_statement` node -- a for statement
+ * @param identifier
+ * @param start_expr
+ * @param inc: "true" for increment, "false" for decrement
+ * @param end_expr
+ * @param statement
+ */
+class NforStatement : public Nstatement
+{
+public:
+    NforStatement(Nidentifier *identifier, Nexpr *start_expr, bool inc, Nexpr *end_expr, Nstatement* statement):\
+        identifier(identifier),
+        start_expr(start_expr),
+        inc(inc),
+        end_expr(end_expr),
+        statement(statement) {}
+    llvm::Value *codeGen();
+    void printNode(int indent);
+
+private:
+    Nidentifier *identifier; // the identifier
+    Nexpr *start_expr; // start expression
+    bool inc; // increment or decrement
+    Nexpr *end_expr; // end expression
+    Nstatement* statement;
+};
+
+/**
  * `type_specifier` node -- 'char', 'int' or 'double'
  * @param type: a std::string "char", "int" or "double"
  */
@@ -675,5 +712,4 @@ public:
     NreturnStatement(Nexpr *expr = NULL) : NexprStatement(expr) {}
     llvm::Value *codeGen() override;
 };
-
 #endif

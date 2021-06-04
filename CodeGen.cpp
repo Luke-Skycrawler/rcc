@@ -20,7 +20,7 @@ Value *NbinaryExpr::codeGen()
     if (lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double")
     {
         if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-            std::cout << "Type error in binary expression $lhs " << op << " $rhs : $lhs is \'" << lhs_type << "\' while rhs is \'" << rhs_type << "\'." << std::endl;
+            error("type error in binary expression $lhs " + op + " $rhs : $lhs is \'" + lhs_type + "\' while rhs is \'" + rhs_type + "\'");
         type = "error";
         return NULL;
     }
@@ -146,9 +146,7 @@ Value *NbinaryExpr::codeGen()
                 return ret;
             }
             else
-            {
-                printf("Error: shift operator \'>>\' not applicable to type \'double\'!\n");
-            }
+                error("shift operator \'>>\' not applicable to type \'double\'!\n");
         case '<':
             if (op.size() == 1)
             {
@@ -162,10 +160,7 @@ Value *NbinaryExpr::codeGen()
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false);
                 return ret;
             }
-            else
-            {
-                printf("Error: shift operator \'<<\' not applicable to type \'double\'!\n");
-            }
+            else error("shift operator \'<<\' not applicable to type \'double\'!\n");
         default:
             return NULL;
         }
@@ -292,7 +287,8 @@ Value *Ndeclaration::codeGen()
         }
         else if (it->op[0] == '(')
         {
-            error("function defination in fuction not allowed");
+            error("function definition in functions is not allowed");
+            return NULL;
         }
         bindings[op]=allocation;
     }
@@ -313,10 +309,7 @@ Value *NifStatement::codeGen()
 {
     Value *cond_val = cond_expr->codeGen();
     if (!cond_val)
-    {
-        printf("Error: conditional expression is not valid!\n");
-        return NULL;
-    }
+        error("conditional expression is not valid!\n");
 
     // If the expr is not a double, convert it to a double
     if (!cond_val->getType()->isDoubleTy())
@@ -339,10 +332,7 @@ Value *NifStatement::codeGen()
     builder.SetInsertPoint(then_bb);           // set insert point to `then_bb`
     Value *then_val = if_statement->codeGen(); // recursively codeGen()
     if (!then_val)
-    {
-        printf("Error: if statement is not valid!\n");
-        return NULL;
-    }
+        error("if statement is not valid!\n");
     builder.CreateBr(merge_bb);         // unconditional branch to the merge point
     then_bb = builder.GetInsertBlock(); // update `then_bb`
 
@@ -359,14 +349,93 @@ Value *NifStatement::codeGen()
 
     return ret;
 }
-inline Type *string_to_Type(string type)
+Value *NforStatement::codeGen()
 {
-    if (type == "int")
-        return Type::getInt32Ty(context);
-    if (type == "double")
-        return Type::getDoubleTy(context);
-    if (type == "char")
-        return Type::getInt8Ty(context);
+    std::string identifier_name = identifier->name;
+
+    Value* start_val = start_expr->codeGen();
+    Value* end_val = end_expr->codeGen();
+    if(!start_val)
+        error("Invalid start expression in FOR statement!");
+    if(!end_val)
+        error("Invalid end expression in FOR statement!");
+    if(GET_VALUE_TYPE(start_val) != "int")
+        error("Start expression in FOR statement should be of type \'int\'!");
+    if(GET_VALUE_TYPE(end_val) != "int")
+        error("End expression in FOR statement should be of type \'int\'!");
+    Function *the_function = builder.GetInsertBlock()->getParent();
+    BasicBlock *preheader_bb = builder.GetInsertBlock();
+    BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
+    
+    // Unconditional branch to `loop_bb`
+    builder.CreateBr(loop_bb);
+    
+    // Set insert point to `loop_bb`
+    builder.SetInsertPoint(loop_bb);
+    
+    // Create a PHI node for the variable
+    PHINode *variable = builder.CreatePHI(Type::getInt32Ty(context), 2, identifier_name);
+    variable->addIncoming(start_val, preheader_bb);
+
+    // Fetch the variable's allocation
+    llvm::AllocaInst *variable_allocation = NULL, *old_variable_allocation = NULL;
+    if(bindings[identifier_name] != NULL) // If there is already a binding, save the old allocation
+    {
+        std::cout << "Variable \'"+identifier_name+"\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
+        old_variable_allocation = bindings[identifier_name];
+    }
+    // Allocate a new space for the loop variable
+    variable_allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, identifier_name);
+    // Add to binding map
+    bindings[identifier_name] = variable_allocation;
+    // Store initial value
+    builder.CreateStore(variable, variable_allocation);
+    // Set the identifier's `type` (IMPORTANT but ugly)
+    identifier->type = "int";
+
+    // Body statement `codeGen()`
+    if(!statement->codeGen())
+    {
+        std::cout << "Warning: Empty body statement in FOR statement!" << std::endl;
+        // return NULL;
+    }
+
+    // Step is 1
+    Value *step_val = builder.getInt32(1);
+
+    // Next Variable
+    Value *next_variable = inc?builder.CreateAdd(variable, step_val, "next_variable"):\
+                               builder.CreateSub(variable, step_val, "next_variable");
+
+    // Convert condition to a bool by comparing non-equal to 0
+    Value* end_cond;
+    end_cond = inc?builder.CreateICmpSGT(next_variable, end_val):\
+                   builder.CreateICmpSLT(next_variable, end_val);
+    end_cond = builder.CreateICmpEQ(end_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "loopcond");
+    
+    // Create 2 new blocks
+    BasicBlock *loopend_bb = builder.GetInsertBlock();
+    BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
+
+    // Insert the conditional branch into the end of `loopend_bb`
+    Value* ret = builder.CreateCondBr(end_cond, loop_bb, after_bb);
+
+    // Any new code will be inserted in `after_bb`
+    builder.SetInsertPoint(after_bb);
+    // Add the other incoming
+    variable->addIncoming(next_variable, loopend_bb);
+
+    if (old_variable_allocation) // Restore the unshadowed variable ('s allocation)
+    {
+        std::cout << "(debug) Restoring variable \'" << identifier_name << "\'" << std::endl;
+        bindings[identifier_name] = old_variable_allocation;
+    }
+    else // No need to restore, just erase the loop variable
+    {
+        std::cout << "(debug) No need to restore variable \'" << identifier_name << "\'" << std::endl;
+        bindings.erase(identifier_name);
+    }
+    return ret;
 }
 Value *NfunctionDefinition::codeGen()
 {
@@ -462,7 +531,8 @@ Value *NpostfixExpr::codeGen()
 {
     if (!name)
     {
-        error("reference not defined");
+        error("the reference in postfix expression is not defined");
+        return NULL;
     }
     string &op = name->name;
 
@@ -473,11 +543,12 @@ Value *NpostfixExpr::codeGen()
             CreatePrintf();
         Function *callee = topModule->getFunction(op);
         vector<Value *> argv;
-        std::cout << type << " " << name->name << "'s Args: ";
         for (auto it : argument_expr_list)
         {
-            std::cout << it->type << " ";
-            argv.push_back(it->codeGen());
+            Value* arg_val = it->codeGen();
+            if(arg_val == NULL)
+                error("invalid argument in function \'" + op + "\'");
+            argv.push_back(arg_val);
         }
         std::cout << std::endl;
         return builder.CreateCall(callee, argv, "call");
@@ -537,7 +608,7 @@ Value *NassignExpr::codeGen()
         else if (lhs_type != rhs_type) // check for type error
         {
             if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-                std::cout << "Type error in assignment expression $lhs = $rhs: $lhs is \'" << lhs_type << "\' while $rhs is \'" << rhs_type << "\'." << std::endl;
+                error("type error in assignment expression $lhs = $rhs: $lhs is \'" + lhs_type + "\' while $rhs is \'" + rhs_type + "\'");
             type = "error";
             return NULL;
         }

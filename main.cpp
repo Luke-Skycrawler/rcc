@@ -22,7 +22,7 @@ Module *topModule;
 std::map<std::string, AllocaInst*> bindings;
 std::map<std::string, std::vector<Nconstant*>*> dimensionBindings;
 Node *root;
-bool type_error_alarm = true;
+bool error_alarm = true;
 
 int main(int argc, char **argv)
 {
