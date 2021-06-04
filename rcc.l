@@ -37,8 +37,8 @@ void comment();
 "if"			{ count(); return(token::IF); }
 "else"			{ count(); return(token::ELSE); }
 "for"			{ count(); return(token::FOR); }
-"incto"			{ count(); return(token::INCTO); }
-"decto"			{ count(); return(token::DECTO); }
+"to"			{ count(); return(token::INCTO); }
+"downto"		{ count(); return(token::DECTO); }
 "while"			{ count(); return(token::WHILE); }
 "return"		{ count(); return(token::RETURN); }
 
@@ -94,9 +94,9 @@ void comment();
 "|"			{ count(); return('|'); }
 "?"			{ count(); return('?'); }
 
-[\t ]		{yylloc->step();}
-[\n]		{yylloc->lines(1);}
-.			{printf("unknown character %c, skipped",*yytext); }
+[\t ]		{ count(); yylloc->step();}
+[\n]		{ count(); yylloc->lines(1);}
+.			{  }
 
 %%
 void comment()
