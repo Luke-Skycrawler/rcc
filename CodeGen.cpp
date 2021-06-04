@@ -15,9 +15,9 @@ Value *NbinaryExpr::codeGen()
     Value *l = lhs->codeGen(), *r = rhs->codeGen(), *ret = NULL;
     bool double_flag;
 
-    if(!lhs)
+    if (!lhs)
         error("invalid $lhs in binary expression $lhs " + op + " $rhs");
-    if(!rhs)
+    if (!rhs)
         error("invalid $rhs in binary expression $lhs " + op + " $rhs");
 
     std::string lhs_type = lhs->type;
@@ -166,7 +166,8 @@ Value *NbinaryExpr::codeGen()
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false);
                 return ret;
             }
-            else error("shift operator \'<<\' not applicable to type \'double\'!\n");
+            else
+                error("shift operator \'<<\' not applicable to type \'double\'!\n");
         default:
             return NULL;
         }
@@ -289,11 +290,11 @@ Value *Ndeclaration::codeGen()
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
             ret = p;
-            dimensionBindings.insert(make_pair(op,&it->dimensions));
+            dimensionBindings.insert(make_pair(op, &it->dimensions));
         }
         else if (it->op[0] == '(')
             error("function definition in functions is not allowed");
-        bindings[op]=allocation;
+        bindings[op] = allocation;
     }
     return (Value *)ret; // some arbitary pointer other than NULL
 }
@@ -348,8 +349,8 @@ Value *NifStatement::codeGen()
         if (!else_val)
             error("2nd body statement of \'if\' statement is not valid");
     }
-    builder.CreateBr(merge_bb);               // unconditional branch to the merge point
-    else_bb = builder.GetInsertBlock();       // update `else_bb`
+    builder.CreateBr(merge_bb);         // unconditional branch to the merge point
+    else_bb = builder.GetInsertBlock(); // update `else_bb`
 
     the_function->getBasicBlockList().push_back(merge_bb); // push `merge_bb` into the BB list
     builder.SetInsertPoint(merge_bb);                      // set insert point to `merge_bb`
@@ -360,41 +361,40 @@ Value *NforStatement::codeGen()
 {
     std::string identifier_name = identifier->name;
 
-    Value* start_val = start_expr->codeGen();
-    Value* end_val = end_expr->codeGen();
-    if(!start_val)
+    Value *start_val = start_expr->codeGen();
+    Value *end_val = end_expr->codeGen();
+    if (!start_val)
         error("Invalid start expression in FOR statement!");
-    if(!end_val)
+    if (!end_val)
         error("Invalid end expression in FOR statement!");
-    if(GET_VALUE_TYPE(start_val) != "int")
+    if (GET_VALUE_TYPE(start_val) != "int")
         error("Start expression in FOR statement should be of type \'int\'!");
-    if(GET_VALUE_TYPE(end_val) != "int")
+    if (GET_VALUE_TYPE(end_val) != "int")
         error("End expression in FOR statement should be of type \'int\'!");
     Function *the_function = builder.GetInsertBlock()->getParent();
     BasicBlock *preheader_bb = builder.GetInsertBlock();
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
     BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
-    
+
     // Check if the condition is met initially; otherwise don't even need to enter the loop
-    Value* enterloop_cond;
-    enterloop_cond = inc?builder.CreateICmpSGT(start_val, end_val):\
-                   builder.CreateICmpSLT(start_val, end_val);
+    Value *enterloop_cond;
+    enterloop_cond = inc ? builder.CreateICmpSGT(start_val, end_val) : builder.CreateICmpSLT(start_val, end_val);
     enterloop_cond = builder.CreateICmpEQ(enterloop_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "enterloop_cond");
     // Conditional branch to `loop_bb`
     builder.CreateCondBr(enterloop_cond, loop_bb, after_bb);
-    
+
     // Set insert point to `loop_bb`
     builder.SetInsertPoint(loop_bb);
-    
+
     // Create a PHI node for the variable
     PHINode *variable = builder.CreatePHI(Type::getInt32Ty(context), 2, identifier_name);
     variable->addIncoming(start_val, preheader_bb);
 
     // Fetch the variable's allocation
     llvm::AllocaInst *variable_allocation = NULL, *old_variable_allocation = NULL;
-    if(bindings[identifier_name] != NULL) // If there is already a binding, save the old allocation
+    if (bindings[identifier_name] != NULL) // If there is already a binding, save the old allocation
     {
-        std::cout << "Variable \'"+identifier_name+"\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
+        std::cout << "Variable \'" + identifier_name + "\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
         old_variable_allocation = bindings[identifier_name];
     }
     // Allocate a new space for the loop variable
@@ -407,7 +407,7 @@ Value *NforStatement::codeGen()
     identifier->type = "int";
 
     // Body statement `codeGen()`
-    if(!statement->codeGen())
+    if (!statement->codeGen())
     {
         std::cout << "Warning: empty body statement in \'for\' statement!" << std::endl;
         // return NULL;
@@ -417,24 +417,22 @@ Value *NforStatement::codeGen()
     // Step is 1
     Value *step_val = builder.getInt32(1);
     // Next variable
-    Value *next_variable = inc?builder.CreateAdd(variable, step_val, "next_variable"):\
-                               builder.CreateSub(variable, step_val, "next_variable");
+    Value *next_variable = inc ? builder.CreateAdd(variable, step_val, "next_variable") : builder.CreateSub(variable, step_val, "next_variable");
 
     // Convert condition to a bool by comparing non-equal to 0
-    Value* continue_cond;
-    continue_cond = inc?builder.CreateICmpSGT(next_variable, end_val):\
-                   builder.CreateICmpSLT(next_variable, end_val);
+    Value *continue_cond;
+    continue_cond = inc ? builder.CreateICmpSGT(next_variable, end_val) : builder.CreateICmpSLT(next_variable, end_val);
     continue_cond = builder.CreateICmpEQ(continue_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "continue_cond");
-    
+
     // get the block where the loop ends
     BasicBlock *loopend_bb = builder.GetInsertBlock();
 
     // Insert the conditional branch into the end of `loopend_bb`
-    Value* ret = builder.CreateCondBr(continue_cond, loop_bb, after_bb);
+    Value *ret = builder.CreateCondBr(continue_cond, loop_bb, after_bb);
 
     // Any new code will be inserted in `after_bb`
     builder.SetInsertPoint(after_bb);
-    
+
     // Add the other incoming
     variable->addIncoming(next_variable, loopend_bb);
 
@@ -458,22 +456,23 @@ Value *NwhileStatement::codeGen()
     // While condition block
     builder.CreateBr(cond_bb);
     builder.SetInsertPoint(cond_bb);
-    Value* while_cond = cond_expr->codeGen();
-    if(GET_VALUE_TYPE(while_cond) == "char")
+    Value *while_cond = cond_expr->codeGen();
+    if (GET_VALUE_TYPE(while_cond) == "char")
         while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 1, true), "whilecond");
-    else if(GET_VALUE_TYPE(while_cond) == "int")
+    else if (GET_VALUE_TYPE(while_cond) == "int")
         while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1, true), "whilecond");
-    else if(GET_VALUE_TYPE(while_cond) == "double")
+    else if (GET_VALUE_TYPE(while_cond) == "double")
         while_cond = builder.CreateFCmpONE(while_cond, ConstantFP::get(context, APFloat(1.0)), "whilecond");
-    else error("invalid condition expression in \'while\' statement");
+    else
+        error("invalid condition expression in \'while\' statement");
 
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
     BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
-    Value* ret = builder.CreateCondBr(while_cond, loop_bb, after_bb);
+    Value *ret = builder.CreateCondBr(while_cond, loop_bb, after_bb);
 
     // Loop block
     builder.SetInsertPoint(loop_bb);
-    if(!statement->codeGen())
+    if (!statement->codeGen())
     {
         std::cout << "Warning: empty body statement in \'while\' statement!" << std::endl;
     }
@@ -481,7 +480,7 @@ Value *NwhileStatement::codeGen()
 
     // After loop block
     builder.SetInsertPoint(after_bb);
-    
+
     return ret;
 }
 Value *NfunctionDefinition::codeGen()
@@ -585,14 +584,30 @@ Value *NpostfixExpr::codeGen()
         type = GET_FUNCTION_TYPE(op); // bind type
         if (op == "printf")
             CreatePrintf();
+        else if (op == "scanf")
+        {
+            CreateScanf();
+        }
         Function *callee = topModule->getFunction(op);
         vector<Value *> argv;
+        int init = 1;
         for (auto it : argument_expr_list)
         {
-            Value* arg_val = it->codeGen();
-            if(arg_val == NULL)
+            Value *arg_val = it->codeGen();
+            if (arg_val == NULL)
                 error("invalid argument in function \'" + op + "\'");
-            argv.push_back(arg_val);
+            if (op != "scanf" || init)
+            {
+                init = 0;
+                argv.push_back(arg_val);
+            }
+            else
+            {
+                auto target = dynamic_cast<NpostfixExpr *>(it);
+                if (!target)
+                    error("require a postfix expression in the parameter list of `scanf()`");
+                argv.push_back(builder.CreateGEP(target->getAccess(), ConstantInt::get(Type::getInt32Ty(context), 0), "tmp"));
+            }
         }
         std::cout << std::endl;
         return builder.CreateCall(callee, argv, "call");
@@ -600,25 +615,27 @@ Value *NpostfixExpr::codeGen()
     else if (postfix_type == SQUARE_BRACKETS || postfix_type == NONE)
     {
         type = GET_TYPE(op); // bind type
-        Value* addr= getAccess();
-        return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
+        Value *addr = getAccess();
+        return builder.CreateLoad(string_to_Type(GET_TYPE(op)), addr);
     }
     return NULL;
 }
 Value *NpostfixExpr::getAccess()
 {
     string &op(name->name);
-    if(dimensionBindings.find(op)==dimensionBindings.end())return bindings[op];
-    auto dimensions=*dimensionBindings[op];
-    if(expr.size()!=dimensions.size())
+    if (dimensionBindings.find(op) == dimensionBindings.end())
+        return bindings[op];
+    auto dimensions = *dimensionBindings[op];
+    if (expr.size() != dimensions.size())
         error("dereferncing failed, please check on the dimensions. \n"
-        "Remember pointers are not supported in this version");
+              "Remember pointers are not supported in this version");
     if (expr.size())
     {
-        Value *index=builder.getInt32(0),*stride=builder.getInt32(1);
-        for(int i=expr.size()-1;i>=0;i--){
-            index=builder.CreateAdd(index,builder.CreateMul(stride,expr[i]->codeGen()));
-            stride=builder.CreateMul(stride,dimensions[i]->codeGen());
+        Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
+        for (int i = expr.size() - 1; i >= 0; i--)
+        {
+            index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
+            stride = builder.CreateMul(stride, dimensions[i]->codeGen());
         }
         ConstantFolder tmp;
         return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], index);
