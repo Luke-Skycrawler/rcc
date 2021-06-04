@@ -292,8 +292,24 @@ Value *Ndeclaration::codeGen()
             ret = p;
             dimensionBindings.insert(make_pair(op, &it->dimensions));
         }
-        else if (it->op[0] == '(')
-            error("function definition in functions is not allowed");
+        else if (it->op[0] == '('){
+            Function *func = topModule->getFunction(op);
+            vector<Type *> args;
+            vector<string> argNames;
+            if (!func)
+            {
+                int i = 0;
+                for (auto j : it->parameter_list)
+                {
+                    args.push_back(string_to_Type(j->type_specifier->type));
+                    argNames.push_back(j->direct_declarator->identifier->name);
+                }
+                FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
+                func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
+                // funcStack.push_back(func);
+            }
+            // error("function definition in functions is not allowed");
+        }
         bindings[op] = allocation;
     }
     return (Value *)ret; // some arbitary pointer other than NULL
@@ -498,7 +514,7 @@ Value *NfunctionDefinition::codeGen()
         for (auto it : direct_declarator->parameter_list)
         {
             args.push_back(string_to_Type(it->type_specifier->type));
-            argNames.push_back(it->direct_declarator->identifier->name);
+            // argNames.push_back(it->direct_declarator->identifier->name);
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
@@ -509,6 +525,11 @@ Value *NfunctionDefinition::codeGen()
     {
         BasicBlock *bb = BasicBlock::Create(context, "entry@" + op, func);
         builder.SetInsertPoint(bb);
+        for (auto it : direct_declarator->parameter_list)
+        {
+            // args.push_back(string_to_Type(it->type_specifier->type));
+            argNames.push_back(it->direct_declarator->identifier->name);
+        }
         int i = 0;
         for (auto it = func->arg_begin(); it != func->arg_end(); it++)
         {
@@ -532,6 +553,8 @@ Value *NfunctionDefinition::codeGen()
 }
 Value *Nprogram::codeGen()
 {
+    CreateScanf();
+    CreatePrintf();
     for (auto it : external_declaration_list)
     {
         it->codeGen();
@@ -582,12 +605,6 @@ Value *NpostfixExpr::codeGen()
     if (postfix_type == PARENTHESES)
     {
         type = GET_FUNCTION_TYPE(op); // bind type
-        if (op == "printf")
-            CreatePrintf();
-        else if (op == "scanf")
-        {
-            CreateScanf();
-        }
         Function *callee = topModule->getFunction(op);
         vector<Value *> argv;
         int init = 1;
