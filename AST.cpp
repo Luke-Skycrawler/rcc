@@ -183,6 +183,13 @@ void NforStatement::printNode(int indent)
     statement->printNode(indent + 1);
 }
 
+void NwhileStatement::printNode(int indent)
+{
+    PRINT_INDENT(indent, "NwhileStatement");
+    cond_expr->printNode(indent + 1);
+    statement->printNode(indent + 1);
+}
+
 void Nexpr::printNode(int indent)
 {
     PRINT_INDENT(indent, "Nexpr");

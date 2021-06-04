@@ -14,6 +14,12 @@ Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen(), *ret = NULL;
     bool double_flag;
+
+    if(!lhs)
+        error("invalid $lhs in binary expression $lhs " + op + " $rhs");
+    if(!rhs)
+        error("invalid $rhs in binary expression $lhs " + op + " $rhs");
+
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
     //Check for type error
@@ -286,10 +292,7 @@ Value *Ndeclaration::codeGen()
             dimensionBindings.insert(make_pair(op,&it->dimensions));
         }
         else if (it->op[0] == '(')
-        {
             error("function definition in functions is not allowed");
-            return NULL;
-        }
         bindings[op]=allocation;
     }
     return (Value *)ret; // some arbitary pointer other than NULL
@@ -340,7 +343,11 @@ Value *NifStatement::codeGen()
     builder.SetInsertPoint(else_bb);                      // set insert point to `else_bb`
     Value *else_val = NULL;
     if (else_statement)
+    {
         else_val = else_statement->codeGen(); // recursively codeGen()
+        if (!else_val)
+            error("2nd body statement of \'if\' statement is not valid");
+    }
     builder.CreateBr(merge_bb);               // unconditional branch to the merge point
     else_bb = builder.GetInsertBlock();       // update `else_bb`
 
@@ -396,7 +403,7 @@ Value *NforStatement::codeGen()
     // Body statement `codeGen()`
     if(!statement->codeGen())
     {
-        std::cout << "Warning: Empty body statement in FOR statement!" << std::endl;
+        std::cout << "Warning: empty body statement in \'for\' statement!" << std::endl;
         // return NULL;
     }
 
@@ -437,6 +444,40 @@ Value *NforStatement::codeGen()
     }
     return ret;
 }
+Value *NwhileStatement::codeGen()
+{
+    Function *the_function = builder.GetInsertBlock()->getParent();
+    BasicBlock *cond_bb = BasicBlock::Create(context, "cond", the_function);
+
+    // While condition block
+    builder.CreateBr(cond_bb);
+    builder.SetInsertPoint(cond_bb);
+    Value* while_cond = cond_expr->codeGen();
+    if(GET_VALUE_TYPE(while_cond) == "char")
+        while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 1, true), "whilecond");
+    else if(GET_VALUE_TYPE(while_cond) == "int")
+        while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1, true), "whilecond");
+    else if(GET_VALUE_TYPE(while_cond) == "double")
+        while_cond = builder.CreateFCmpONE(while_cond, ConstantFP::get(context, APFloat(1.0)), "whilecond");
+    else error("invalid condition expression in \'while\' statement");
+
+    BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
+    BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
+    Value* ret = builder.CreateCondBr(while_cond, loop_bb, after_bb);
+
+    // Loop block
+    builder.SetInsertPoint(loop_bb);
+    if(!statement->codeGen())
+    {
+        std::cout << "Warning: empty body statement in \'while\' statement!" << std::endl;
+    }
+    builder.CreateBr(cond_bb); // goto cond_bb after each loop
+
+    // After loop block
+    builder.SetInsertPoint(after_bb);
+    
+    return ret;
+}
 Value *NfunctionDefinition::codeGen()
 {
     string op = direct_declarator->identifier->name;
@@ -451,10 +492,10 @@ Value *NfunctionDefinition::codeGen()
         int i = 0;
         for (auto it : direct_declarator->parameter_list)
         {
-            args.push_back(TRANSLATE_STRING2LLVMTYPE(it->type_specifier->type));
+            args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
         }
-        FunctionType *ft = FunctionType::get(TRANSLATE_STRING2LLVMTYPE(type), args, false);
+        FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);
     }
@@ -530,10 +571,7 @@ inline Value *createOpNode(Value *l, Value *r, char op)
 Value *NpostfixExpr::codeGen()
 {
     if (!name)
-    {
-        error("the reference in postfix expression is not defined");
-        return NULL;
-    }
+        error("reference in postfix expression is not defined");
     string &op = name->name;
 
     if (postfix_type == PARENTHESES)

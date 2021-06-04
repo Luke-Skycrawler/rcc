@@ -458,6 +458,18 @@ private:
     Nstatement* statement;
 };
 
+class NwhileStatement: public Nstatement {
+public:
+    NwhileStatement(Nexpr *cond_expr, Nstatement *statement):\
+        cond_expr(cond_expr),
+        statement(statement) {}
+    llvm::Value *codeGen();
+    void printNode(int indent);
+private:
+    Nexpr *cond_expr;
+    Nstatement *statement;
+};
+
 /**
  * `type_specifier` node -- 'char', 'int' or 'double'
  * @param type: a std::string "char", "int" or "double"
