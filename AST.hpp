@@ -37,6 +37,25 @@ extern std::map<std::string, llvm::AllocaInst *> bindings;
 extern std::map<std::string, std::vector<Nconstant *>*> dimensionBindings;
 extern llvm::LLVMContext context;
 extern llvm::IRBuilder<> builder;
+inline void ERROR(const std::string &msg, int level = 0)
+{
+    if(level == 0)
+    {
+        printf("\e[31;40m\e[1merror: \e[0m%s\n", msg.data());
+        return;
+    }
+    if(level == 1)
+    {
+        printf("\e[31;40m\e[1merror: \e[0m%s\n", msg.data());
+        exit(-1);
+    }
+    if(level == -1)
+    {
+        printf("\e[31;40m\e[1mwarning: \e[0m%s\n", msg.data());
+        return;
+    }
+    return;
+}
 inline void error(const std::string &msg)
 {
     printf("\e[31;40m\e[1merror: \e[0m%s\n", msg.data());

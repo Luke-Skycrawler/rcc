@@ -14,6 +14,7 @@ Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen(), *ret = NULL;
     bool double_flag;
+    type = "NULL";
 
     if (!lhs)
         error("invalid $lhs in binary expression $lhs " + op + " $rhs");
@@ -22,30 +23,49 @@ Value *NbinaryExpr::codeGen()
 
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
-    //Check for type error
-    if (lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double")
+
+    // If one is double, the op should also be a double op
+    if (lhs_type == "double" && rhs_type == "double")
+        type = "double";
+    else if(lhs_type == "int" && rhs_type == "double") // convert int -> double
     {
-        if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-            error("type error in binary expression $lhs " + op + " $rhs : $lhs is \'" + lhs_type + "\' while rhs is \'" + rhs_type + "\'");
+        type = "double";
+        l = builder.CreateSIToFP(l, Type::getDoubleTy(context));
+    }
+    else if(lhs_type == "double" && rhs_type == "int") // convert int -> double
+    {
+        type = "double";
+        r = builder.CreateSIToFP(r, Type::getDoubleTy(context));
+    }
+    else if(lhs_type == "int" && rhs_type == "int")
+        type = "int";
+    else if(lhs_type == "char" && rhs_type == "char")
+        type = "char";
+    else if(lhs_type == "char" && rhs_type == "int") // convert int -> char
+    {
+        type = "char";
+        r = builder.CreateIntCast(r, Type::getInt8Ty(context), false);
+    }
+    else if(lhs_type == "int" && rhs_type == "char") // convert int -> char
+    {
+        type = "char";
+        l = builder.CreateIntCast(l, Type::getInt8Ty(context), false);
+    }
+    else // check for type error
+    {
         type = "error";
+        if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
+            ERROR("type error in binary expression $lhs " + op + " $rhs : $lhs is \'" + lhs_type + "\' while rhs is \'" + rhs_type + "\'");
         return NULL;
     }
-    // If one is double, the op should also be a double op
-    if (lhs_type == "double" || rhs_type == "double")
-        double_flag = true;
-    // If only one is double but the other is int, convert the int -> double...
-    if (double_flag && lhs_type != "double")
-        l = builder.CreateSIToFP(l, Type::getDoubleTy(context));
-    if (double_flag && rhs_type != "double")
-        r = builder.CreateSIToFP(r, Type::getDoubleTy(context));
-    // Record `type`
-    if (double_flag)
-        type = "double";
-    else
-        type = "int";
 
-    if (!double_flag)
+
+    if (type == "int" || type == "char")
     {
+        Value *constant_zero;
+        if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
+        else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
+
         switch (op[0])
         {
         case '+':
@@ -63,7 +83,7 @@ Value *NbinaryExpr::codeGen()
                 return builder.CreateAnd(l, r);
             else
             {
-                ret = builder.CreateICmpUGT(builder.CreateAnd(l, r), ConstantInt::get(Type::getInt32Ty(context), 0));
+                ret = builder.CreateICmpUGT(builder.CreateAnd(l, r), constant_zero);
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false);
                 return ret;
             }
@@ -72,7 +92,7 @@ Value *NbinaryExpr::codeGen()
                 return builder.CreateOr(l, r);
             else
             {
-                ret = builder.CreateICmpUGT(builder.CreateOr(l, r), ConstantInt::get(Type::getInt32Ty(context), 0));
+                ret = builder.CreateICmpUGT(builder.CreateOr(l, r), constant_zero);
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false);
                 return ret;
             }
@@ -124,9 +144,14 @@ Value *NbinaryExpr::codeGen()
             ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false);
             return ret;
         }
+        default:
+        {
+            ERROR("invalid binary operator \'" + op + "\' for type \'int\'", 0);
+            return NULL;
+        }
         }
     }
-    else
+    else if(type == "double")
     {
         switch (op[0])
         {
@@ -169,6 +194,7 @@ Value *NbinaryExpr::codeGen()
             else
                 error("shift operator \'<<\' not applicable to type \'double\'!\n");
         default:
+            ERROR("invalid binary operator \'" + op + "\' for type \'double\'", 0);
             return NULL;
         }
     }
