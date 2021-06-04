@@ -36,6 +36,7 @@ void comment();
 "for"			{ count(); return(token::FOR); }
 "incto"			{ count(); return(token::INCTO); }
 "decto"			{ count(); return(token::DECTO); }
+"while"			{ count(); return(token::WHILE); }
 "return"		{ count(); return(token::RETURN); }
 
 \'.\'			{ count(); yylval->constant = new Nconstant("char", yytext[1]); return(token::CHAR_CONSTANT); }
