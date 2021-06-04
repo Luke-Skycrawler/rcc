@@ -5,18 +5,43 @@
 #include <vector>
 #include <string>
 #include <sstream>
-
+class Node;
+class Nprogram;
+class NexternalDeclaration;
+class Ndeclaration;
+class NinitDeclarator;
+// class Ndeclarator;
+class NdirectDeclarator;
+class NparameterDeclaration;
+class Ninitializer;
+class NfunctionDefinition;
+class NcompoundStatement;
+class Nstatement;
+class NexprStatement;
+class NtypeSpecifier;
+class Nexpr;
+class NassignExpr;
+class NcondExpr;
+class NcastExpr;
+class NunaryExpr;
+class NpostfixExpr;
+class Nidentifier;
+class Nconstant;
+class Nstruct;
+class NderivedType;
 extern bool error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern llvm::Module *topModule;
 extern std::map<std::string, llvm::AllocaInst *> bindings;
-
-inline void LOG_ERROR(std::string msg)
+extern std::map<std::string, std::vector<Nconstant *>*> dimensionBindings;
+extern llvm::LLVMContext context;
+extern llvm::IRBuilder<> builder;
+inline void error(const std::string &msg)
 {
-    std::cout << "Error: " << msg << "." << std::endl;
+    printf("\e[31;40m\e[1merror: \e[0m%s\n", msg.data());
+    exit(1);
 }
-
 inline std::string INT2STRING(int x)
 {
     std::stringstream ss;
@@ -119,7 +144,7 @@ inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst *inst)
     return "NULL";
 }
 
-inline llvm::Type *TRANSLATE_STRING2LLVMTYPE(std::string type)
+inline llvm::Type *string_to_Type(std::string type)
 {
     if (type == "int")
         return llvm::Type::getInt32Ty(context);
@@ -129,30 +154,6 @@ inline llvm::Type *TRANSLATE_STRING2LLVMTYPE(std::string type)
         return llvm::Type::getInt8Ty(context);
 }
 
-class Node;
-class Nprogram;
-class NexternalDeclaration;
-class Ndeclaration;
-class NinitDeclarator;
-// class Ndeclarator;
-class NdirectDeclarator;
-class NparameterDeclaration;
-class Ninitializer;
-class NfunctionDefinition;
-class NcompoundStatement;
-class Nstatement;
-class NexprStatement;
-class NtypeSpecifier;
-class Nexpr;
-class NassignExpr;
-class NcondExpr;
-class NcastExpr;
-class NunaryExpr;
-class NpostfixExpr;
-class Nidentifier;
-class Nconstant;
-class Nstruct;
-class NderivedType;
 
 /**
  * Base class of AST node, for derivation and inheritation
@@ -627,7 +628,7 @@ public:
     void set(POSTFIX_TYPE postfix_type, Nexpr *expr)
     {
         this->postfix_type = postfix_type;
-        this->expr = expr;
+        this->expr.push_back(expr);
     }
     void set(POSTFIX_TYPE postfix_type, std::vector<Nexpr *> &argument_expr_list)
     {
@@ -651,7 +652,7 @@ public:
     // private:
 
     POSTFIX_TYPE postfix_type;
-    Nexpr *expr;                             // valid when postfix_type = SUQARE_BRACKETS
+    std::vector<Nexpr *> expr;                             // valid when postfix_type = SUQARE_BRACKETS
     std::vector<Nexpr *> argument_expr_list; // valid when postfix_type = PARENTHESES, could be a nullptr!
     Nidentifier *identifier, *name;          // valid when postfix_type = DOT or PTR_OP
     // when postfix_type = INC_OP or DEC_OP, none of the 3 upon would be used!
