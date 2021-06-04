@@ -43,6 +43,7 @@ Nstruct *selfDefinedType=NULL;
 	NexprStatement* expr_statement;
 	NifStatement* if_statement;
 	NforStatement* for_statement;
+	NwhileStatement* while_statement;
 	Nexpr* expr;
 	std::string* assign_op;
 	NunaryExpr::UNARY_OP unary_op;
@@ -63,7 +64,7 @@ Nstruct *selfDefinedType=NULL;
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME
 %token CHAR INT DOUBLE
-%token STRUCT IF IFX ELSE FOR INCTO DECTO RETURN
+%token STRUCT IF IFX ELSE FOR INCTO DECTO WHILE RETURN
 
 %token<identifier> IDENTIFIER
 %token<constant> CHAR_CONSTANT
@@ -94,6 +95,7 @@ Nstruct *selfDefinedType=NULL;
 %type<expr_statement> expr_statement;
 %type<if_statement> if_statement;
 %type<for_statement> for_statement;
+%type<while_statement> while_statement;
 %type<expr> expr;
 %type<expr> assign_expr;
 %type<assign_op> assign_op;
@@ -312,6 +314,9 @@ statement
 	| for_statement {
 		$$ = $1;
 	}
+	| while_statement {
+		$$ = $1;
+	}
 	| RETURN expr ';'		{$$=new NreturnStatement($2);}
 	| RETURN ';'			{$$=new NreturnStatement(NULL);}
 	;
@@ -340,6 +345,12 @@ for_statement
 	}
 	| FOR '(' IDENTIFIER ':' expr DECTO expr ')' statement {
 		$$ = new NforStatement($3, $5, false, $7, $9);
+	}
+	;
+
+while_statement
+	: WHILE '(' expr ')' statement {
+		$$ = new NwhileStatement($3, $5);
 	}
 	;
 

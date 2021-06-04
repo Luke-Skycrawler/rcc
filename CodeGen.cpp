@@ -14,6 +14,18 @@ Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen(), *ret = NULL;
     bool double_flag;
+
+    if(!lhs)
+    {
+        LOG_ERROR("invalid $lhs in binary expression $lhs " + op + " $rhs");
+        return NULL;
+    }
+    if(!rhs)
+    {
+        LOG_ERROR("invalid $rhs in binary expression $lhs " + op + " $rhs");
+        return NULL;
+    }
+
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
     //Check for type error
@@ -324,7 +336,7 @@ Value *NifStatement::codeGen()
     Value *cond_val = cond_expr->codeGen();
     if (!cond_val)
     {
-        printf("Error: conditional expression is not valid!\n");
+        LOG_ERROR("condition expression in \'if\' statement is not valid");
         return NULL;
     }
 
@@ -350,7 +362,7 @@ Value *NifStatement::codeGen()
     Value *then_val = if_statement->codeGen(); // recursively codeGen()
     if (!then_val)
     {
-        printf("Error: if statement is not valid!\n");
+        LOG_ERROR("1st body statement of \'if\' statement is not valid");
         return NULL;
     }
     builder.CreateBr(merge_bb);         // unconditional branch to the merge point
@@ -360,7 +372,14 @@ Value *NifStatement::codeGen()
     builder.SetInsertPoint(else_bb);                      // set insert point to `else_bb`
     Value *else_val = NULL;
     if (else_statement)
+    {
         else_val = else_statement->codeGen(); // recursively codeGen()
+        if (!else_val)
+        {
+            LOG_ERROR("2nd body statement of \'if\' statement is not valid");
+            return NULL;
+        }
+    }
     builder.CreateBr(merge_bb);               // unconditional branch to the merge point
     else_bb = builder.GetInsertBlock();       // update `else_bb`
 
@@ -377,22 +396,22 @@ Value *NforStatement::codeGen()
     Value* end_val = end_expr->codeGen();
     if(!start_val)
     {
-        std::cout << "Error: Invalid start expression in FOR statement!" << std::endl;
+        LOG_ERROR("invalid start expression in \'for\' statement");
         return NULL;
     }
     if(!end_val)
     {
-        std::cout << "Error: Invalid end expression in FOR statement!" << std::endl;
+        LOG_ERROR("invalid end expression in \'for\' statement");
         return NULL;
     }
     if(GET_VALUE_TYPE(start_val) != "int")
     {
-        std::cout << "Error: Start expression in FOR statement should be of type \'int\'!" << std::endl;
+        LOG_ERROR("start expression in \'for\' statement should be of type \'int\'");
         return NULL;
     }
     if(GET_VALUE_TYPE(end_val) != "int")
     {
-        std::cout << "Error: End expression in FOR statement should be of type \'int\'!" << std::endl;
+        LOG_ERROR("end expression in \'for\' statement should be of type \'int\'");
         return NULL;
     }
 
@@ -429,7 +448,7 @@ Value *NforStatement::codeGen()
     // Body statement `codeGen()`
     if(!statement->codeGen())
     {
-        std::cout << "Warning: Empty body statement in FOR statement!" << std::endl;
+        std::cout << "Warning: empty body statement in \'for\' statement!" << std::endl;
         // return NULL;
     }
 
@@ -468,6 +487,44 @@ Value *NforStatement::codeGen()
         std::cout << "(debug) No need to restore variable \'" << identifier_name << "\'" << std::endl;
         bindings.erase(identifier_name);
     }
+    return ret;
+}
+Value *NwhileStatement::codeGen()
+{
+    Function *the_function = builder.GetInsertBlock()->getParent();
+    BasicBlock *cond_bb = BasicBlock::Create(context, "cond", the_function);
+
+    // While condition block
+    builder.CreateBr(cond_bb);
+    builder.SetInsertPoint(cond_bb);
+    Value* while_cond = cond_expr->codeGen();
+    if(GET_VALUE_TYPE(while_cond) == "char")
+        while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 1, true), "whilecond");
+    else if(GET_VALUE_TYPE(while_cond) == "int")
+        while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1, true), "whilecond");
+    else if(GET_VALUE_TYPE(while_cond) == "double")
+        while_cond = builder.CreateFCmpONE(while_cond, ConstantFP::get(context, APFloat(1.0)), "whilecond");
+    else
+    {
+        LOG_ERROR("invalid condition expression in \'while\' statement");
+        return NULL;
+    }
+
+    BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
+    BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
+    Value* ret = builder.CreateCondBr(while_cond, loop_bb, after_bb);
+
+    // Loop block
+    builder.SetInsertPoint(loop_bb);
+    if(!statement->codeGen())
+    {
+        std::cout << "Warning: empty body statement in \'while\' statement!" << std::endl;
+    }
+    builder.CreateBr(cond_bb); // goto cond_bb after each loop
+
+    // After loop block
+    builder.SetInsertPoint(after_bb);
+    
     return ret;
 }
 Value *NfunctionDefinition::codeGen()
