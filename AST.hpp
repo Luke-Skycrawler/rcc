@@ -5,17 +5,41 @@
 #include <vector>
 #include <string>
 #include <sstream>
-
+class Node;
+class Nprogram;
+class NexternalDeclaration;
+class Ndeclaration;
+class NinitDeclarator;
+// class Ndeclarator;
+class NdirectDeclarator;
+class NparameterDeclaration;
+class Ninitializer;
+class NfunctionDefinition;
+class NcompoundStatement;
+class Nstatement;
+class NexprStatement;
+class NtypeSpecifier;
+class Nexpr;
+class NassignExpr;
+class NcondExpr;
+class NcastExpr;
+class NunaryExpr;
+class NpostfixExpr;
+class Nidentifier;
+class Nconstant;
+class Nstruct;
+class NderivedType;
 extern bool type_error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern llvm::Module *topModule;
 extern std::map<std::string, llvm::AllocaInst *> bindings;
+extern std::map<std::string, std::vector<Nconstant *>*> dimensionBindings;
 extern llvm::LLVMContext context;
 extern llvm::IRBuilder<> builder;
-inline void error(const char *msg)
+inline void error(const std::string &msg)
 {
-    printf("error:%s \n", msg);
+    printf("\e[31;40m\e[1merror: \e[0m%s\n", msg.data());
     exit(1);
 }
 inline std::string INT2STRING(int x)
@@ -121,30 +145,6 @@ inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst *inst)
 
 // enum RCC_TYPE {RCC_CHAR = 1, RCC_INT = 2, RCC_DOUBLE = 3, RCC_STRING_LITERAL = 4, RCC_ERROR = -1, RCC_NULL = 0};
 
-class Node;
-class Nprogram;
-class NexternalDeclaration;
-class Ndeclaration;
-class NinitDeclarator;
-// class Ndeclarator;
-class NdirectDeclarator;
-class NparameterDeclaration;
-class Ninitializer;
-class NfunctionDefinition;
-class NcompoundStatement;
-class Nstatement;
-class NexprStatement;
-class NtypeSpecifier;
-class Nexpr;
-class NassignExpr;
-class NcondExpr;
-class NcastExpr;
-class NunaryExpr;
-class NpostfixExpr;
-class Nidentifier;
-class Nconstant;
-class Nstruct;
-class NderivedType;
 
 /**
  * Base class of AST node, for derivation and inheritation

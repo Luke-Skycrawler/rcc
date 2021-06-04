@@ -205,13 +205,8 @@ llvm::Value *Nconstant::codeGen()
 }
 Value *Nidentifier::codeGen()
 {
-    if (!bindings[name])
-    {
-        std::cout << "Undeclared identifier \'" << name << "\'." << std::endl;
-        return NULL;
-    }
-    type = GET_TYPE(name);
-    return builder.CreateLoad(bindings[name]);
+    return NULL;
+    // should all be over at postfix
 }
 Value *Ninitializer::codeGen()
 {
@@ -293,6 +288,7 @@ Value *Ndeclaration::codeGen()
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
             ret = p;
+            dimensionBindings.insert(make_pair(op,&it->dimensions));
         }
         else if (it->op[0] == '(')
         {
@@ -388,11 +384,9 @@ Value *NfunctionDefinition::codeGen()
         {
             args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
-            // GET_TYPE(argNames[i++]) = it->type_specifier->type;
         }
         FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
-        // GET_TYPE(op) = type;
         // funcStack.push_back(func);
     }
 
@@ -498,20 +492,22 @@ Value *NpostfixExpr::codeGen()
 }
 Value *NpostfixExpr::getAccess()
 {
-    string &op = name->name;
+    string &op(name->name);
+    if(dimensionBindings.find(op)==dimensionBindings.end())return bindings[op];
+    auto dimensions=*dimensionBindings[op];
+    if(expr.size()!=dimensions.size())
+        error("dereferncing failed, please check on the dimensions. \n"
+        "Remember pointers are not supported in this version");
     if (expr.size())
     {
-        // vector<Value *> ref;
-        // ref.push_back(builder.getInt32(0));
-        // ref.push_back(expr->codeGen());
+        Value *index=builder.getInt32(0),*stride=builder.getInt32(1);
+        for(int i=expr.size()-1;i>=0;i--){
+            index=builder.CreateAdd(index,builder.CreateMul(stride,expr[i]->codeGen()));
+            stride=builder.CreateMul(stride,dimensions[i]->codeGen());
+        }
         ConstantFolder tmp;
-        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], expr[0]->codeGen());
-        // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
-        // return builder.CreateExtractValue((Value *)bindings[op],expr->codeGen(),"tmp");
-        // return builder.CreateInBoundsGEP(bindings[op],ref );
+        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], index);
     }
-    else
-        return bindings[op];
 }
 Value *NassignExpr::codeGen()
 {
