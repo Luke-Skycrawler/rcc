@@ -16,15 +16,9 @@ Value *NbinaryExpr::codeGen()
     bool double_flag;
 
     if(!lhs)
-    {
-        LOG_ERROR("invalid $lhs in binary expression $lhs " + op + " $rhs");
-        return NULL;
-    }
+        error("invalid $lhs in binary expression $lhs " + op + " $rhs");
     if(!rhs)
-    {
-        LOG_ERROR("invalid $rhs in binary expression $lhs " + op + " $rhs");
-        return NULL;
-    }
+        error("invalid $rhs in binary expression $lhs " + op + " $rhs");
 
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
@@ -32,7 +26,7 @@ Value *NbinaryExpr::codeGen()
     if (lhs_type != "int" && lhs_type != "double" || rhs_type != "int" && rhs_type != "double")
     {
         if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-            LOG_ERROR("type error in binary expression $lhs " + op + " $rhs : $lhs is \'" + lhs_type + "\' while rhs is \'" + rhs_type + "\'");
+            error("type error in binary expression $lhs " + op + " $rhs : $lhs is \'" + lhs_type + "\' while rhs is \'" + rhs_type + "\'");
         type = "error";
         return NULL;
     }
@@ -158,9 +152,7 @@ Value *NbinaryExpr::codeGen()
                 return ret;
             }
             else
-            {
-                printf("Error: shift operator \'>>\' not applicable to type \'double\'!\n");
-            }
+                error("shift operator \'>>\' not applicable to type \'double\'!\n");
         case '<':
             if (op.size() == 1)
             {
@@ -174,10 +166,7 @@ Value *NbinaryExpr::codeGen()
                 ret = builder.CreateIntCast(ret, Type::getInt32Ty(context), false);
                 return ret;
             }
-            else
-            {
-                printf("Error: shift operator \'<<\' not applicable to type \'double\'!\n");
-            }
+            else error("shift operator \'<<\' not applicable to type \'double\'!\n");
         default:
             return NULL;
         }
@@ -217,13 +206,8 @@ llvm::Value *Nconstant::codeGen()
 }
 Value *Nidentifier::codeGen()
 {
-    if (!bindings[name])
-    {
-        std::cout << "Error: Undeclared identifier \'" << name << "\'." << std::endl;
-        return NULL;
-    }
-    type = GET_TYPE(name);
-    return builder.CreateLoad(bindings[name]);
+    return NULL;
+    // should all be over at postfix
 }
 Value *Ninitializer::codeGen()
 {
@@ -252,10 +236,10 @@ Value *Ndeclaration::codeGen()
     for (auto iterator : init_declarator_list)
     {
         NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
+        AllocaInst *allocation;
         auto op = it->identifier->name;
         if (it->op == "")
         {
-            AllocaInst *allocation;
             if (type == "double")
             {
                 allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
@@ -274,12 +258,10 @@ Value *Ndeclaration::codeGen()
             }
             ret = allocation;
             // builder.CreateStore(builder.getInt64(0), allocation);
-            bindings[op] = allocation;
         }
         else if (it->op[0] == '[')
         {
             Value *size = ConstantInt::get(Type::getInt32Ty(context), 1);
-            AllocaInst *allocation;
             int i = 0;
             for (auto constant : it->dimensions)
             {
@@ -290,10 +272,7 @@ Value *Ndeclaration::codeGen()
                 }
                 i++;
             }
-            llvm::Value *p;
-            vector<Value *> arrayRef;
-            arrayRef.push_back(allocation);
-            arrayRef.push_back(size);
+            Value *p;
             if (type == "double")
             {
                 allocation = builder.CreateAlloca(Type::getDoubleTy(context), size, op);
@@ -310,13 +289,11 @@ Value *Ndeclaration::codeGen()
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
             ret = p;
-            bindings[op] = allocation;
+            dimensionBindings.insert(make_pair(op,&it->dimensions));
         }
         else if (it->op[0] == '(')
-        {
-            LOG_ERROR("function definition in function is not allowed");
-            return NULL;
-        }
+            error("function definition in functions is not allowed");
+        bindings[op]=allocation;
     }
     return (Value *)ret; // some arbitary pointer other than NULL
 }
@@ -335,10 +312,7 @@ Value *NifStatement::codeGen()
 {
     Value *cond_val = cond_expr->codeGen();
     if (!cond_val)
-    {
-        LOG_ERROR("condition expression in \'if\' statement is not valid");
-        return NULL;
-    }
+        error("conditional expression is not valid!\n");
 
     // If the expr is not a double, convert it to a double
     if (!cond_val->getType()->isDoubleTy())
@@ -361,10 +335,7 @@ Value *NifStatement::codeGen()
     builder.SetInsertPoint(then_bb);           // set insert point to `then_bb`
     Value *then_val = if_statement->codeGen(); // recursively codeGen()
     if (!then_val)
-    {
-        LOG_ERROR("1st body statement of \'if\' statement is not valid");
-        return NULL;
-    }
+        error("if statement is not valid!\n");
     builder.CreateBr(merge_bb);         // unconditional branch to the merge point
     then_bb = builder.GetInsertBlock(); // update `then_bb`
 
@@ -375,10 +346,7 @@ Value *NifStatement::codeGen()
     {
         else_val = else_statement->codeGen(); // recursively codeGen()
         if (!else_val)
-        {
-            LOG_ERROR("2nd body statement of \'if\' statement is not valid");
-            return NULL;
-        }
+            error("2nd body statement of \'if\' statement is not valid");
     }
     builder.CreateBr(merge_bb);               // unconditional branch to the merge point
     else_bb = builder.GetInsertBlock();       // update `else_bb`
@@ -395,26 +363,13 @@ Value *NforStatement::codeGen()
     Value* start_val = start_expr->codeGen();
     Value* end_val = end_expr->codeGen();
     if(!start_val)
-    {
-        LOG_ERROR("invalid start expression in \'for\' statement");
-        return NULL;
-    }
+        error("Invalid start expression in FOR statement!");
     if(!end_val)
-    {
-        LOG_ERROR("invalid end expression in \'for\' statement");
-        return NULL;
-    }
+        error("Invalid end expression in FOR statement!");
     if(GET_VALUE_TYPE(start_val) != "int")
-    {
-        LOG_ERROR("start expression in \'for\' statement should be of type \'int\'");
-        return NULL;
-    }
+        error("Start expression in FOR statement should be of type \'int\'!");
     if(GET_VALUE_TYPE(end_val) != "int")
-    {
-        LOG_ERROR("end expression in \'for\' statement should be of type \'int\'");
-        return NULL;
-    }
-
+        error("End expression in FOR statement should be of type \'int\'!");
     Function *the_function = builder.GetInsertBlock()->getParent();
     BasicBlock *preheader_bb = builder.GetInsertBlock();
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
@@ -439,7 +394,7 @@ Value *NforStatement::codeGen()
     llvm::AllocaInst *variable_allocation = NULL, *old_variable_allocation = NULL;
     if(bindings[identifier_name] != NULL) // If there is already a binding, save the old allocation
     {
-        std::cout << "Variable \'" << identifier_name << "\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
+        std::cout << "Variable \'"+identifier_name+"\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
         old_variable_allocation = bindings[identifier_name];
     }
     // Allocate a new space for the loop variable
@@ -510,11 +465,7 @@ Value *NwhileStatement::codeGen()
         while_cond = builder.CreateICmpEQ(while_cond, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1, true), "whilecond");
     else if(GET_VALUE_TYPE(while_cond) == "double")
         while_cond = builder.CreateFCmpONE(while_cond, ConstantFP::get(context, APFloat(1.0)), "whilecond");
-    else
-    {
-        LOG_ERROR("invalid condition expression in \'while\' statement");
-        return NULL;
-    }
+    else error("invalid condition expression in \'while\' statement");
 
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
     BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
@@ -547,13 +498,11 @@ Value *NfunctionDefinition::codeGen()
         int i = 0;
         for (auto it : direct_declarator->parameter_list)
         {
-            args.push_back(TRANSLATE_STRING2LLVMTYPE(it->type_specifier->type));
+            args.push_back(string_to_Type(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
-            GET_TYPE(argNames[i++]) = it->type_specifier->type;
         }
-        FunctionType *ft = FunctionType::get(TRANSLATE_STRING2LLVMTYPE(type), args, false);
+        FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
-        GET_TYPE(op) = type;
         // funcStack.push_back(func);
     }
 
@@ -628,10 +577,7 @@ inline Value *createOpNode(Value *l, Value *r, char op)
 Value *NpostfixExpr::codeGen()
 {
     if (!name)
-    {
-        LOG_ERROR("the reference in postfix expression is not defined");
-        return NULL;
-    }
+        error("reference in postfix expression is not defined");
     string &op = name->name;
 
     if (postfix_type == PARENTHESES)
@@ -645,10 +591,7 @@ Value *NpostfixExpr::codeGen()
         {
             Value* arg_val = it->codeGen();
             if(arg_val == NULL)
-            {
-                LOG_ERROR("invalid argument in function \'" + op + "\'");
-                return NULL;
-            }
+                error("invalid argument in function \'" + op + "\'");
             argv.push_back(arg_val);
         }
         std::cout << std::endl;
@@ -658,42 +601,28 @@ Value *NpostfixExpr::codeGen()
     {
         type = GET_TYPE(op); // bind type
         Value* addr= getAccess();
-        if(!addr)
-        {
-            LOG_ERROR("undeclared identifier \'" + name->name + "\'");
-            return NULL;
-        }
-        return builder.CreateLoad(TRANSLATE_STRING2LLVMTYPE(GET_TYPE(op)),addr);
-        // vector<Value *> ref;
-        // ref.push_back(builder.getInt32(0));
-        // ref.push_back(expr->codeGen());
-        // auto addr=builder.CreateInBoundsGEP(bindings[op],ref );
-
-        // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
-        // auto addr = builder.CreateInsertElement(bindings[op]->getType(), (Constant*)bindings[op], expr->codeGen());
-        // return builder.CreateLoad(TRANSLATE_STRING2LLVMTYPE(GET_TYPE(op)), addr);
+        return builder.CreateLoad(string_to_Type(GET_TYPE(op)),addr);
     }
     return NULL;
 }
 Value *NpostfixExpr::getAccess()
 {
-    string &op = name->name;
-    if (expr)
+    string &op(name->name);
+    if(dimensionBindings.find(op)==dimensionBindings.end())return bindings[op];
+    auto dimensions=*dimensionBindings[op];
+    if(expr.size()!=dimensions.size())
+        error("dereferncing failed, please check on the dimensions. \n"
+        "Remember pointers are not supported in this version");
+    if (expr.size())
     {
-        // vector<Value *> ref;
-        // ref.push_back(builder.getInt32(0));
-        // ref.push_back(expr->codeGen());
+        Value *index=builder.getInt32(0),*stride=builder.getInt32(1);
+        for(int i=expr.size()-1;i>=0;i--){
+            index=builder.CreateAdd(index,builder.CreateMul(stride,expr[i]->codeGen()));
+            stride=builder.CreateMul(stride,dimensions[i]->codeGen());
+        }
         ConstantFolder tmp;
-        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], expr->codeGen());
-        // return builder.CreateExtractElement((Value *)bindings[op],expr->codeGen(),"tmp");
-        // return builder.CreateExtractValue((Value *)bindings[op],expr->codeGen(),"tmp");
-        // return builder.CreateInBoundsGEP(bindings[op],ref );
+        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], index);
     }
-    else
-    {
-        return bindings[op];
-    }
-    return NULL;
 }
 Value *NassignExpr::codeGen()
 {
@@ -723,7 +652,7 @@ Value *NassignExpr::codeGen()
         else if (lhs_type != rhs_type) // check for type error
         {
             if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-                LOG_ERROR("type error in assignment expression $lhs = $rhs: $lhs is \'" + lhs_type + "\' while $rhs is \'" + rhs_type + "\'");
+                error("type error in assignment expression $lhs = $rhs: $lhs is \'" + lhs_type + "\' while $rhs is \'" + rhs_type + "\'");
             type = "error";
             return NULL;
         }

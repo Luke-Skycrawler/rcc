@@ -236,6 +236,10 @@ void NpostfixExpr::printNode(int indent)
     {
         it->printNode(indent + 1);
     }
+    for (auto it : expr)
+    {
+        it->printNode(indent + 1);
+    }
 }
 
 void NdirectDeclarator::pushIntConstant(Nconstant *int_constant)
@@ -250,7 +254,7 @@ void NdirectDeclarator::updateType(const string &op)
     // TODO: check declarator's syntax here!!!
     if (this->op != "" && this->op != op)
     {
-        LOG_ERROR("(latent) mixed type in declarator");
+        error("(latent) mixed type in declarator");
         exit(-1);
     }
     this->op = op;
@@ -280,7 +284,7 @@ NderivedType::NderivedType(char type)
         baseType = selfDefinedType->name;
         if (structBindings.find(baseType) == structBindings.end())
         {
-            LOG_ERROR("struct not defined");
+            error("struct not defined");
             exit(-1);
         }
         break;
@@ -297,7 +301,7 @@ Nstruct::Nstruct(const std::string &name, vector<Ndeclaration *> *content) : nam
 {
     if (bindings.find(name) != bindings.end() || structBindings.find(name) != structBindings.end())
     {
-        LOG_ERROR("struct name conflict");
+        error("struct name conflict");
         exit(-1);
     }
     structBindings[name] = this;
