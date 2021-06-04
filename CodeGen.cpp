@@ -373,9 +373,15 @@ Value *NforStatement::codeGen()
     Function *the_function = builder.GetInsertBlock()->getParent();
     BasicBlock *preheader_bb = builder.GetInsertBlock();
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
+    BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
     
-    // Unconditional branch to `loop_bb`
-    builder.CreateBr(loop_bb);
+    // Check if the condition is met initially; otherwise don't even need to enter the loop
+    Value* enterloop_cond;
+    enterloop_cond = inc?builder.CreateICmpSGT(start_val, end_val):\
+                   builder.CreateICmpSLT(start_val, end_val);
+    enterloop_cond = builder.CreateICmpEQ(enterloop_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "enterloop_cond");
+    // Conditional branch to `loop_bb`
+    builder.CreateCondBr(enterloop_cond, loop_bb, after_bb);
     
     // Set insert point to `loop_bb`
     builder.SetInsertPoint(loop_bb);
@@ -407,32 +413,32 @@ Value *NforStatement::codeGen()
         // return NULL;
     }
 
+    // Get next variable
     // Step is 1
     Value *step_val = builder.getInt32(1);
-
-    // Next Variable
+    // Next variable
     Value *next_variable = inc?builder.CreateAdd(variable, step_val, "next_variable"):\
                                builder.CreateSub(variable, step_val, "next_variable");
 
     // Convert condition to a bool by comparing non-equal to 0
-    Value* end_cond;
-    end_cond = inc?builder.CreateICmpSGT(next_variable, end_val):\
+    Value* continue_cond;
+    continue_cond = inc?builder.CreateICmpSGT(next_variable, end_val):\
                    builder.CreateICmpSLT(next_variable, end_val);
-    end_cond = builder.CreateICmpEQ(end_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "loopcond");
+    continue_cond = builder.CreateICmpEQ(continue_cond, llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 0, true), "continue_cond");
     
-    // Create 2 new blocks
+    // get the block where the loop ends
     BasicBlock *loopend_bb = builder.GetInsertBlock();
-    BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
 
     // Insert the conditional branch into the end of `loopend_bb`
-    Value* ret = builder.CreateCondBr(end_cond, loop_bb, after_bb);
+    Value* ret = builder.CreateCondBr(continue_cond, loop_bb, after_bb);
 
     // Any new code will be inserted in `after_bb`
     builder.SetInsertPoint(after_bb);
+    
     // Add the other incoming
     variable->addIncoming(next_variable, loopend_bb);
 
-    if (old_variable_allocation) // Restore the unshadowed variable ('s allocation)
+    if (old_variable_allocation) // Restore the old variable ('s allocation)
     {
         std::cout << "(debug) Restoring variable \'" << identifier_name << "\'" << std::endl;
         bindings[identifier_name] = old_variable_allocation;
