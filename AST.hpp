@@ -33,8 +33,9 @@ extern bool error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
 extern llvm::Module *topModule;
-extern std::map<std::string, llvm::AllocaInst *> bindings;
+extern std::map<std::string, void*> bindings;
 extern std::map<std::string, std::vector<Nconstant *>*> dimensionBindings;
+extern std::map<std::string, std::string> global_variables_type;
 extern llvm::LLVMContext context;
 extern llvm::IRBuilder<> builder;
 inline void ERROR(const std::string &msg, int level = 0)
@@ -83,7 +84,7 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
 inline std::string GET_TYPE(std::string name)
 {
     if(bindings.find(name) == bindings.end()) return "NULL";
-    llvm::AllocaInst *inst = bindings[name];
+    llvm::AllocaInst *inst = (llvm::AllocaInst *)(bindings[name]);
     if (!inst)
         return "NULL";
     if (inst->getAllocatedType()->isIntegerTy())
@@ -98,6 +99,22 @@ inline std::string GET_TYPE(std::string name)
     {
         return "double";
     }
+    else if(inst->getAllocatedType()->getArrayElementType()) // Maybe it's an array!
+    {
+        if(inst->getAllocatedType()->getArrayElementType()->isIntegerTy())
+        {
+            int num_bit = inst->getAllocatedType()->getArrayElementType()->getIntegerBitWidth();
+            if (num_bit == 8)
+                return "char";
+            else if (num_bit == 32)
+                return "int";
+        }
+        else if(inst->getAllocatedType()->getArrayElementType()->isDoubleTy())
+        {
+            return "double";
+        }
+    }
+    
     return "NULL";
 }
 
@@ -259,11 +276,12 @@ class Ndeclaration : public NexternalDeclaration
 {
 public:
     Ndeclaration(NtypeSpecifier *type_specifier, std::vector<NinitDeclarator *> &init_declarator_list) : type_specifier(type_specifier),
-                                                                                                         init_declarator_list(init_declarator_list) {}
-    Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier) {}
+                                                                                                         init_declarator_list(init_declarator_list),
+                                                                                                         is_global(false) {}
+    Ndeclaration(NtypeSpecifier *type_specifier) : type_specifier(type_specifier), is_global(false) {}
     llvm::Value *codeGen();
     void printNode(int indent);
-
+    bool is_global; // whether it's a global declaration
 private:
     NtypeSpecifier *type_specifier; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator *> init_declarator_list;
@@ -342,7 +360,7 @@ public:
     llvm::Value *codeGen();
     virtual void printNode(int indent);
 
-private:
+// private:
     Nexpr *assign_expr;
     std::vector<Ninitializer *> initializer_list;
 };
@@ -513,8 +531,8 @@ public:
 class Nexpr : public Node
 {
 public:
-    Nexpr() {} // default constructor
-    Nexpr(std::vector<Nexpr *> &expr_list) : expr_list(expr_list) {}
+    Nexpr() : is_constant(false) {} // default constructor
+    Nexpr(std::vector<Nexpr *> &expr_list) : expr_list(expr_list), is_constant(false) {}
     void push_back(Nexpr *expr)
     {
         type = "NULL";
@@ -524,7 +542,7 @@ public:
     llvm::Value *codeGen() = 0;
     // virtual std::string getType() { return "NULL"; }
     std::string type;
-
+    bool is_constant;
 private:
     std::vector<Nexpr *> expr_list;
 };
@@ -712,16 +730,19 @@ class Nconstant : public Nexpr
 public:
     Nconstant(const std::string &type, char value)
     {
+        is_constant = true;
         this->type = type;
         this->value.char_value = value;
     }
     Nconstant(const std::string &type, int value)
     {
+        is_constant = true;
         this->type = type;
         this->value.int_value = value;
     }
     Nconstant(const std::string &type, double value)
     {
+        is_constant = true;
         this->type = type;
         this->value.double_value = value;
     }

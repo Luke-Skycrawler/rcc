@@ -17,9 +17,15 @@ Value *NbinaryExpr::codeGen()
     type = "NULL";
 
     if (!lhs)
-        error("invalid $lhs in binary expression $lhs " + op + " $rhs");
+    {
+        ERROR("invalid $lhs in binary expression $lhs " + op + " $rhs");
+        return NULL;
+    }
     if (!rhs)
-        error("invalid $rhs in binary expression $lhs " + op + " $rhs");
+    {
+        ERROR("invalid $rhs in binary expression $lhs " + op + " $rhs");
+        return NULL;
+    }
 
     std::string lhs_type = lhs->type;
     std::string rhs_type = rhs->type;
@@ -177,7 +183,10 @@ Value *NbinaryExpr::codeGen()
                 return ret;
             }
             else
-                error("shift operator \'>>\' not applicable to type \'double\'!\n");
+            {
+                ERROR("shift operator \'>>\' not applicable to type \'double\'!\n");
+                return NULL;
+            }
         case '<':
             if (op.size() == 1)
             {
@@ -192,7 +201,10 @@ Value *NbinaryExpr::codeGen()
                 return ret;
             }
             else
-                error("shift operator \'<<\' not applicable to type \'double\'!\n");
+            {
+                ERROR("shift operator \'<<\' not applicable to type \'double\'!\n");
+                return NULL;
+            }
         default:
             ERROR("invalid binary operator \'" + op + "\' for type \'double\'", 0);
             return NULL;
@@ -263,62 +275,124 @@ Value *Ndeclaration::codeGen()
     for (auto iterator : init_declarator_list)
     {
         NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
-        AllocaInst *allocation;
+        Value *allocation;
         auto op = it->identifier->name;
-        if (it->op == "")
+        if (it->op == "") // A single identifier
         {
-            if (type == "double")
+            if(is_global) // if a global variable declaration
             {
+                global_variables_type[op] = type; // manually bind
+                Value* constant_zero; // get constant zero as the default initializer
+                if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
+                else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
+                else if(type == "double") constant_zero = ConstantFP::get(context, APFloat(0.0));
+                
+                if(it->initializer) // if an initializer already exists
+                {
+                    if(!it->initializer->assign_expr->is_constant)
+                    {
+                        ERROR("only constants are allowed to initialize a global variable");
+                        return NULL;
+                    }
+                    if(it->initializer->assign_expr->type != type)
+                    {
+                        if(it->initializer->assign_expr->type == "int" && type == "double")
+                        {
+                            allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage,\
+                                                          (Constant*)(builder.CreateSIToFP(it->initializer->codeGen(), Type::getDoubleTy(context))), op);
+                            return allocation;
+                        }
+                        if(it->initializer->assign_expr->type == "int" && type == "char")
+                        {
+                            allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage,\
+                                                                  (Constant*)(builder.CreateIntCast(it->initializer->codeGen(), Type::getInt8Ty(context), false)), op);
+                            return allocation;
+                        }
+                        ERROR("must initialize \'" + type + " " + op + " with a legal type");
+                        return NULL;
+                    }
+                    allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)(it->initializer->codeGen()), op);
+                }
+                else allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)constant_zero, op);
+                Value* tmp = topModule->getNamedGlobal(op);
+                std::cout << "Global type: " << GET_VALUE_TYPE(tmp) << std::endl;
+                return allocation; // no need to record it in `bindings`
+            }
+            // Otherwise a local variable
+            if (type == "double")
+            {   
                 allocation = builder.CreateAlloca(Type::getDoubleTy(context), NULL, op);
+                if(!allocation)
+                {
+                    ERROR("unable to allocate for variable \'" + op + "\' of type \'" + type + "\'");
+                    return NULL;
+                }
                 if (it->initializer)
                     builder.CreateStore(it->initializer->codeGen(), allocation);
             }
             else if (type == "int")
             {
                 allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, op);
+                if(!allocation)
+                {
+                    ERROR("unable to allocate for variable \'" + op + "\' of type \'" + type + "\'");
+                    return NULL;
+                }
                 builder.CreateStore(it->initializer ? it->initializer->codeGen() : builder.getInt32(0), allocation);
             }
             else if (type == "char")
             {
                 allocation = builder.CreateAlloca(Type::getInt8Ty(context), NULL, op);
+                if(!allocation)
+                {
+                    ERROR("unable to allocate for variable \'" + op + "\' of type \'" + type + "\'");
+                    return NULL;
+                }
                 builder.CreateStore(it->initializer ? it->initializer->codeGen() : builder.getInt8(0), allocation);
             }
             ret = allocation;
             // builder.CreateStore(builder.getInt64(0), allocation);
         }
-        else if (it->op[0] == '[')
+        else if (it->op[0] == '[') // An array
         {
+            int num = 1;
             Value *size = ConstantInt::get(Type::getInt32Ty(context), 1);
             int i = 0;
             for (auto constant : it->dimensions)
             {
                 if (constant)
                 {
+                    num *= constant->value.int_value;
                     size = builder.CreateMul(size, constant->codeGen());
                     // FIXME: negative size
                 }
                 i++;
             }
+            ArrayType* arrayType = ArrayType::get(string_to_Type(type), num);
             Value *p;
-            if (type == "double")
+
+            if(is_global) // if a global variable declaration
             {
-                allocation = builder.CreateAlloca(Type::getDoubleTy(context), size, op);
+                global_variables_type[op] = type; // manually bind
+                Value *constant_zero;
+                if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
+                else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
+                allocation = new llvm::GlobalVariable(*topModule, arrayType, false, llvm::GlobalValue::CommonLinkage, (Constant*)constant_zero, op);
+                // ConstantAggregateZero* const_array_2 = ConstantAggregateZero::get(ArrayTy_0);
+                // allocation->setInitializer(const_array_2);
+                p = allocation; 
+            }
+            else // otherwise a local array declaration
+            {
+                allocation = builder.CreateAlloca(arrayType, NULL, op);
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
-            else if (type == "int")
-            {
-                allocation = builder.CreateAlloca(Type::getInt32Ty(context), size, op);
-                p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
-            }
-            else if (type == "char")
-            {
-                allocation = builder.CreateAlloca(Type::getInt8Ty(context), size, op);
-                p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
-            }
+            
             ret = p;
             dimensionBindings.insert(make_pair(op, &it->dimensions));
         }
-        else if (it->op[0] == '('){
+        else if (it->op[0] == '(') // A function definition
+        {
             Function *func = topModule->getFunction(op);
             vector<Type *> args;
             vector<string> argNames;
@@ -334,7 +408,7 @@ Value *Ndeclaration::codeGen()
                 func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
                 // funcStack.push_back(func);
             }
-            // error("function definition in functions is not allowed");
+            // ERROR("function definition in functions is not allowed");
         }
         bindings[op] = allocation;
     }
@@ -355,7 +429,10 @@ Value *NifStatement::codeGen()
 {
     Value *cond_val = cond_expr->codeGen();
     if (!cond_val)
-        error("conditional expression is not valid!\n");
+    {
+        ERROR("conditional expression is not valid!\n");
+        return NULL;
+    }
 
     // If the expr is not a double, convert it to a double
     if (!cond_val->getType()->isDoubleTy())
@@ -378,7 +455,10 @@ Value *NifStatement::codeGen()
     builder.SetInsertPoint(then_bb);           // set insert point to `then_bb`
     Value *then_val = if_statement->codeGen(); // recursively codeGen()
     if (!then_val)
-        error("if statement is not valid!\n");
+    {
+        ERROR("if statement is not valid!\n");
+        return NULL;
+    }
     builder.CreateBr(merge_bb);         // unconditional branch to the merge point
     then_bb = builder.GetInsertBlock(); // update `then_bb`
 
@@ -389,7 +469,10 @@ Value *NifStatement::codeGen()
     {
         else_val = else_statement->codeGen(); // recursively codeGen()
         if (!else_val)
-            error("2nd body statement of \'if\' statement is not valid");
+        {
+            ERROR("2nd body statement of \'if\' statement is not valid");
+            return NULL;
+        }
     }
     builder.CreateBr(merge_bb);         // unconditional branch to the merge point
     else_bb = builder.GetInsertBlock(); // update `else_bb`
@@ -406,13 +489,25 @@ Value *NforStatement::codeGen()
     Value *start_val = start_expr->codeGen();
     Value *end_val = end_expr->codeGen();
     if (!start_val)
-        error("Invalid start expression in FOR statement!");
+    {
+        ERROR("Invalid start expression in FOR statement!");
+        return NULL;
+    }
     if (!end_val)
-        error("Invalid end expression in FOR statement!");
+    {
+        ERROR("Invalid end expression in FOR statement!");
+        return NULL;
+    }
     if (GET_VALUE_TYPE(start_val) != "int")
-        error("Start expression in FOR statement should be of type \'int\'!");
+    {
+        ERROR("Start expression in FOR statement should be of type \'int\'!");
+        return NULL;
+    }
     if (GET_VALUE_TYPE(end_val) != "int")
-        error("End expression in FOR statement should be of type \'int\'!");
+    {
+        ERROR("End expression in FOR statement should be of type \'int\'!");
+        return NULL;
+    }
     Function *the_function = builder.GetInsertBlock()->getParent();
     BasicBlock *preheader_bb = builder.GetInsertBlock();
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
@@ -437,7 +532,7 @@ Value *NforStatement::codeGen()
     if (bindings[identifier_name] != NULL) // If there is already a binding, save the old allocation
     {
         std::cout << "Variable \'" + identifier_name + "\' already exists, of type " << GET_TYPE(identifier_name) << std::endl;
-        old_variable_allocation = bindings[identifier_name];
+        old_variable_allocation = (llvm::AllocaInst*)bindings[identifier_name];
     }
     // Allocate a new space for the loop variable
     variable_allocation = builder.CreateAlloca(Type::getInt32Ty(context), NULL, identifier_name);
@@ -486,7 +581,7 @@ Value *NforStatement::codeGen()
     else // No need to restore, just erase the loop variable
     {
         std::cout << "(debug) No need to restore variable \'" << identifier_name << "\'" << std::endl;
-        bindings.erase(identifier_name);
+        // bindings.erase(identifier_name);
     }
     return ret;
 }
@@ -506,7 +601,10 @@ Value *NwhileStatement::codeGen()
     else if (GET_VALUE_TYPE(while_cond) == "double")
         while_cond = builder.CreateFCmpONE(while_cond, ConstantFP::get(context, APFloat(1.0)), "whilecond");
     else
-        error("invalid condition expression in \'while\' statement");
+    {
+        ERROR("invalid condition expression in \'while\' statement");
+        return NULL;
+    }
 
     BasicBlock *loop_bb = BasicBlock::Create(context, "loop", the_function);
     BasicBlock *after_bb = BasicBlock::Create(context, "afterloop", the_function);
@@ -625,7 +723,10 @@ inline Value *createOpNode(Value *l, Value *r, char op)
 Value *NpostfixExpr::codeGen()
 {
     if (!name)
-        error("reference in postfix expression is not defined");
+    {
+        ERROR("reference in postfix expression is not defined");
+        return NULL;
+    }
     string &op = name->name;
 
     if (postfix_type == PARENTHESES)
@@ -638,7 +739,10 @@ Value *NpostfixExpr::codeGen()
         {
             Value *arg_val = it->codeGen();
             if (arg_val == NULL)
-                error("invalid argument in function \'" + op + "\'");
+            {
+                ERROR("invalid argument in function \'" + op + "\'");
+                return NULL;
+            }
             if (op != "scanf" || init)
             {
                 init = 0;
@@ -648,7 +752,10 @@ Value *NpostfixExpr::codeGen()
             {
                 auto target = dynamic_cast<NpostfixExpr *>(it);
                 if (!target)
-                    error("require a postfix expression in the parameter list of `scanf()`");
+                {
+                    ERROR("require a postfix expression in the parameter list of `scanf()`");
+                    return NULL;
+                }
                 argv.push_back(builder.CreateGEP(target->getAccess(), ConstantInt::get(Type::getInt32Ty(context), 0), "tmp"));
             }
         }
@@ -657,31 +764,75 @@ Value *NpostfixExpr::codeGen()
     }
     else if (postfix_type == SQUARE_BRACKETS || postfix_type == NONE)
     {
-        type = GET_TYPE(op); // bind type
+         // bind type
+        if(topModule->getNamedGlobal(op) != NULL) type = global_variables_type[op];
+        else type = GET_TYPE(op);
+        // get access
         Value *addr = getAccess();
-        return builder.CreateLoad(string_to_Type(GET_TYPE(op)), addr);
+        if(addr == NULL)
+        {
+            ERROR("(internal) invalid address");
+            return NULL;
+        }
+        // load variable
+        Value* ret = builder.CreateLoad(string_to_Type(type), addr);
+        return ret;
     }
     return NULL;
 }
 Value *NpostfixExpr::getAccess()
 {
     string &op(name->name);
+    /* Global variables have higher priviledge in RCC!!! */
+    if(topModule->getNamedGlobal(op) != NULL)
+    {
+        /* A single variable, not an array */
+        if(dimensionBindings.find(op) == dimensionBindings.end())
+            return topModule->getNamedGlobal(op);
+        
+        /* Else a global array */
+        auto dimensions = *dimensionBindings[op];
+        if (expr.size() != dimensions.size())
+        {
+            ERROR("dereferencing failed, please check on the dimensions. \n"
+                "Remember pointers are not supported in this version");
+            return NULL;
+        }
+        if (expr.size())
+        {
+            std::vector<Value*> indices;
+            for (int i = 0; i < expr.size(); i++)
+                indices.push_back(expr[i]->codeGen());
+            return builder.CreateGEP(topModule->getNamedGlobal(op), indices);
+        }
+    }
+    /* Otherwise local variables */
     if (dimensionBindings.find(op) == dimensionBindings.end())
-        return bindings[op];
+        return (llvm::AllocaInst *)bindings[op];
+    /* Otherwise local arrays */
     auto dimensions = *dimensionBindings[op];
     if (expr.size() != dimensions.size())
-        error("dereferncing failed, please check on the dimensions. \n"
+    {
+        ERROR("dereferencing failed, please check on the dimensions. \n"
               "Remember pointers are not supported in this version");
+        return NULL;
+    }
     if (expr.size())
     {
-        Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
-        for (int i = expr.size() - 1; i >= 0; i--)
-        {
-            index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
-            stride = builder.CreateMul(stride, dimensions[i]->codeGen());
-        }
-        ConstantFolder tmp;
-        return tmp.CreateGetElementPtr(bindings[op]->getType(), (Constant *)bindings[op], index);
+        std::vector<Value*> indices;
+        for (int i = 0; i < expr.size(); i++)
+            indices.push_back(expr[i]->codeGen());
+        return builder.CreateGEP((Value*)(bindings[op]), indices);
+        
+        // Deprecated index method with brute force below..
+        // Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
+        // for (int i = expr.size() - 1; i >= 0; i--)
+        // {
+        //     index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
+        //     stride = builder.CreateMul(stride, dimensions[i]->codeGen());
+        // }
+        // ConstantFolder tmp;
+        // return tmp.CreateGetElementPtr(((llvm::AllocaInst *)(bindings[op]))->getType(), (Constant *)bindings[op], index);
     }
 }
 Value *NassignExpr::codeGen()
@@ -712,7 +863,7 @@ Value *NassignExpr::codeGen()
         else if (lhs_type != rhs_type) // check for type error
         {
             if (lhs_type != "error" && rhs_type != "error") // Blocking cascade error
-                error("type error in assignment expression $lhs = $rhs: $lhs is \'" + lhs_type + "\' while $rhs is \'" + rhs_type + "\'");
+                ERROR("type error in assignment expression $lhs = $rhs: $lhs is \'" + lhs_type + "\' while $rhs is \'" + rhs_type + "\'");
             type = "error";
             return NULL;
         }
