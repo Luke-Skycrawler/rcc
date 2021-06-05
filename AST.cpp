@@ -231,7 +231,7 @@ void NunaryExpr::printNode(int indent)
 void NpostfixExpr::printNode(int indent)
 {
     // postfix_expr->printNode(indent);
-    PRINT_INDENT(indent, "NpostfixExpr(" + name->name + " type: "+type+")");
+    PRINT_INDENT(indent, "NpostfixExpr(\'" + name->name + "\', type: " + type + ")");
     for (auto it : argument_expr_list)
     {
         it->printNode(indent + 1);
@@ -306,8 +306,9 @@ Nstruct::Nstruct(const std::string &name, vector<Ndeclaration *> *content) : nam
     }
     structBindings[name] = this;
 }
-Nconstant::Nconstant(const std::string &type, char *value) 
+Nconstant::Nconstant(const std::string &type, char *value)
 {
+    is_constant = true;
     //Ignore the last \", so use `len` but not `len + 1`
     this->type=type;
     int len = strlen(value);
