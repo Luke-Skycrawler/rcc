@@ -3,17 +3,15 @@
 #include <vector>
 #include <algorithm>
 using namespace std;
-// vector<string> courses;
 string courses[50];
 static int bit[50],size_l1[50],size_l2[50][3];
 string prerequisites[50][5][5];
-// vector<vector<vector<string>>> prerequisites;
 int cnt=0,tot_credit=0,tot_score=0,attempt_credit=0,left_credit=0;
 int read(){
     char c,tmp1,tmp2;
     int i=0,j,credit,t;
     t=scanf("%c",&c);
-    if(t==EOF)return 0;
+    if(t==-1)return 1;
     while(c=='\n')scanf("%c",&c);
     while(c!='|'){
         courses[cnt]+=c;
@@ -26,16 +24,27 @@ int read(){
     scanf("%c",&c);
     scanf("%c",&c);
     i=j=0;
+    int init_i=1,init_j=1;
+    // i counts ';', j counts ','
     while(c!='|'){
         switch (c){
-            case ';':/*prerequisites[cnt][i++][j]+='\0';*/size_l2[cnt][i++]=j;break;
-            case ',':/*prerequisites[cnt][i][j++]+='\0';*/j++;break;
-            default:prerequisites[cnt][i][j]+=c;
+            case ';':size_l2[cnt][i++]+=j;j=0;init_j=1;break;
+            case ',':j++;break;
+            default:
+                prerequisites[cnt][i][j]+=c;
+                if(init_i){
+                    init_i=0;
+                    size_l1[cnt]++;
+                }
+                if(init_j){
+                    init_j=0;
+                    size_l2[cnt][i]++;
+                }
         }
         scanf("%c",&c);
     }
-    size_l1[cnt]=i;
-    size_l2[cnt][i]=j;
+    size_l1[cnt]+=i;
+    size_l2[cnt][i]+=j;
     t=scanf("%c",&c);
     if(t==-1){
         left_credit+=credit;
@@ -47,7 +56,8 @@ int read(){
             tot_score+=credit*(4-(c-'A'));
             attempt_credit+=credit;
             bit[cnt]=1;
-            scanf("%c",&c);
+            t=scanf("%c",&c);
+            if(t==-1)return 1;
             break;
         case 'F':
             attempt_credit+=credit;
@@ -61,7 +71,7 @@ int read(){
 }
 int main(void){
     while(read()==0){}
-    printf("GPA: %.1f\n",(float)tot_score/(tot_credit-left_credit));
+    printf("GPA: %.1f\n",(tot_credit-left_credit==0)?0.0f:(float)tot_score/(tot_credit-left_credit));
     printf("Hours Attempted: %d\n",attempt_credit);
     printf("Hours Completed: %d\n",tot_credit-left_credit);
     printf("Credits Remaining: %d\n\n",left_credit);
