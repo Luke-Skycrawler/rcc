@@ -180,7 +180,7 @@ inline std::string TRANSLATE_ALLOCAINST2TYPE(llvm::AllocaInst *inst)
     return "NULL";
 }
 
-inline llvm::Type *string_to_Type(std::string type)
+inline llvm::Type *STRING_TO_TYPE(std::string type)
 {
     if (type == "int")
         return llvm::Type::getInt32Ty(context);

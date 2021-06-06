@@ -303,22 +303,22 @@ Value *Ndeclaration::codeGen()
                     {
                         if(it->initializer->assign_expr->type == "int" && type == "double")
                         {
-                            allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage,\
+                            allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage,\
                                                           (Constant*)(builder.CreateSIToFP(it->initializer->codeGen(), Type::getDoubleTy(context))), op);
                             continue;
                         }
                         if(it->initializer->assign_expr->type == "int" && type == "char")
                         {
-                            allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage,\
+                            allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage,\
                                                                   (Constant*)(builder.CreateIntCast(it->initializer->codeGen(), Type::getInt8Ty(context), false)), op);
                             continue;
                         }
                         ERROR("must initialize \'" + type + " " + op + " with a legal type");
                         return NULL;
                     }
-                    allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)(it->initializer->codeGen()), op);
+                    allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)(it->initializer->codeGen()), op);
                 }
-                else allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)constant_zero, op);
+                else allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)constant_zero, op);
                 Value* tmp = topModule->getNamedGlobal(op);
                 std::cout << "Global type: " << GET_VALUE_TYPE(tmp) << std::endl;
                 continue;
@@ -373,7 +373,7 @@ Value *Ndeclaration::codeGen()
                 }
                 i++;
             }
-            ArrayType* array_type = ArrayType::get(string_to_Type(type), num);
+            ArrayType* array_type = ArrayType::get(STRING_TO_TYPE(type), num);
             Value *p;
 
             if(is_global) // if a global variable declaration
@@ -406,10 +406,10 @@ Value *Ndeclaration::codeGen()
                 int i = 0;
                 for (auto j : it->parameter_list)
                 {
-                    args.push_back(string_to_Type(j->type_specifier->type));
+                    args.push_back(STRING_TO_TYPE(j->type_specifier->type));
                     argNames.push_back(j->direct_declarator->identifier->name);
                 }
-                FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
+                FunctionType *ft = FunctionType::get(STRING_TO_TYPE(type), args, false);
                 func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
                 // funcStack.push_back(func);
             }
@@ -643,10 +643,10 @@ Value *NfunctionDefinition::codeGen()
         int i = 0;
         for (auto it : direct_declarator->parameter_list)
         {
-            args.push_back(string_to_Type(it->type_specifier->type));
+            args.push_back(STRING_TO_TYPE(it->type_specifier->type));
             // argNames.push_back(it->direct_declarator->identifier->name);
         }
-        FunctionType *ft = FunctionType::get(string_to_Type(type), args, false);
+        FunctionType *ft = FunctionType::get(STRING_TO_TYPE(type), args, false);
         func = Function::Create(ft, Function::ExternalLinkage, op, topModule);
         // funcStack.push_back(func);
     }
@@ -657,7 +657,7 @@ Value *NfunctionDefinition::codeGen()
         builder.SetInsertPoint(bb);
         for (auto it : direct_declarator->parameter_list)
         {
-            // args.push_back(string_to_Type(it->type_specifier->type));
+            // args.push_back(STRING_TO_TYPE(it->type_specifier->type));
             argNames.push_back(it->direct_declarator->identifier->name);
         }
         int i = 0;
@@ -781,7 +781,7 @@ Value *NpostfixExpr::codeGen()
             return NULL;
         }
         // load variable
-        Value* ret = builder.CreateLoad(string_to_Type(type), addr);
+        Value* ret = builder.CreateLoad(STRING_TO_TYPE(type), addr);
         return ret;
     }
     return NULL;
@@ -815,7 +815,7 @@ Value *NpostfixExpr::getAccess()
             }
             // return builder.CreateGEP((Value*)(bindings[op]), index);
             ConstantFolder tmp;
-            return tmp.CreateGetElementPtr(string_to_Type(global_variables_type[op]), topModule->getNamedGlobal(op), index);
+            return tmp.CreateGetElementPtr(STRING_TO_TYPE(global_variables_type[op]), topModule->getNamedGlobal(op), index);
 
             // std::vector<Value*> indices;
             // for (int i = 0; i < expr.size(); i++)
