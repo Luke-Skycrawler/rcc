@@ -368,7 +368,7 @@ Value *Ndeclaration::codeGen()
                 }
                 i++;
             }
-            ArrayType* arrayType = ArrayType::get(string_to_Type(type), num);
+            ArrayType* array_type = ArrayType::get(string_to_Type(type), num);
             Value *p;
 
             if(is_global) // if a global variable declaration
@@ -377,14 +377,14 @@ Value *Ndeclaration::codeGen()
                 Value *constant_zero;
                 if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
                 else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
-                allocation = new llvm::GlobalVariable(*topModule, arrayType, false, llvm::GlobalValue::CommonLinkage, (Constant*)constant_zero, op);
+                allocation = new llvm::GlobalVariable(*topModule, array_type, false, llvm::GlobalValue::CommonLinkage, (Constant*)constant_zero, op);
                 // ConstantAggregateZero* const_array_2 = ConstantAggregateZero::get(ArrayTy_0);
                 // allocation->setInitializer(const_array_2);
                 p = allocation; 
             }
             else // otherwise a local array declaration
             {
-                allocation = builder.CreateAlloca(arrayType, NULL, op);
+                allocation = builder.CreateAlloca(array_type, NULL, op);
                 p = builder.CreateGEP(allocation, ConstantInt::get(Type::getInt32Ty(context), 0), "tmp");
             }
             
@@ -800,10 +800,21 @@ Value *NpostfixExpr::getAccess()
         }
         if (expr.size())
         {
-            std::vector<Value*> indices;
-            for (int i = 0; i < expr.size(); i++)
-                indices.push_back(expr[i]->codeGen());
-            return builder.CreateGEP(topModule->getNamedGlobal(op), indices);
+            // Deprecated index method with brute force below..
+            Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
+            for (int i = expr.size() - 1; i >= 0; i--)
+            {
+                index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
+                stride = builder.CreateMul(stride, dimensions[i]->codeGen());
+            }
+            // return builder.CreateGEP((Value*)(bindings[op]), index);
+            ConstantFolder tmp;
+            return tmp.CreateGetElementPtr(string_to_Type(global_variables_type[op]), topModule->getNamedGlobal(op), index);
+
+            // std::vector<Value*> indices;
+            // for (int i = 0; i < expr.size(); i++)
+            //     indices.push_back(expr[i]->codeGen());
+            // return builder.CreateGEP(topModule->getNamedGlobal(op), indices);
         }
     }
     /* Otherwise local variables */
@@ -819,20 +830,16 @@ Value *NpostfixExpr::getAccess()
     }
     if (expr.size())
     {
-        std::vector<Value*> indices;
-        for (int i = 0; i < expr.size(); i++)
-            indices.push_back(expr[i]->codeGen());
-        return builder.CreateGEP((Value*)(bindings[op]), indices);
-        
         // Deprecated index method with brute force below..
-        // Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
-        // for (int i = expr.size() - 1; i >= 0; i--)
-        // {
-        //     index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
-        //     stride = builder.CreateMul(stride, dimensions[i]->codeGen());
-        // }
-        // ConstantFolder tmp;
-        // return tmp.CreateGetElementPtr(((llvm::AllocaInst *)(bindings[op]))->getType(), (Constant *)bindings[op], index);
+        Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
+        for (int i = expr.size() - 1; i >= 0; i--)
+        {
+            index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
+            stride = builder.CreateMul(stride, dimensions[i]->codeGen());
+        }
+        // return builder.CreateGEP((Value*)(bindings[op]), index);
+        ConstantFolder tmp;
+        return tmp.CreateGetElementPtr(((llvm::AllocaInst *)(bindings[op]))->getType(), (Constant *)bindings[op], index);
     }
 }
 Value *NassignExpr::codeGen()
