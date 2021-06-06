@@ -46,16 +46,20 @@ Value *NbinaryExpr::codeGen()
     else if(lhs_type == "int" && rhs_type == "int")
         type = "int";
     else if(lhs_type == "char" && rhs_type == "char")
-        type = "char";
-    else if(lhs_type == "char" && rhs_type == "int") // convert int -> char
     {
-        type = "char";
-        r = builder.CreateIntCast(r, Type::getInt8Ty(context), false);
+        type = "int";
+        l = builder.CreateIntCast(l, Type::getInt32Ty(context), false);
+        r = builder.CreateIntCast(r, Type::getInt32Ty(context), false);
     }
-    else if(lhs_type == "int" && rhs_type == "char") // convert int -> char
+    else if(lhs_type == "char" && rhs_type == "int") // convert char -> int
     {
-        type = "char";
-        l = builder.CreateIntCast(l, Type::getInt8Ty(context), false);
+        type = "int";
+        l = builder.CreateIntCast(l, Type::getInt32Ty(context), false);
+    }
+    else if(lhs_type == "int" && rhs_type == "char") // convert char -> int
+    {
+        type = "int";
+        r = builder.CreateIntCast(r, Type::getInt32Ty(context), false);
     }
     else // check for type error
     {
@@ -69,8 +73,8 @@ Value *NbinaryExpr::codeGen()
     if (type == "int" || type == "char")
     {
         Value *constant_zero;
-        if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
-        else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
+        if(type == "int" || type == "char") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
+        // else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
 
         switch (op[0])
         {
@@ -282,6 +286,7 @@ Value *Ndeclaration::codeGen()
             if(is_global) // if a global variable declaration
             {
                 global_variables_type[op] = type; // manually bind
+                std::cout << "Bind '" << op << "' successfully to type '" << type << "'" << std::endl;
                 Value* constant_zero; // get constant zero as the default initializer
                 if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
                 else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
@@ -300,13 +305,13 @@ Value *Ndeclaration::codeGen()
                         {
                             allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage,\
                                                           (Constant*)(builder.CreateSIToFP(it->initializer->codeGen(), Type::getDoubleTy(context))), op);
-                            return allocation;
+                            continue;
                         }
                         if(it->initializer->assign_expr->type == "int" && type == "char")
                         {
                             allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage,\
                                                                   (Constant*)(builder.CreateIntCast(it->initializer->codeGen(), Type::getInt8Ty(context), false)), op);
-                            return allocation;
+                            continue;
                         }
                         ERROR("must initialize \'" + type + " " + op + " with a legal type");
                         return NULL;
@@ -316,7 +321,7 @@ Value *Ndeclaration::codeGen()
                 else allocation = new llvm::GlobalVariable(*topModule, string_to_Type(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)constant_zero, op);
                 Value* tmp = topModule->getNamedGlobal(op);
                 std::cout << "Global type: " << GET_VALUE_TYPE(tmp) << std::endl;
-                return allocation; // no need to record it in `bindings`
+                continue;
             }
             // Otherwise a local variable
             if (type == "double")
@@ -554,7 +559,8 @@ Value *NforStatement::codeGen()
     // Step is 1
     Value *step_val = builder.getInt32(1);
     // Next variable
-    Value *next_variable = inc ? builder.CreateAdd(variable, step_val, "next_variable") : builder.CreateSub(variable, step_val, "next_variable");
+    Value* cur_variable = builder.CreateLoad((AllocaInst*)variable_allocation);
+    Value *next_variable = inc ? builder.CreateAdd(cur_variable, step_val, "next_variable") : builder.CreateSub(variable, step_val, "next_variable");
 
     // Convert condition to a bool by comparing non-equal to 0
     Value *continue_cond;
@@ -771,7 +777,7 @@ Value *NpostfixExpr::codeGen()
         Value *addr = getAccess();
         if(addr == NULL)
         {
-            ERROR("(internal) invalid address");
+            ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
             return NULL;
         }
         // load variable
@@ -866,6 +872,16 @@ Value *NassignExpr::codeGen()
             // std::cout << "Warning(debug): Automatic conversion when assigning \'int\' to \'double\'..." << std::endl;
             result = builder.CreateSIToFP(result, Type::getDoubleTy(context));
             type = "double";
+        }
+        else if (lhs_type == "int" && rhs_type == "char") // automatic conversion from when doing 'int' = 'char' assignment
+        {
+            result = builder.CreateIntCast(result, Type::getInt32Ty(context), false);
+            type = "int";
+        }
+        else if (lhs_type == "char" && rhs_type == "int") // automatic conversion from when doing 'int' = 'char' assignment
+        {
+            result = builder.CreateIntCast(result, Type::getInt8Ty(context), false);
+            type = "char";
         }
         else if (lhs_type != rhs_type) // check for type error
         {
