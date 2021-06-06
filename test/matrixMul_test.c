@@ -1,5 +1,5 @@
 int main(){
-    int m,n,u,v,i,j,k,a[20][20],b[20][20],sum;
+    int m,n,u,v,i,j,k,a[100][100],b[100][100],sum;
     scanf("%d%d",m,n);
     for(i:0 to m-1){
         for(j:0 to n-1){
@@ -13,7 +13,7 @@ int main(){
         }
     }
     if(n != u){
-        printf("%s","Incompatible Dimensions");
+        printf("%s","Incompatible Dimensions\n");
         return 0;
     }
     for(i:0 to m-1){

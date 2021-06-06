@@ -1,5 +1,5 @@
 // #include <stdio.h>
-int a[100];
+int a[10005];
 int sort(int left, int right)
 {
     int i = left;
