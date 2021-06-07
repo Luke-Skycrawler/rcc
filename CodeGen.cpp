@@ -427,7 +427,7 @@ Value *NcompoundStatement::codeGen()
     }
     for (auto it :statement_list){
         tmp = it->codeGen();
-        if(tmp==NULL && dynamic_cast<NreturnStatement*>(it))break;
+        if(dynamic_cast<NreturnStatement*>(it))break;
     }
     return tmp;
 }
@@ -967,11 +967,9 @@ llvm::Value *NreturnStatement::codeGen()
 {
     if (expr)
     {
-        builder.CreateRet(expr->codeGen());
-        return NULL;
+        return builder.CreateRet(expr->codeGen());
     }
     else{
         return builder.CreateRet(NULL);
-        return NULL;
     }
 }
