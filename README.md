@@ -8,13 +8,13 @@ This repository contains our course project for *Compiler Principle* Curriculum 
 
 ### Difference with C
 
-[ ] type system: char, int, double and n-dimensional array type; Pointers and struct type is not supported in this version.
-[ ] no controled jumps, gotos and labels , i.e. break, continue and switch statements are not supported.
-[ ] pre-compile MARCO not supported
-[ ] `scanf` and `printf` are automaticly declared and linked with libc in runtime
-[ ] calling convention of `scanf` modified. e.g. you shall use `scanf("%d",i)` to read the value into variable i and drop the `&` symbol. 
-[ ] `for` loop snippet is switched to pascal-like `for(i: 0 to n){}`, where i is only seen within the scope of this loop 
-[ ] unary operators not supported
+[x] type system: char, int, double and n-dimensional array type; Pointers and struct type is not supported in this version.
+[x] no controled jumps, gotos and labels , i.e. break, continue and switch statements are not supported.
+[x] pre-compile MARCO not supported
+[x] `scanf` and `printf` are automaticly declared and linked with libc in runtime
+[x] calling convention of `scanf` modified. e.g. you shall use `scanf("%d",i)` to read the value into variable i and drop the `&` symbol. 
+[x] `for` loop snippet is switched to pascal-like `for(i: 0 to n){}`, where i is only seen within the scope of this loop 
+[x] unary operators not supported
 
 try out the test samples to get a better understanding of the gramma. 
 ### Prerequsite
