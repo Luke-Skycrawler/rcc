@@ -670,7 +670,7 @@ Value *NfunctionDefinition::codeGen()
         }
         if (auto ret = body->codeGen())
         {
-            builder.CreateRet(ret);
+            // builder.CreateRet(ret);
             verifyFunction(*func);
 
             return ret;
@@ -703,28 +703,6 @@ Value *Nexpr::codeGen()
         tmp = it->codeGen();
     }
     return tmp;
-}
-inline Value *createOpNode(Value *l, Value *r, char op)
-{
-    switch (op)
-    {
-    case '+':
-        return builder.CreateFAdd(l, r, "add");
-    case '-':
-        return builder.CreateFSub(l, r, "sub");
-    case '*':
-        return builder.CreateFMul(l, r, "mult");
-    case '/':
-        return builder.CreateFDiv(l, r, "div");
-    case '|':
-        return builder.CreateOr(l, r, "or");
-    case '&':
-        return builder.CreateAnd(l, r, "and");
-    case '%':
-        return builder.CreateFRem(l, r, "");
-    default:
-        return NULL;
-    }
 }
 Value *NpostfixExpr::codeGen()
 {
@@ -848,19 +826,61 @@ Value *NpostfixExpr::getAccess()
         return tmp.CreateGetElementPtr(((llvm::AllocaInst *)(bindings[op]))->getType(), (Constant *)bindings[op], index);
     }
 }
+inline Value *createIntOp(Value *l, Value *r, char op)
+{
+    switch (op)
+    {
+    case '+':
+        return builder.CreateAdd(l, r, "add");
+    case '-':
+        return builder.CreateSub(l, r, "sub");
+    case '*':
+        return builder.CreateMul(l, r, "mult");
+    case '/':
+        return builder.CreateSDiv(l, r, "div");
+    case '|':
+        return builder.CreateOr(l, r, "or");
+    case '&':
+        return builder.CreateAnd(l, r, "and");
+    case '%':
+        return builder.CreateSRem(l, r, "");
+    default:
+        return NULL;
+    }
+}
+inline Value *createFloatOp(Value *l,Value *r, char op){
+    switch (op)
+    {
+    case '+':
+        return builder.CreateFAdd(l, r, "add");
+    case '-':
+        return builder.CreateFSub(l, r, "sub");
+    case '*':
+        return builder.CreateFMul(l, r, "mult");
+    case '/':
+        return builder.CreateFDiv(l, r, "div");
+    case '%':
+        return builder.CreateFRem(l, r, "");
+    default:
+        return NULL;
+    }    
+}
 Value *NassignExpr::codeGen()
 {
     Value *r = assign_expr->codeGen(), *l = lhs->codeGen(), *result = NULL;
+    auto storeAddr = lhs->getAccess();
     // FIXME: possible error here
     if (assign_op[0] != '=') // TODO: extension
     {
-        result = createOpNode(l, r, assign_op[0]);
+        if(GET_VALUE_TYPE(l)=="double")
+            result=createFloatOp(l,r,assign_op[0]);
+        else 
+            result = createIntOp(l, r, assign_op[0]);
+        builder.CreateStore(result, storeAddr);
         return result;
     }
     if (assign_op[0] == '=')
     {
-        // auto storeAddr = bindings[lhs->identifier->name];
-        auto storeAddr = lhs->getAccess();
         // We should NOT directly search in the bindings
         // We shall use some virtual method, which would automatically fetch the `storeAddr` and related info (like the size of an array)
         // Or just give up assigning to an array... :)
