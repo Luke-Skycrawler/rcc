@@ -670,7 +670,7 @@ Value *NfunctionDefinition::codeGen()
         }
         if (auto ret = body->codeGen())
         {
-            // builder.CreateRet(ret);
+            builder.CreateRet(ret);
             verifyFunction(*func);
 
             return ret;
