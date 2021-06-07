@@ -422,12 +422,13 @@ Value *Ndeclaration::codeGen()
 Value *NcompoundStatement::codeGen()
 {
     Value *tmp;
-    if (declaration_list.size())
-        for (auto it = declaration_list.begin(); it != declaration_list.end(); it++)
-            tmp = (*it)->codeGen();
-    if (statement_list.size())
-        for (auto it = statement_list.begin(); it != statement_list.end(); it++)
-            tmp = (*it)->codeGen();
+    for (auto it:declaration_list){
+        tmp = it->codeGen();
+    }
+    for (auto it :statement_list){
+        tmp = it->codeGen();
+        if(tmp==NULL && dynamic_cast<NreturnStatement*>(it))break;
+    }
     return tmp;
 }
 Value *NifStatement::codeGen()
@@ -966,8 +967,11 @@ llvm::Value *NreturnStatement::codeGen()
 {
     if (expr)
     {
-        return builder.CreateRet(expr->codeGen());
+        builder.CreateRet(expr->codeGen());
+        return NULL;
     }
-    else
+    else{
         return builder.CreateRet(NULL);
+        return NULL;
+    }
 }
