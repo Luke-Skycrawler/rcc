@@ -4,9 +4,9 @@
 
 > Authors: [Haoyang Shi](https://github.com/Luke-Skycrawler), [Tinghao Xie](http://vtu.life)
 
-This repository contains our course project for *Compiler Principle* Curriculum at ZJU.
+[This repository](https://github.com/Luke-Skycrawler/rcc) contains our course project for *Compiler Principle* at ZJU.
 
-### Difference with C
+### Differences with C
 
 * type system: char, int, double and n-dimensional array type; Pointers and struct type is not supported in this version.
 * no controled jumps, gotos and labels , i.e. break, continue and switch statements are not supported.
@@ -17,6 +17,7 @@ This repository contains our course project for *Compiler Principle* Curriculum 
 * unary operators not supported
 
 try out the test samples to get a better understanding of the gramma. 
+
 ### Prerequsite
 
 * flex 2.5+
@@ -27,10 +28,11 @@ try out the test samples to get a better understanding of the gramma.
 which is easily accessible via apt and other package managers.  
 
 It has been successfully tested with
-* flex 2.6.4 + bison 3.0.4 on Ubuntu 18.04 (x86_64)
-* flex 2.5.35 + bison 3.7.6 on MacOS (x86_64)
+* flex 2.6.4 + bison 3.0.4 + llvm-12 on Ubuntu 18.04 (x86_64)
+* flex 2.5.35 + bison 3.7.6 + llvm-12 on MacOS (x86_64)
 
 ### Install
+
 Clean the directory with:
 ```bash
 make clean
@@ -40,6 +42,17 @@ Install with:
 ```bash
 make
 ```
+
+If you want to install with a specific version of bison, install with:
+```bash
+make BISON=[YOUR-BISON-PATH]
+```
+
+If you are installing RCC with LLVM12 on MacOS, install with:
+```bash
+make DEFINE='-D MACOS'
+```
+
 ### Usage
 
 ```bash
