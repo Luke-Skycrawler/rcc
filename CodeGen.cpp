@@ -258,6 +258,8 @@ Value *Ninitializer::codeGen()
 }
 Value *NtypeSpecifier::codeGen()
 {
+    if(struct_type != NULL)
+        struct_type->codeGen();
     return NULL;
 }
 Value *NinitDeclarator::codeGen()
@@ -275,7 +277,9 @@ Value *NdirectDeclarator::codeGen()
 Value *Ndeclaration::codeGen()
 {
     void *ret;
-    auto type = type_specifier->type;
+    type_specifier->codeGen(); // only matters when the type specifier contains a struct definition!
+    auto type = type_specifier->type; // the type's name
+    auto llvm_type = STRING_TO_TYPE(type); // embedding type
     for (auto iterator : init_declarator_list)
     {
         NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
@@ -286,8 +290,10 @@ Value *Ndeclaration::codeGen()
             if(is_global) // if a global variable declaration
             {
                 global_variables_type[op] = type; // manually bind
+                global_variables_llvmtype[op] = llvm_type; // manually bind
                 std::cout << "Bind '" << op << "' successfully to type '" << type << "'" << std::endl;
-                Value* constant_zero; // get constant zero as the default initializer
+                /* get constant zero as the default initializer */
+                Value* constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0); // default to int32(0)
                 if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
                 else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
                 else if(type == "double") constant_zero = ConstantFP::get(context, APFloat(0.0));
@@ -355,37 +361,69 @@ Value *Ndeclaration::codeGen()
                 }
                 builder.CreateStore(it->initializer ? it->initializer->codeGen() : builder.getInt8(0), allocation);
             }
+            else // user defined struct type
+            {
+                allocation = builder.CreateAlloca(llvm_type, NULL, op);
+                if(!allocation)
+                {
+                    ERROR("unable to allocate for variable \'" + op + "\' of type \'" + type + "\'");
+                    return NULL;
+                }
+                if (it->initializer)
+                {
+                    ERROR("initializing a struct type variable is not allowed");
+                    return NULL;
+                }
+            }
             ret = allocation;
-            // builder.CreateStore(builder.getInt64(0), allocation);
         }
         else if (it->op[0] == '[') // An array
         {
-            int num = 1;
-            Value *size = ConstantInt::get(Type::getInt32Ty(context), 1);
-            int i = 0;
-            for (auto constant : it->dimensions)
+            // int num = 1;
+            // Value *size = ConstantInt::get(Type::getInt32Ty(context), 1); // not used
+            // int i = 0;
+            // for (auto constant : it->dimensions)
+            // {
+            //     if (constant)
+            //     {
+            //         num *= constant->value.int_value;
+            //         size = builder.CreateMul(size, constant->codeGen());
+            //         // FIXME: negative size
+            //     }
+            //     i++;
+            // }
+            // ArrayType* array_type = ArrayType::get(STRING_TO_TYPE(type), num);
+            
+            // if(type != "int" && type != "double" && type != "char")
+            // {
+            //     ERROR("array of struct is not supported yet");
+            //     return NULL;
+            // }
+
+            llvm::Type* tmp_type = STRING_TO_TYPE(type);
+            ArrayType* array_type;
+            for(auto constant = it->dimensions.rbegin(); constant != it->dimensions.rend(); constant++)
             {
-                if (constant)
+                if (*constant)
                 {
-                    num *= constant->value.int_value;
-                    size = builder.CreateMul(size, constant->codeGen());
-                    // FIXME: negative size
+                    array_type = ArrayType::get(tmp_type, (*constant)->value.int_value);
+                    tmp_type = array_type;
                 }
-                i++;
             }
-            ArrayType* array_type = ArrayType::get(STRING_TO_TYPE(type), num);
+
             Value *p;
 
             if(is_global) // if a global variable declaration
             {
                 global_variables_type[op] = type; // manually bind
+                global_variables_llvmtype[op] = array_type; // manually bind
                 Value *constant_zero;
                 if(type == "int") constant_zero = ConstantInt::get(Type::getInt32Ty(context), 0);
                 else if(type == "char") constant_zero = ConstantInt::get(Type::getInt8Ty(context), 0);
                 allocation = new llvm::GlobalVariable(*topModule, array_type, false, llvm::GlobalValue::CommonLinkage, (Constant*)constant_zero, op);
                 // ConstantAggregateZero* const_array_2 = ConstantAggregateZero::get(ArrayTy_0);
                 // allocation->setInitializer(const_array_2);
-                p = allocation; 
+                p = allocation;
             }
             else // otherwise a local array declaration
             {
@@ -747,12 +785,48 @@ Value *NpostfixExpr::codeGen()
         std::cout << std::endl;
         return builder.CreateCall(callee, argv, "call");
     }
-    else if (postfix_type == SQUARE_BRACKETS || postfix_type == NONE)
+    else if (postfix_type == NONE)
     {
          // bind type
         if(topModule->getNamedGlobal(op) != NULL) type = global_variables_type[op];
         else type = GET_TYPE(op);
+        
         // get access
+        Value *addr = getAccess();
+        if(addr == NULL)
+        {
+            ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
+            return NULL;
+        }
+        // load variable
+        // std::cout << "Creating load for variable \'" + op + "\' of type \'" + type + "\'" << std::endl;
+        Value* ret = builder.CreateLoad(STRING_TO_TYPE(type), addr);
+        return ret;
+    }
+    else if (postfix_type == SQUARE_BRACKETS)
+    {
+         // bind type
+        type = getUltimateType();
+        
+        // get access
+        Value *addr = getAccess();
+        if(addr == NULL)
+        {
+            ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
+            return NULL;
+        }
+        // load variable
+        // std::cout << "Creating load for variable \'" + op + "\' of type \'" + type + "\'" << std::endl;
+        Value* ret = builder.CreateLoad(STRING_TO_TYPE(type), addr);
+        return ret;
+    }
+    else if (postfix_type == DOT) // struct reference
+    {
+        std::string struct_type = GET_TYPE(op);
+        std::cout << "Dereferencing struct " << struct_type << " variable \'" << op << "\': " << std::endl;
+        std::cout << "\tUltimate type is \'" << getUltimateType() << "\'" << std::endl;
+        type = getUltimateType();
+
         Value *addr = getAccess();
         if(addr == NULL)
         {
@@ -765,67 +839,263 @@ Value *NpostfixExpr::codeGen()
     }
     return NULL;
 }
+std::string NpostfixExpr::getUltimateType()
+{
+    if(postfix_type == PARENTHESES)
+    {
+        ERROR("(internal) should not call NpostfixExpr::getUltimateType() when not dereferencing a struct or array");
+        return "NULL";
+    }
+    if(postfix_type == SQUARE_BRACKETS)
+    {
+        string &op(name->name);
+
+        llvm::Type *superior_llvm_type;
+        if(topModule->getNamedGlobal(op) != NULL)
+        {
+            superior_llvm_type = global_variables_llvmtype[op];
+        }
+        else
+            superior_llvm_type = ((llvm::AllocaInst*)bindings[op])->getAllocatedType(); // the leftmost identifier's struct type
+        if(superior_llvm_type->isArrayTy() == false)
+        {
+            ERROR("illegal dereference of a vairable that is not of an array type");
+            return "NULL";
+        }
+        
+        for(auto it: expr)
+        {
+            Value* array_ref = it->codeGen();
+
+            if(array_ref)
+            {
+                if(superior_llvm_type->isArrayTy())
+                    superior_llvm_type = ((llvm::ArrayType*)superior_llvm_type)->getElementType(); // update superior type name
+                else
+                {
+                    ERROR("illegal access a struct vairable's member that is not of an array type");
+                    return NULL;
+                }
+            }
+            else
+            {
+                Nidentifier* tmp = (Nidentifier*)it;
+                std::string& member_name = tmp->name;
+                std::string superior_type = TYPE_TO_STRING(superior_llvm_type);
+                if (struct_info_bindings.find(superior_type) == struct_info_bindings.end())
+                {
+                    ERROR("No such struct type \'" + superior_type + "\'");
+                    return NULL;
+                }
+                if (struct_info_bindings[superior_type]->name_type_map.find(member_name) == struct_info_bindings[superior_type]->name_type_map.end())
+                {
+                    ERROR("No such member \'" + member_name + "\' in struct type \'" + superior_type + "\'");
+                    return NULL;
+                }
+                superior_llvm_type = struct_info_bindings[superior_type]->name_llvmtype_map[member_name]; // update superior type name
+            }
+        }
+        if(TYPE_TO_STRING(superior_llvm_type) == "NULL")
+        {
+            ERROR("(internal) invalid dereference of variable \'" + op + "\' of struct type \'" + GET_TYPE(op) + "\'");
+            return NULL;
+        }
+        return TYPE_TO_STRING(superior_llvm_type);
+    }
+    else if(postfix_type == DOT)
+    {
+        string &op(name->name);
+
+        llvm::Type *superior_llvm_type; // the leftmost identifier's struct type
+        if(topModule->getNamedGlobal(op) != NULL)
+        {
+            superior_llvm_type = global_variables_llvmtype[op];
+        }
+        else
+            superior_llvm_type = ((llvm::AllocaInst*)bindings[op])->getAllocatedType();
+        if(superior_llvm_type->isStructTy() == false)
+        {
+            ERROR("illegal dereference of a vairable that is not of an struct type");
+            return NULL;
+        }
+
+        for(auto it: expr)
+        {
+            Value* array_ref = it->codeGen();
+
+            if(array_ref)
+            {
+                if(superior_llvm_type->isArrayTy())
+                    superior_llvm_type = ((llvm::ArrayType*)superior_llvm_type)->getElementType(); // update superior type name
+                else
+                {
+                    ERROR("illegal access a struct vairable's member that is not of an array type");
+                    return NULL;
+                }
+            }
+            else
+            {
+                Nidentifier* tmp = (Nidentifier*)it;
+                std::string& member_name = tmp->name;
+                std::string superior_type = TYPE_TO_STRING(superior_llvm_type);
+                if (struct_info_bindings.find(superior_type) == struct_info_bindings.end())
+                {
+                    ERROR("No such struct type \'" + superior_type + "\'");
+                    return NULL;
+                }
+                if (struct_info_bindings[superior_type]->name_type_map.find(member_name) == struct_info_bindings[superior_type]->name_type_map.end())
+                {
+                    ERROR("No such member \'" + member_name + "\' in struct type \'" + superior_type + "\'");
+                    return NULL;
+                }
+                superior_llvm_type = struct_info_bindings[superior_type]->name_llvmtype_map[member_name]; // update superior type name
+            }
+        }
+        if(TYPE_TO_STRING(superior_llvm_type) == "NULL")
+        {
+            ERROR("(internal) invalid dereference of variable \'" + op + "\' of struct type \'" + GET_TYPE(op) + "\'");
+            return NULL;
+        }
+        return TYPE_TO_STRING(superior_llvm_type);
+    }
+    return "NULL";
+}
 Value *NpostfixExpr::getAccess()
 {
     string &op(name->name);
-    /* Global variables have higher priviledge in RCC!!! */
+    Value* addr;
+    bool is_global = false;
     if(topModule->getNamedGlobal(op) != NULL)
     {
-        /* A single variable, not an array */
-        if(dimensionBindings.find(op) == dimensionBindings.end())
-            return topModule->getNamedGlobal(op);
-        
-        /* Else a global array */
-        auto dimensions = *dimensionBindings[op];
-        if (expr.size() != dimensions.size())
-        {
-            ERROR("dereferencing failed, please check on the dimensions. \n"
-                "Remember pointers are not supported in this version");
-            return NULL;
-        }
+        is_global = true;
+        addr = topModule->getNamedGlobal(op);
+    }
+    else addr = (Value*)(bindings[op]);
+
+    if(postfix_type == NONE) /* local (normal) variables */
+    {
+        return addr;
+    }
+    else if(postfix_type == SQUARE_BRACKETS) /* local arrays */
+    {
         if (expr.size())
         {
-            // Deprecated index method with brute force below..
-            Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
-            for (int i = expr.size() - 1; i >= 0; i--)
+            std::vector<llvm::Value*> indices; // record indices to the target member
+            indices.push_back(ConstantInt::get(Type::getInt32Ty(context), 0)); // the first index must be 0!
+            
+            llvm::Type *superior_llvm_type; // the leftmost identifier's struct type
+            if(is_global)
             {
-                index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
-                stride = builder.CreateMul(stride, dimensions[i]->codeGen());
+                superior_llvm_type = global_variables_llvmtype[op];
             }
-            // return builder.CreateGEP((Value*)(bindings[op]), index);
-            ConstantFolder tmp;
-            return tmp.CreateGetElementPtr(STRING_TO_TYPE(global_variables_type[op]), topModule->getNamedGlobal(op), index);
+            else
+                superior_llvm_type = ((llvm::AllocaInst*)bindings[op])->getAllocatedType();
+            if(superior_llvm_type->isArrayTy() == false)
+            {
+                ERROR("illegal dereference of a vairable that is not of an array type");
+                return NULL;
+            }
 
-            // std::vector<Value*> indices;
-            // for (int i = 0; i < expr.size(); i++)
-            //     indices.push_back(expr[i]->codeGen());
-            // return builder.CreateGEP(topModule->getNamedGlobal(op), indices);
+            for(auto it: expr)
+            {
+                Value* array_ref = it->codeGen();
+
+                if(array_ref)
+                {
+                    indices.push_back(array_ref);
+                    if(superior_llvm_type->isArrayTy())
+                        superior_llvm_type = ((llvm::ArrayType*)superior_llvm_type)->getElementType(); // update superior type name
+                    else
+                    {
+                        ERROR("illegal access a struct vairable's member that is not of an array type");
+                        return NULL;
+                    }
+                }
+                else
+                {
+                    Nidentifier* tmp = (Nidentifier*)it;
+                    std::string& member_name = tmp->name;
+                    std::string superior_type = TYPE_TO_STRING(superior_llvm_type);
+                    if (struct_info_bindings.find(superior_type) == struct_info_bindings.end())
+                    {
+                        ERROR("No such struct type \'" + superior_type + "\'");
+                        return NULL;
+                    }
+                    if (struct_info_bindings[superior_type]->name_offset_map.find(member_name) == struct_info_bindings[superior_type]->name_offset_map.end())
+                    {
+                        ERROR("No such member \'" + member_name + "\' in struct type \'" + superior_type + "\'");
+                        return NULL;
+                    }
+                    
+                    int member_offset = struct_info_bindings[superior_type]->name_offset_map[member_name];
+                    indices.push_back(ConstantInt::get(Type::getInt32Ty(context), member_offset));
+
+                    superior_llvm_type = struct_info_bindings[superior_type]->name_llvmtype_map[member_name]; // update superior type name
+                }
+            }
+            return builder.CreateGEP(addr, indices);
         }
     }
-    /* Otherwise local variables */
-    if (dimensionBindings.find(op) == dimensionBindings.end())
-        return (llvm::AllocaInst *)bindings[op];
-    /* Otherwise local arrays */
-    auto dimensions = *dimensionBindings[op];
-    if (expr.size() != dimensions.size())
+    else if(postfix_type == DOT) /* user defined struct */
     {
-        ERROR("dereferencing failed, please check on the dimensions. \n"
-              "Remember pointers are not supported in this version");
-        return NULL;
-    }
-    if (expr.size())
-    {
-        // Deprecated index method with brute force below..
-        Value *index = builder.getInt32(0), *stride = builder.getInt32(1);
-        for (int i = expr.size() - 1; i >= 0; i--)
+        std::vector<llvm::Value*> indices; // record indices to the target member
+        indices.push_back(ConstantInt::get(Type::getInt32Ty(context), 0)); // the first index must be 0!
+        
+        llvm::Type *superior_llvm_type; // the leftmost identifier's struct type
+        if(is_global)
         {
-            index = builder.CreateAdd(index, builder.CreateMul(stride, expr[i]->codeGen()));
-            stride = builder.CreateMul(stride, dimensions[i]->codeGen());
+            superior_llvm_type = global_variables_llvmtype[op];
         }
-        // return builder.CreateGEP((Value*)(bindings[op]), index);
-        ConstantFolder tmp;
-        return tmp.CreateGetElementPtr(((llvm::AllocaInst *)(bindings[op]))->getType(), (Constant *)bindings[op], index);
+        else
+            superior_llvm_type = ((llvm::AllocaInst*)bindings[op])->getAllocatedType();
+        if(superior_llvm_type->isStructTy() == false)
+        {
+            ERROR("illegal dereference of a vairable that is not of an struct type");
+            return NULL;
+        }
+
+        for(auto it: expr)
+        {
+            Value* array_ref = it->codeGen();
+            if(array_ref) // array element
+            {
+                indices.push_back(array_ref);
+                if(superior_llvm_type->isArrayTy())
+                    superior_llvm_type = ((llvm::ArrayType*)superior_llvm_type)->getElementType(); // update superior type name
+                else
+                {
+                    ERROR("illegal access a struct vairable's member that is not of an array type");
+                    return NULL;
+                }
+            }
+            else // struct member
+            {
+                Nidentifier* tmp = (Nidentifier*)it;
+                std::string& member_name = tmp->name;
+                std::string superior_type = TYPE_TO_STRING(superior_llvm_type);
+                if (struct_info_bindings.find(superior_type) == struct_info_bindings.end())
+                {
+                    ERROR("No such struct type \'" + superior_type + "\'");
+                    return NULL;
+                }
+                if (struct_info_bindings[superior_type]->name_offset_map.find(member_name) == struct_info_bindings[superior_type]->name_offset_map.end())
+                {
+                    ERROR("No such member \'" + member_name + "\' in struct type \'" + superior_type + "\'");
+                    return NULL;
+                }
+                
+                int member_offset = struct_info_bindings[superior_type]->name_offset_map[member_name];
+                indices.push_back(ConstantInt::get(Type::getInt32Ty(context), member_offset));
+
+                superior_llvm_type = struct_info_bindings[superior_type]->name_llvmtype_map[member_name]; // update superior type name
+            }
+        }
+        
+        // llvm::Value* member_ptr = builder.CreateGEP(STRING_TO_TYPE(GET_TYPE(op)), (llvm::AllocaInst *)addr, indices, "memberptr");
+        llvm::Value* member_ptr = builder.CreateGEP(addr, indices, "memberptr");
+        return member_ptr;
     }
+    return NULL;
 }
 inline Value *createIntOp(Value *l, Value *r, char op)
 {
@@ -951,16 +1221,30 @@ llvm::Function *CreateScanf()
     func->setCallingConv(llvm::CallingConv::C);
     return func;
 }
-llvm::Value *NderivedType::codeGen()
-{
-    return NULL;
-}
 llvm::Value *NparameterList::codeGen()
 {
     return NULL;
 }
 llvm::Value *Nstruct::codeGen()
 {
+    /**
+     * This codeGen() return nothing! It just constructs the user defined type
+     * and save the info in the global map `struct_info_bindings`
+     */
+    auto struct_type = llvm::StructType::create(context, name); // create an opaque type
+    if(struct_info_bindings[name] != NULL)
+    {
+        ERROR("struct type \'" + name + "\' already defined", 1);
+    }
+    struct_info_bindings[name] = new StructInfo(struct_type); // create a new struct info in map
+    
+    std::vector<llvm::Type*> members; // the vector to hold all types
+    for(auto it: *content) // traverse all declarations
+    {
+        it->constructStruct(name, members);
+    }
+    struct_type->setBody(members); // update the LLVM struct type's body
+    
     return NULL;
 }
 llvm::Value *NreturnStatement::codeGen()

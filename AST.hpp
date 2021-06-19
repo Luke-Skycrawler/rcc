@@ -28,7 +28,6 @@ class NpostfixExpr;
 class Nidentifier;
 class Nconstant;
 class Nstruct;
-class NderivedType;
 extern bool error_alarm;
 llvm::Function *CreateScanf();
 llvm::Function *CreatePrintf();
@@ -36,6 +35,17 @@ extern llvm::Module *topModule;
 extern std::map<std::string, void*> bindings;
 extern std::map<std::string, std::vector<Nconstant *>*> dimensionBindings;
 extern std::map<std::string, std::string> global_variables_type;
+extern std::map<std::string, llvm::Type*> global_variables_llvmtype;
+class StructInfo {
+public:
+    StructInfo(llvm::StructType* struct_type_pointer):len(0), struct_type_pointer(struct_type_pointer){}
+    llvm::StructType* struct_type_pointer;
+    int len; // number of members
+    std::map<std::string, int> name_offset_map; // mapping names of members to offsets
+    std::map<std::string, std::string> name_type_map; // mapping names of members to types (string)
+    std::map<std::string, llvm::Type*> name_llvmtype_map; // mapping names of members to LLVM types
+};
+extern std::map<std::string, StructInfo*> struct_info_bindings;
 extern llvm::LLVMContext context;
 extern llvm::IRBuilder<> builder;
 inline void ERROR(const std::string &msg, int level = 0)
@@ -83,35 +93,67 @@ inline void PRINT_INDENT(int indent, std::string msg = "", bool new_line = 1)
 
 inline std::string GET_TYPE(std::string name)
 {
-    if(bindings.find(name) == bindings.end()) return "NULL";
-    llvm::AllocaInst *inst = (llvm::AllocaInst *)(bindings[name]);
-    if (!inst)
-        return "NULL";
-    if (inst->getAllocatedType()->isIntegerTy())
+    llvm::Type* type;
+    if(topModule->getNamedGlobal(name) != NULL)
     {
-        int num_bit = inst->getAllocatedType()->getIntegerBitWidth();
+        type = global_variables_llvmtype[name];
+    }
+    else
+    {
+        if(bindings.find(name) == bindings.end()) return "NULL";
+        llvm::AllocaInst *inst = (llvm::AllocaInst *)(bindings[name]);
+        if (!inst)
+            return "NULL";
+        type = inst->getAllocatedType();
+    }
+    
+    if (type->isIntegerTy())
+    {
+        int num_bit = type->getIntegerBitWidth();
         if (num_bit == 8)
             return "char";
         else if (num_bit == 32)
             return "int";
     }
-    else if (inst->getAllocatedType()->isDoubleTy())
+    else if (type->isDoubleTy())
     {
         return "double";
     }
-    else if(inst->getAllocatedType()->getArrayElementType()) // Maybe it's an array!
+    else if(type->isStructTy())
     {
-        if(inst->getAllocatedType()->getArrayElementType()->isIntegerTy())
+        if(((llvm::StructType*)(type))->hasName())
         {
-            int num_bit = inst->getAllocatedType()->getArrayElementType()->getIntegerBitWidth();
+            return ((llvm::StructType*)(type))->getName().str();
+        }
+        return "struct";
+    }
+    else if(type->isArrayTy()) // if it's an array (maybe multi-dimensional)
+    {
+        llvm::Type* tmp = type->getArrayElementType();
+        while(tmp->isArrayTy())
+        {
+            printf("HOLA\n");
+            tmp = tmp->getArrayElementType();
+        }
+        if(tmp->isIntegerTy())
+        {
+            int num_bit = tmp->getIntegerBitWidth();
             if (num_bit == 8)
                 return "char";
             else if (num_bit == 32)
                 return "int";
         }
-        else if(inst->getAllocatedType()->getArrayElementType()->isDoubleTy())
+        else if(tmp->isDoubleTy())
         {
             return "double";
+        }
+        else if(tmp->isStructTy())
+        {
+            if(((llvm::StructType*)tmp)->hasName())
+            {
+                return ((llvm::StructType*)tmp)->getName().str();
+            }
+            return "struct";
         }
     }
     
@@ -158,6 +200,14 @@ inline std::string GET_VALUE_TYPE(llvm::Value* value)
     {
         return "double";
     }
+    else if(value->getType()->isStructTy())
+    {
+        if(((llvm::StructType*)(value->getType()))->hasName())
+        {
+            return ((llvm::StructType*)(value->getType()))->getName().str();
+        }
+        return "struct";
+    }
     return "NULL";
 }
 
@@ -184,10 +234,42 @@ inline llvm::Type *STRING_TO_TYPE(std::string type)
 {
     if (type == "int")
         return llvm::Type::getInt32Ty(context);
-    if (type == "double")
+    else if (type == "double")
         return llvm::Type::getDoubleTy(context);
-    if (type == "char")
+    else if (type == "char")
         return llvm::Type::getInt8Ty(context);
+    else if(struct_info_bindings[type]->struct_type_pointer)
+        return struct_info_bindings[type]->struct_type_pointer;
+    return NULL;
+}
+
+inline std::string TYPE_TO_STRING(llvm::Type* type)
+{
+    if (!type)
+    {
+        return "NULL";
+    }
+    if (type->isIntegerTy())
+    {
+        int num_bit = type->getIntegerBitWidth();
+        if (num_bit == 8)
+            return "char";
+        else if (num_bit == 32)
+            return "int";
+    }
+    else if (type->isDoubleTy())
+    {
+        return "double";
+    }
+    else if(type->isStructTy())
+    {
+        if(((llvm::StructType*)(type))->hasName())
+        {
+            return ((llvm::StructType*)(type))->getName().str();
+        }
+        return "struct";
+    }
+    return "NULL";
 }
 
 
@@ -231,28 +313,15 @@ private:
 class NexternalDeclaration : public Node
 {
 };
-class NderivedType : public Node
-{
-    NderivedType(char type);
-    void push(Nexpr *element) { arraySize.push_back(element); }
-    llvm::Value *codeGen();
-    void printNode(int indent)
-    {
-        if (next)
-            next->printNode(indent);
-    }
-    std::string baseType;
-    std::vector<Nexpr *> arraySize;
-    NderivedType *next; // used for function parameter list only
-};
 struct Nstruct : public Node
 {
     // nearly the same as BlockAST
-    Nstruct(const std::string &name, std::vector<Ndeclaration *> *content = NULL);
+    Nstruct(const std::string &name, std::vector<Ndeclaration *> *content = NULL):name(name), content(content), is_definition(false) {};
     std::string name;
     std::vector<Ndeclaration *> *content;
     llvm::Value *codeGen();
     void printNode(int indent);
+    bool is_definition; // whether the node is for struct definition
 };
 struct NparameterList : public Node
 {
@@ -282,6 +351,7 @@ public:
     llvm::Value *codeGen();
     void printNode(int indent);
     bool is_global; // whether it's a global declaration
+    void constructStruct(std::string struct_name, std::vector<llvm::Type*> &members);
 private:
     NtypeSpecifier *type_specifier; // like 'int' in 'int x = 3'
     std::vector<NinitDeclarator *> init_declarator_list;
@@ -515,10 +585,12 @@ class NtypeSpecifier : public Node
 {
 public:
     NtypeSpecifier(std::string type) : type(type) {}
+    NtypeSpecifier(Nstruct* struct_type) : struct_type(struct_type), type(struct_type->name) {}
     llvm::Value *codeGen();
     virtual void printNode(int indent);
     // private:
     std::string type;
+    Nstruct* struct_type; // for codeGen()
 };
 
 /**
@@ -674,30 +746,53 @@ public:
         DEC_OP = 5,
         NONE = 6
     };
+    /**
+     * FIXME:
+     * The `postfix_type` update is kinda confusing.
+     * Take a look at "x.y[10]", its type should be `DOT` but not `SQUARE_BRACKETS`
+     */
     void set(POSTFIX_TYPE postfix_type, Nexpr *expr)
     {
-        this->postfix_type = postfix_type;
+        if(postfix_type_changeable)
+        {
+            this->postfix_type = postfix_type;
+            postfix_type_changeable = false;
+        }
         this->expr.push_back(expr);
     }
     void set(POSTFIX_TYPE postfix_type, std::vector<Nexpr *> &argument_expr_list)
     {
-        this->postfix_type = postfix_type;
+        if(postfix_type_changeable)
+        {
+            this->postfix_type = postfix_type;
+            postfix_type_changeable = false;
+        }
         this->argument_expr_list = argument_expr_list;
     }
     void set(POSTFIX_TYPE postfix_type, Nidentifier *identifier)
     {
-        this->postfix_type = postfix_type;
-        this->identifier = identifier;
+        if(postfix_type_changeable)
+        {
+            this->postfix_type = postfix_type;
+            postfix_type_changeable = false;
+        }
+        this->expr.push_back((Nexpr*)identifier);
     }
     void set(POSTFIX_TYPE postfix_type)
     {
-        this->postfix_type = postfix_type;
+        if(postfix_type_changeable)
+        {
+            this->postfix_type = postfix_type;
+            postfix_type_changeable = false;
+        }
     }
     NpostfixExpr(POSTFIX_TYPE postfix_type, Nidentifier *name) : name(name),
-                                                                 postfix_type(postfix_type) {}
+                                                                 postfix_type(postfix_type),
+                                                                 postfix_type_changeable(true) {}
     llvm::Value *codeGen();
     void printNode(int indent);
     llvm::Value *getAccess();
+    std::string getUltimateType();
     // private:
 
     POSTFIX_TYPE postfix_type;
@@ -705,6 +800,7 @@ public:
     std::vector<Nexpr *> argument_expr_list; // valid when postfix_type = PARENTHESES, could be a nullptr!
     Nidentifier *identifier, *name;          // valid when postfix_type = DOT or PTR_OP
     // when postfix_type = INC_OP or DEC_OP, none of the 3 upon would be used!
+    bool postfix_type_changeable;
 };
 
 /**

@@ -365,16 +365,41 @@ type_specifier
     | DOUBLE {
 		$$ = new NtypeSpecifier("double");
 	}
-	| struct_or_union_specifier							{selfDefinedType=dynamic_cast<Nstruct*>($1);}
+	| struct_or_union_specifier {
+		if($1->is_definition)
+		{
+			$$ = new NtypeSpecifier($1); // need codeGen()
+		}
+		else
+		{
+			$$ = new NtypeSpecifier($1->name); // use it like any other type!
+		}
+		// selfDefinedType = dynamic_cast<Nstruct*>($1);
+	}
     ;
 
 struct_declaration
-	: struct_or_union IDENTIFIER						{$$=new Nstruct($2->name);}
+	: struct_or_union IDENTIFIER {
+		$$ = new Nstruct($2->name);
+	}
 	;
 struct_or_union_specifier
-	: struct_declaration '{' declaration_list '}'		{$$=$1;$$->content=$3;}
-	| struct_declaration								{$$=$1;}
-	| struct_or_union '{' declaration_list '}'			{$$=new Nstruct("@tmp1",$3);}
+	: struct_declaration '{' declaration_list '}' {
+		// Struct definition
+		$$ = $1;
+		$$->content = $3;
+		$$->is_definition = true;
+	}
+	| struct_declaration {
+		// Use a defined struct
+		$$ = $1;
+	}
+	// | struct_or_union '{' declaration_list '}' {
+	// 	// Not allowed!
+	// 	printf("warning: must specified struct names\n");
+	// 	$$ = new Nstruct("@tmp1", $3);
+	// 	$$->is_definition = true;
+	// }
 	;
 
 struct_or_union

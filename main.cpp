@@ -22,6 +22,8 @@ Module *topModule;
 std::map<std::string, void*> bindings;
 std::map<std::string, std::vector<Nconstant*>*> dimensionBindings;
 std::map<std::string, std::string> global_variables_type;
+std::map<std::string, llvm::Type*> global_variables_llvmtype;
+std::map<std::string, StructInfo*> struct_info_bindings;
 Node *root;
 bool error_alarm = true;
 

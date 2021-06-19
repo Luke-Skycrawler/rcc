@@ -1,8 +1,6 @@
 #include "AST.hpp"
 #include <vector>
 using namespace std;
-extern Nstruct *selfDefinedType;
-static map<string, Nstruct *> structBindings;
 void Nprogram::printNode(int indent = 0)
 {
     PRINT_INDENT(indent, "Nprogram");
@@ -78,6 +76,7 @@ void Ninitializer::printNode(int indent)
 void NtypeSpecifier::printNode(int indent)
 {
     PRINT_INDENT(indent, "NtypeSpecifier(" + type + ")");
+    if(struct_type) struct_type->printNode(indent + 1);
 }
 
 void NfunctionDefinition::printNode(int indent)
@@ -269,42 +268,12 @@ void NdirectDeclarator::setIdentifierList(const std::vector<Nidentifier *> &iden
 {
     this->identifier_list = identifier_list;
 }
-NderivedType::NderivedType(char type)
-{
-    switch (type)
-    {
-    case 'c':
-        baseType = "char";
-        break;
-    // case 'i':baseType="int";break;
-    case 'd':
-        baseType = "double";
-        break;
-    case 't':
-        baseType = selfDefinedType->name;
-        if (structBindings.find(baseType) == structBindings.end())
-        {
-            error("struct not defined");
-            exit(-1);
-        }
-        break;
-    }
-}
 void Nstruct::printNode(int indent)
 {
-    PRINT_INDENT(indent, "");
+    PRINT_INDENT(indent, "Nstruct(\'" + name + "\')");
     if (content)
         for (auto it : *content)
             it->printNode(indent + 1);
-}
-Nstruct::Nstruct(const std::string &name, vector<Ndeclaration *> *content) : name(name), content(content)
-{
-    if (bindings.find(name) != bindings.end() || structBindings.find(name) != structBindings.end())
-    {
-        error("struct name conflict");
-        exit(-1);
-    }
-    structBindings[name] = this;
 }
 Nconstant::Nconstant(const std::string &type, char *value)
 {
@@ -352,5 +321,55 @@ Nconstant::Nconstant(const std::string &type, char *value)
         }
         else
             str[i] = str[i + j];
+    }
+}
+void Ndeclaration::constructStruct(std::string struct_name, std::vector<llvm::Type*> &members)
+{
+    void *ret;
+    auto type = type_specifier->type;
+    auto llvm_type = STRING_TO_TYPE(type);
+    for (auto iterator : init_declarator_list)
+    {
+        NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
+        auto op = it->identifier->name;
+        if (it->op == "") // A single identifier
+        {
+            if(llvm_type == NULL)
+            {
+                ERROR("type \'" + type + "\' not defined", 1);
+            }
+            members.push_back(llvm_type); // record in the vector
+            int len = struct_info_bindings[struct_name]->len; // get length
+            struct_info_bindings[struct_name]->name_offset_map[op] = len; // offset
+            struct_info_bindings[struct_name]->len = len + 1; // length++
+            struct_info_bindings[struct_name]->name_type_map[op] = type; // type name
+            struct_info_bindings[struct_name]->name_llvmtype_map[op] = llvm_type; // llvm type
+        }
+        else if (it->op[0] == '[') // An array
+        {
+            ERROR("array inside a struct is on the way", -1);
+
+            llvm::Type* tmp_type = STRING_TO_TYPE(type);
+            llvm::ArrayType* array_type;
+            for(auto constant = it->dimensions.rbegin(); constant != it->dimensions.rend(); constant++)
+            {
+                if (*constant)
+                {
+                    array_type = llvm::ArrayType::get(tmp_type, (*constant)->value.int_value);
+                    tmp_type = array_type;
+                }
+            }
+
+            members.push_back(array_type); // record in the vector
+            int len = struct_info_bindings[struct_name]->len; // get length
+            struct_info_bindings[struct_name]->name_offset_map[op] = len; // offset
+            struct_info_bindings[struct_name]->len = len + 1; // length++
+            struct_info_bindings[struct_name]->name_type_map[op] = type; // type name
+            struct_info_bindings[struct_name]->name_llvmtype_map[op] = array_type; // llvm type
+        }
+        else if (it->op[0] == '(') // A function definition
+        {
+            ERROR("function definition inside a struct is not allowed", -1);
+        }
     }
 }
