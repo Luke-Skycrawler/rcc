@@ -26,12 +26,14 @@ std::map<std::string, llvm::Type*> global_variables_llvmtype;
 std::map<std::string, StructInfo*> struct_info_bindings;
 Node *root;
 bool error_alarm = true;
+extern void preBuild(RccGlobal &global);
 
 int main(int argc, char **argv)
 {
     RccGlobal global(argc > 1 ? argv[1] : "");
     if (argc == 2)
         freopen(argv[1], "r", stdin);
+    preBuild(global);
     topModule = new Module("retarded", context);
     yy::rcc parser(global);
     int v = parser.parse();

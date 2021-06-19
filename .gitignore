@@ -5,7 +5,7 @@
 *.tab*
 *.out
 *.o
-lex.yy.*
+lex.*
 build/
 ~
 rcc.dSYM

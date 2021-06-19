@@ -1,0 +1,86 @@
+%language "C++"
+%defines
+%locations
+%define parser_class_name {marco}
+// %define api.parser.class {rcc}
+%{
+#include <iostream>
+#include <cctype>
+#include <string>
+// #include "AST.hpp"
+#include "RccGlobal.hpp"
+#include "marco.tab.hpp"
+using namespace std;
+extern int yylex(yy::marco::semantic_type *yylval, yy::marco::location_type *yylloc, RccGlobal &global);
+
+%}
+
+%parse-param {RccGlobal &global}
+%lex-param {RccGlobal &global}
+%initial-action {
+	@$.begin.filename=@$.end.filename=(global.in=="")?new std::string("stdin"):&global.in;
+}
+%union {
+	std::string *marco_name;
+}
+
+%token DEFINE IFDEF IDENTIFIER OTHER IFNDEF ELSE ENDIF
+
+/* %type<marco_name> ; */
+
+%start program
+%%
+
+program
+	: blocks;
+blocks
+	: block
+	| blocks block
+	;
+block
+	: atom
+	| block atom
+	;
+
+atom
+	: if_block
+	| define_line
+	| normal_line
+	;
+normal_line
+	: tokens '\n' 
+	;
+tokens
+	: token
+	| tokens token
+	;
+token
+	: IDENTIFIER	
+	| ELSE
+	| OTHER
+	; 
+if_block
+	: IF IDENTIFIER '\n' blocks '#' ENDIF '\n'
+	| IF IDENTIFIER '\n' blocks '#' ELSE '\n' blocks
+	;
+IF 
+	: IFDEF
+	| IFNDEF
+	;
+
+define_line 
+	: '#' DEFINE identifier tokens '\n'
+	;
+identifier
+	: IDENTIFIER
+	;
+%%
+namespace yy
+{
+	void marco::error(location const &loc, const string &s){
+		printf("\n\e[1m%s:%d:%d: \e[0m",loc.begin.filename->data(),loc.begin.line,loc.end.line);
+		printf("\e[31;40m\e[1merror: \e[0m%s\n", s.data());
+	}
+}
+
+
