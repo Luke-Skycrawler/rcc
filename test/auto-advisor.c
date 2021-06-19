@@ -97,7 +97,7 @@ int read(int cnt)
             printf("error: invalid grade info in line %d!\n", cnt);
             scanf("%c", c); // Eat the '\n'
         }
-        return 1;
+        // return 1; // Uncomment it and the code would fail :(
     }
     else if(c == 'F')
     {
