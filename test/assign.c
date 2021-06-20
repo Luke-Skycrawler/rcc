@@ -14,7 +14,7 @@ int main(){
     printf("%d ",x);
     x&=10;
     printf("%d ",x);
-    x%=-3;
+    x%=-3; // unary expr is not supported, so an error would be triggered; try "0 - 3" instead...
     printf("%d ",x);
 
     y+=2.0;

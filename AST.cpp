@@ -347,7 +347,7 @@ void Ndeclaration::constructStruct(std::string struct_name, std::vector<llvm::Ty
         }
         else if (it->op[0] == '[') // An array
         {
-            ERROR("array inside a struct is on the way", -1);
+            // ERROR("array inside a struct is on the way", -1);
 
             llvm::Type* tmp_type = STRING_TO_TYPE(type);
             llvm::ArrayType* array_type;

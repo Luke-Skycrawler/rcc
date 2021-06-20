@@ -13,7 +13,17 @@ Value *Nstatement::codeGen()
 Value *NbinaryExpr::codeGen()
 {
     Value *l = lhs->codeGen(), *r = rhs->codeGen(), *ret = NULL;
-    bool double_flag;
+    if(l == NULL)
+    {
+        ERROR("illegal binary expression while $lhs is invalid");
+        return NULL;
+    }
+    if(r == NULL)
+    {
+        ERROR("illegal binary expression while $rhs is invalid");
+        return NULL;
+    }
+
     type = "NULL";
 
     if (!lhs)
@@ -280,6 +290,11 @@ Value *Ndeclaration::codeGen()
     type_specifier->codeGen(); // only matters when the type specifier contains a struct definition!
     auto type = type_specifier->type; // the type's name
     auto llvm_type = STRING_TO_TYPE(type); // embedding type
+    if(llvm_type == NULL)
+    {
+        ERROR("invalid type \'" + type + "\'");
+        return NULL;
+    }
     for (auto iterator : init_declarator_list)
     {
         NdirectDeclarator *it = dynamic_cast<NdirectDeclarator *>(iterator);
@@ -287,6 +302,16 @@ Value *Ndeclaration::codeGen()
         auto op = it->identifier->name;
         if (it->op == "") // A single identifier
         {
+            Value* initializer_value;
+            if(it->initializer) // check if the initializer is valid
+            {
+                initializer_value = it->initializer->codeGen();
+                if(initializer_value == NULL)
+                {
+                    ERROR("invalid initializer for variable \'" + op + "\' of type \'" + type + "\'");
+                    return NULL;
+                }
+            }
             if(is_global) // if a global variable declaration
             {
                 global_variables_type[op] = type; // manually bind
@@ -310,19 +335,19 @@ Value *Ndeclaration::codeGen()
                         if(it->initializer->assign_expr->type == "int" && type == "double")
                         {
                             allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage,\
-                                                          (Constant*)(builder.CreateSIToFP(it->initializer->codeGen(), Type::getDoubleTy(context))), op);
+                                                          (Constant*)(builder.CreateSIToFP(initializer_value, Type::getDoubleTy(context))), op);
                             continue;
                         }
                         if(it->initializer->assign_expr->type == "int" && type == "char")
                         {
                             allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage,\
-                                                                  (Constant*)(builder.CreateIntCast(it->initializer->codeGen(), Type::getInt8Ty(context), false)), op);
+                                                                  (Constant*)(builder.CreateIntCast(initializer_value, Type::getInt8Ty(context), false)), op);
                             continue;
                         }
                         ERROR("must initialize \'" + type + " " + op + " with a legal type");
                         return NULL;
                     }
-                    allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)(it->initializer->codeGen()), op);
+                    allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)(initializer_value), op);
                 }
                 else allocation = new llvm::GlobalVariable(*topModule, STRING_TO_TYPE(type), false, llvm::GlobalValue::ExternalLinkage, (Constant*)constant_zero, op);
                 Value* tmp = topModule->getNamedGlobal(op);
@@ -339,7 +364,7 @@ Value *Ndeclaration::codeGen()
                     return NULL;
                 }
                 if (it->initializer)
-                    builder.CreateStore(it->initializer->codeGen(), allocation);
+                    builder.CreateStore(initializer_value, allocation);
             }
             else if (type == "int")
             {
@@ -349,7 +374,7 @@ Value *Ndeclaration::codeGen()
                     ERROR("unable to allocate for variable \'" + op + "\' of type \'" + type + "\'");
                     return NULL;
                 }
-                builder.CreateStore(it->initializer ? it->initializer->codeGen() : builder.getInt32(0), allocation);
+                builder.CreateStore(it->initializer ? initializer_value : builder.getInt32(0), allocation);
             }
             else if (type == "char")
             {
@@ -359,7 +384,7 @@ Value *Ndeclaration::codeGen()
                     ERROR("unable to allocate for variable \'" + op + "\' of type \'" + type + "\'");
                     return NULL;
                 }
-                builder.CreateStore(it->initializer ? it->initializer->codeGen() : builder.getInt8(0), allocation);
+                builder.CreateStore(it->initializer ? initializer_value : builder.getInt8(0), allocation);
             }
             else // user defined struct type
             {
@@ -432,7 +457,7 @@ Value *Ndeclaration::codeGen()
             }
             
             ret = p;
-            dimensionBindings.insert(make_pair(op, &it->dimensions));
+            // dimensionBindings.insert(make_pair(op, &it->dimensions));
         }
         else if (it->op[0] == '(') // A function definition
         {
@@ -795,7 +820,7 @@ Value *NpostfixExpr::codeGen()
         Value *addr = getAccess();
         if(addr == NULL)
         {
-            ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
+            ERROR("undeclared single variable \'" + op + "\'");
             return NULL;
         }
         // load variable
@@ -812,7 +837,8 @@ Value *NpostfixExpr::codeGen()
         Value *addr = getAccess();
         if(addr == NULL)
         {
-            ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
+            ERROR("undeclared array variable \'" + op + "\'");
+            // ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
             return NULL;
         }
         // load variable
@@ -830,7 +856,8 @@ Value *NpostfixExpr::codeGen()
         Value *addr = getAccess();
         if(addr == NULL)
         {
-            ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
+            ERROR("undeclared struct variable \'" + op + "\'");
+            // ERROR("(internal) invalid address while fetching declarator \'" + op + "\'");
             return NULL;
         }
         // load variable
@@ -1139,7 +1166,22 @@ inline Value *createFloatOp(Value *l,Value *r, char op){
 Value *NassignExpr::codeGen()
 {
     Value *r = assign_expr->codeGen(), *l = lhs->codeGen(), *result = NULL;
+    if(l == NULL)
+    {
+        ERROR("illegal assignment while $lhs is invalid");
+        return NULL;
+    }
+    if(r == NULL)
+    {
+        ERROR("illegal assignment while $rhs is invalid");
+        return NULL;
+    }
     auto storeAddr = lhs->getAccess();
+    if(storeAddr == NULL)
+    {
+        ERROR("illegal assignment since cannot fetch $lhs's address");
+        return NULL;
+    }
     // FIXME: possible error here
     if (assign_op[0] != '=') // TODO: extension
     {
@@ -1190,14 +1232,17 @@ Value *NassignExpr::codeGen()
 }
 Value *NcondExpr::codeGen()
 {
+    ERROR("conditional expression not supported yet");
     return NULL;
 }
 Value *NcastExpr::codeGen()
 {
+    ERROR("cast expression not supported yet");
     return NULL;
 }
 Value *NunaryExpr::codeGen()
 {
+    ERROR("unary expression not supported yet");
     return NULL;
 }
 
@@ -1234,7 +1279,8 @@ llvm::Value *Nstruct::codeGen()
     auto struct_type = llvm::StructType::create(context, name); // create an opaque type
     if(struct_info_bindings[name] != NULL)
     {
-        ERROR("struct type \'" + name + "\' already defined", 1);
+        ERROR("struct type \'" + name + "\' already defined");
+        return NULL;
     }
     struct_info_bindings[name] = new StructInfo(struct_type); // create a new struct info in map
     
