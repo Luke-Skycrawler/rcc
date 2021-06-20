@@ -26,7 +26,8 @@ typedef yy::marco::token token;
 "endif" 					{ return(token::ENDIF);}
 "define" 					{ return(token::DEFINE);}
 [a-zA-Z_][a-zA-Z0-9_]*    	{ yylval->marco_name = new std::string(yytext); return(token::IDENTIFIER); }
-[\r\t ]						{ ECHO; yylloc->step();}
+[\t ]						{ ECHO; yylloc->step();}
+"\r"						{ }
 "\n"						{ ECHO; yylloc->lines(1); return('\n');}
 "#"							{ return('#'); }
 \"(\\.|[^\\\"])*\"|\'.\'	{ yylval->marco_name = new std::string(yytext); return(token::OTHER);}

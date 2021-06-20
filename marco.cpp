@@ -6,7 +6,7 @@
 using namespace std;
 std::map<std::string, std::string> definedMarcos;
 FILE * out;
-void preBuild(RccGlobal &global){
+int preBuild(RccGlobal &global){
     // freopen(".LONG_AND_AWARD_NAME.c","w",stdout);
     out=fopen(".LONG_AND_AWARD_NAME.c","w");
     yy::marco marco_parser(global);
@@ -14,6 +14,7 @@ void preBuild(RccGlobal &global){
     fclose(out);
     // marcolex();
     freopen(".LONG_AND_AWARD_NAME.c","r",stdin);
+    return v;
 }
 #ifdef MARCO_DEBUG
 int main(int argc,char **argv){
