@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     RccGlobal global(argc > 1 ? argv[1] : "");
     if (argc == 2)
         freopen(argv[1], "r", stdin);
-    if(!preBuild(global))
+    if(preBuild(global))
         exit(-1);
     topModule = new Module("retarded", context);
     yy::rcc parser(global);

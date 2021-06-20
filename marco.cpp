@@ -11,6 +11,7 @@ int preBuild(RccGlobal &global){
     out=fopen(".LONG_AND_AWARD_NAME.c","w");
     yy::marco marco_parser(global);
     int v = marco_parser.parse();
+    fprintf(out,"\n");
     fclose(out);
     // marcolex();
     freopen(".LONG_AND_AWARD_NAME.c","r",stdin);
