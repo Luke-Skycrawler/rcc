@@ -14,35 +14,35 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 
 CXX = g++
 all: rcc
-marco_test: lex.marco.cpp marco.ypp marco.cpp marco.hpp
-	${BISON} -d marco.ypp
-	${CXX} -D MARCO_DEBUG -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
-	./marco_test test/define.c
+macro_test: lex.macro.cpp macro.ypp macro.cpp macro.hpp
+	${BISON} -d macro.ypp
+	${CXX} -D MACRO_DEBUG -g -o $@ lex.macro.cpp macro.tab.cpp macro.cpp
+	./macro_test test/define.c
 	cat .LONG_AND_AWARD_NAME.c
-lex.marco.cpp: marco.l
-	flex -Pmarco marco.l 
-	mv lex.marco.c lex.marco.cpp
-	# flex marco.l 
-	# mv lex.yy.c lex.marco.cpp
+lex.macro.cpp: macro.l
+	flex -Pmacro macro.l 
+	mv lex.macro.c lex.macro.cpp
+	# flex macro.l 
+	# mv lex.yy.c lex.macro.cpp
 	
 %.o: %.cpp AST.hpp
 	${CXX} -c ${DEFINE} ${CXXFLAGS} -g -o $@ $<
 	@echo "CXX $< => $@"
-# rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.cpp marco.ypp marco.cpp
+# rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.macro.cpp macro.ypp macro.cpp
 # 	mkdir tmp
-# 	cp marco.ypp lex.marco.cpp marco.cpp tmp
+# 	cp macro.ypp lex.macro.cpp macro.cpp tmp
 # 	cd tmp 
-# 	${BISON} -d marco.ypp
-# 	${CXX} -c -g -o marco.tab.o marco.tab.cpp
-# 	${CXX} -c -g -o lex.marco.o lex.marco.cpp
-# 	${CXX} -c -g -o marco.o marco.cpp
-# 	cp marco.tab.o lex.marco.o marco.o ../
+# 	${BISON} -d macro.ypp
+# 	${CXX} -c -g -o macro.tab.o macro.tab.cpp
+# 	${CXX} -c -g -o lex.macro.o lex.macro.cpp
+# 	${CXX} -c -g -o macro.o macro.cpp
+# 	cp macro.tab.o lex.macro.o macro.o ../
 # 	cd ..
 # 	rm -r tmp
 # 	@echo "CXX $< => $@"
-# 	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.o marco.tab.o marco.o ${LIBS} ${LDFLAGS}
+# 	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.macro.o macro.tab.o macro.o ${LIBS} ${LDFLAGS}
 # 	@echo "LINK * => rcc"
-rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o marco_test
+rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o macro_test
 	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o ${LIBS} ${LDFLAGS}
 	@echo "LINK * => rcc"
 rcc.tab.cpp: rcc.ypp 

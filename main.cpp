@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     RccGlobal global(argc > 1 ? argv[1] : "");
     if (argc == 2)
         freopen(argv[1], "r", stdin);
-    system("./marco_test ");
+    system("./macro_test ");
     // if(preBuild(global))
     //     exit(-1);
     freopen(".LONG_AND_AWARD_NAME.c","r",stdin);

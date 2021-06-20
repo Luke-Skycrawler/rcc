@@ -1,7 +1,7 @@
 %language "C++"
 %defines
 %locations
-%define parser_class_name {marco}
+%define parser_class_name {macro}
 // %define api.parser.class {rcc}
 /* TODO: garbage colllection */
 %{
@@ -10,11 +10,11 @@
 #include <vector>
 // #include "AST.hpp"
 #include "RccGlobal.hpp"
-#include "marco.tab.hpp"
-#define yylex(...) marcolex(__VA_ARGS__)
+#include "macro.tab.hpp"
+#define yylex(...) macrolex(__VA_ARGS__)
 using namespace std;
-extern int yylex(yy::marco::semantic_type *yylval, yy::marco::location_type *yylloc, RccGlobal &global);
-#include "marco.hpp"
+extern int yylex(yy::macro::semantic_type *yylval, yy::macro::location_type *yylloc, RccGlobal &global);
+#include "macro.hpp"
 bool ifdef=false;
 std::vector<bool> mute_restore;
 %}
@@ -25,13 +25,13 @@ std::vector<bool> mute_restore;
 	@$.begin.filename=@$.end.filename=(global.in=="")?new std::string("stdin"):&global.in;
 }
 %union {
-	std::string *marco_name;
+	std::string *macro_name;
 }
 
 %token DEFINE IFDEF IFNDEF ELSE ENDIF
 
-%token<marco_name> IDENTIFIER OTHER
-%type<marco_name> token tokens
+%token<macro_name> IDENTIFIER OTHER
+%type<macro_name> token tokens
 %start program
 %%
 
@@ -66,7 +66,7 @@ if_block
 	| if_header ELSE '\n' 	{mute=!mute;} block '\n' '#' ENDIF 	{mute=mute_restore.back();mute_restore.pop_back();}
 	;
 if_header
-	: IF IDENTIFIER '\n' {mute_restore.push_back(mute);mute=(ifdef ^ MARCO_DEFINED($2));} block '\n' '#'
+	: IF IDENTIFIER '\n' {mute_restore.push_back(mute);mute=(ifdef ^ MACRO_DEFINED($2));} block '\n' '#'
 	;
 IF 
 	: '#' IFDEF			{ifdef=true;}
@@ -74,15 +74,15 @@ IF
 	;
 
 define_line 
-	: '#' DEFINE IDENTIFIER {mute=true;} tokens 		{LOG("DEFINED identifier %s\n",$3->data());INSERT_MARCO($3,$5);mute=false;}
-	| '#' DEFINE IDENTIFIER {LOG("DEFINED identifier %s\n",$3->data());INSERT_MARCO($3);}
+	: '#' DEFINE IDENTIFIER {mute=true;} tokens 		{LOG("DEFINED identifier %s\n",$3->data());INSERT_MACRO($3,$5);mute=false;}
+	| '#' DEFINE IDENTIFIER {LOG("DEFINED identifier %s\n",$3->data());INSERT_MACRO($3);}
 	;
 %%
 namespace yy
 {
-	void marco::error(location const &loc, const string &s){
+	void macro::error(location const &loc, const string &s){
 		printf("\n\e[1m%s:%d:%d: \e[0m",loc.begin.filename->data(),loc.begin.line,loc.end.line);
-		printf("\e[31;40m\e[1merror: \e[0m%s\n", "marco instruction not recongnized");
+		printf("\e[31;40m\e[1merror: \e[0m%s\n", "macro instruction not recongnized");
 	}
 }
 
