@@ -13,7 +13,6 @@ int preBuild(RccGlobal &global){
     int v = marco_parser.parse();
     fprintf(out,"\n");
     fclose(out);
-    // marcolex();
     freopen(".LONG_AND_AWARD_NAME.c","r",stdin);
     return v;
 }

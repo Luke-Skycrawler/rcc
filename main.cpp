@@ -26,15 +26,18 @@ std::map<std::string, llvm::Type*> global_variables_llvmtype;
 std::map<std::string, StructInfo*> struct_info_bindings;
 Node *root;
 bool error_alarm = true;
-extern int preBuild(RccGlobal &global);
+// extern int preBuild(RccGlobal &global);
+#include <cstring>
 
 int main(int argc, char **argv)
 {
     RccGlobal global(argc > 1 ? argv[1] : "");
     if (argc == 2)
         freopen(argv[1], "r", stdin);
-    if(preBuild(global))
-        exit(-1);
+    system("./marco_test ");
+    // if(preBuild(global))
+    //     exit(-1);
+    freopen(".LONG_AND_AWARD_NAME.c","r",stdin);
     topModule = new Module("retarded", context);
     yy::rcc parser(global);
     int v = parser.parse();
