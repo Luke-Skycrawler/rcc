@@ -25,6 +25,9 @@ inline int REPLACE(std::string *p){
         else fprintf(out,p->data());
     return 0;
 }
+inline int MARCO_DEFINED(std::string *p){
+    return definedMarcos.find(*p)!=definedMarcos.end();
+}
 inline int INSERT_MARCO(std::string *p,std::string *value=NULL){
     int ret=0;
     if(definedMarcos.find(*p)!=definedMarcos.end()){
@@ -35,6 +38,7 @@ inline int INSERT_MARCO(std::string *p,std::string *value=NULL){
         definedMarcos.insert(make_pair(*p,*value));
         delete value;
     }
+    else definedMarcos.insert(make_pair(*p,""));
     delete p;
     return ret;
 }
