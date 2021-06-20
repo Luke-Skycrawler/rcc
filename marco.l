@@ -24,10 +24,11 @@ typedef yy::marco::token token;
 "ifdef" 					{ return(token::IFDEF);}
 "ifndef"					{ return(token::IFNDEF);}
 "endif" 					{ return(token::ENDIF);}
+"define" 					{ return(token::DEFINE);}
 [a-zA-Z_][a-zA-Z0-9_]*    	{ ECHO; yylval->marco_name = new std::string(yytext); return(token::IDENTIFIER); }
-[^\t \n]*					{ ECHO; return(token::OTHER);}
 [\t ]						{ ECHO; yylloc->step();}
-[\n]						{ ECHO; yylloc->lines(1); return('\n');}
+"\n"						{ ECHO; yylloc->lines(1); return('\n');}
 "#"							{ return('#'); }
+[^#\t \n][^\t \n]*			{ ECHO; return(token::OTHER);}
 %%
 

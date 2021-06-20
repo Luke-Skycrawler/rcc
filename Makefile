@@ -15,11 +15,11 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 CXX = g++
 all: rcc
 marco_test: lex.marco.cpp marco.tab.cpp marco.cpp
-	${CXX} -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
+	${CXX} -D MARCO_DEBUG -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
 	./marco_test test/define.c
-marco.o: lex.marco.cpp marco.tab.cpp marco.cpp
-	${CXX} -o ${DEFINE} ${CXXFLAGS} -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
-	@echo "CXX $< => $@"
+# marco.o: lex.marco.cpp marco.tab.cpp marco.cpp
+# 	${CXX} -g -o marco.o lex.marco.cpp marco.tab.cpp marco.cpp
+# 	@echo "CXX $< => $@"
 marco.tab.cpp: marco.ypp 
 	${BISON} -d marco.ypp
 lex.marco.cpp: marco.l
@@ -30,8 +30,8 @@ lex.marco.cpp: marco.l
 %.o: %.cpp AST.hpp
 	${CXX} -c ${DEFINE} ${CXXFLAGS} -g -o $@ $<
 	@echo "CXX $< => $@"
-rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o marco.o
-	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o marco.o ${LIBS} ${LDFLAGS}
+rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.o marco.tab.o marco.o
+	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.o marco.tab.o marco.o ${LIBS} ${LDFLAGS}
 	@echo "LINK * => rcc"
 rcc.tab.cpp: rcc.ypp 
 	${BISON} -d rcc.ypp

@@ -22,9 +22,11 @@ void preBuild(RccGlobal &global){
     // marcolex();
     freopen(".LONG_AND_AWARD_NAME.c","r",stdin);
 }
+#ifdef MARCO_DEBUG
 int main(int argc,char **argv){
     RccGlobal global(argc > 1 ? argv[1] : "");
     if (argc == 2)
         freopen(argv[1], "r", stdin);
     preBuild(global);
 }
+#endif
