@@ -28,19 +28,22 @@ lex.marco.cpp: marco.l
 %.o: %.cpp AST.hpp
 	${CXX} -c ${DEFINE} ${CXXFLAGS} -g -o $@ $<
 	@echo "CXX $< => $@"
-rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.cpp marco.ypp marco.cpp
-	mkdir tmp
-	cp marco.ypp lex.marco.cpp marco.cpp tmp
-	cd tmp 
-	${BISON} -d marco.ypp
-	${CXX} -c -g -o marco.tab.o marco.tab.cpp
-	${CXX} -c -g -o lex.marco.o lex.marco.cpp
-	${CXX} -c -g -o marco.o marco.cpp
-	cp marco.tab.o lex.marco.o marco.o ../
-	cd ..
-	rm -r tmp
-	@echo "CXX $< => $@"
-	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.o marco.tab.o marco.o ${LIBS} ${LDFLAGS}
+# rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.cpp marco.ypp marco.cpp
+# 	mkdir tmp
+# 	cp marco.ypp lex.marco.cpp marco.cpp tmp
+# 	cd tmp 
+# 	${BISON} -d marco.ypp
+# 	${CXX} -c -g -o marco.tab.o marco.tab.cpp
+# 	${CXX} -c -g -o lex.marco.o lex.marco.cpp
+# 	${CXX} -c -g -o marco.o marco.cpp
+# 	cp marco.tab.o lex.marco.o marco.o ../
+# 	cd ..
+# 	rm -r tmp
+# 	@echo "CXX $< => $@"
+# 	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.o marco.tab.o marco.o ${LIBS} ${LDFLAGS}
+# 	@echo "LINK * => rcc"
+rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o marco_test
+	${CXX} -o $@ rcc.tab.o lex.yy.o CodeGen.o AST.o main.o ${LIBS} ${LDFLAGS}
 	@echo "LINK * => rcc"
 rcc.tab.cpp: rcc.ypp 
 	${BISON} -d rcc.ypp
