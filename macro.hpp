@@ -2,7 +2,7 @@
 #include <map>
 #include <cstdio>
 
-#ifdef MACRO_DEBUG
+#ifndef NO_LOGGING
 #define LOG(format, ...) printf(format, ##__VA_ARGS__)
 #else
 #define LOG(format, ...)

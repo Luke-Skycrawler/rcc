@@ -16,7 +16,7 @@ CXX = g++
 all: rcc
 macro_test: lex.macro.cpp macro.ypp macro.cpp macro.hpp
 	${BISON} -d macro.ypp
-	${CXX} -D MACRO_DEBUG -g -o $@ lex.macro.cpp macro.tab.cpp macro.cpp
+	${CXX} -D MACRO_DEBUG -D NO_LOGGING -g -o $@ lex.macro.cpp macro.tab.cpp macro.cpp
 	./macro_test test/define.c
 	cat .LONG_AND_AWARD_NAME.c
 lex.macro.cpp: macro.l
