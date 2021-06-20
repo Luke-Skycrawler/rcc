@@ -58,8 +58,10 @@ clean:
 	-rm -f *.o
 	-rm -f rcc.tab.cpp
 	-rm -f rcc.tab.hpp
-	-rm -f lex.yy.c
+	-rm -f lex.*
 	-rm -f lex.yy.cpp
 	-rm -f location.hh
 	-rm -f position.hh
 	-rm -f stack.hh
+	-rm -f macro_test
+	-rm -f .LONG_AND_AWARD_NAME.c
