@@ -14,7 +14,7 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 
 CXX = g++
 all: rcc
-marco_test: lex.marco.cpp marco.tab.cpp marco.cpp marco.hpp
+marco_test: lex.marco.cpp marco.ypp marco.cpp marco.hpp
 	${BISON} -d marco.ypp
 	${CXX} -D MARCO_DEBUG -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
 	./marco_test test/define.c
