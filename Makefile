@@ -15,10 +15,12 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 CXX = g++
 all: rcc
 macro_test: lex.macro.cpp macro.ypp macro.cpp macro.hpp
+	@echo "BISON => macro.tab.cpp"
 	${BISON} -d macro.ypp
+	@echo "CXX lex.macro.cpp macro.tab.cpp macro.cpp => $@"
 	${CXX} -D MACRO_DEBUG -D NO_LOGGING -g -o $@ lex.macro.cpp macro.tab.cpp macro.cpp
-	./macro_test test/define.c
-	cat .LONG_AND_AWARD_NAME.c
+	# ./macro_test test/define.c
+	# cat .LONG_AND_AWARD_NAME.c
 lex.macro.cpp: macro.l
 	flex -Pmacro macro.l 
 	mv lex.macro.c lex.macro.cpp
@@ -64,4 +66,5 @@ clean:
 	-rm -f position.hh
 	-rm -f stack.hh
 	-rm -f macro_test
+	-rm -rf macro_test.dSYM
 	-rm -f .LONG_AND_AWARD_NAME.c
