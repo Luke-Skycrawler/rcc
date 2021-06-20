@@ -10,6 +10,7 @@
 // #include "AST.hpp"
 #include "RccGlobal.hpp"
 #include "marco.tab.hpp"
+#define yylex(...) marcolex(__VA_ARGS__)
 using namespace std;
 extern int yylex(yy::marco::semantic_type *yylval, yy::marco::location_type *yylloc, RccGlobal &global);
 #include "marco.hpp"

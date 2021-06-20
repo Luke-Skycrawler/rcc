@@ -5,7 +5,7 @@
 #include <string>
 #include "RccGlobal.hpp"
 #include "marco.tab.hpp"
-#define YY_DECL int yylex(yy::marco::semantic_type *yylval, yy::marco::location_type *yylloc, RccGlobal &global)
+#define YY_DECL int marcolex(yy::marco::semantic_type *yylval, yy::marco::location_type *yylloc, RccGlobal &global)
 // make location include the current token
 #define YY_USER_ACTION yylloc->columns(yyleng);
 extern FILE *out;

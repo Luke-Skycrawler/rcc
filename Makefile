@@ -18,16 +18,16 @@ marco_test: lex.marco.cpp marco.tab.cpp marco.cpp marco.hpp
 	${CXX} -D MARCO_DEBUG -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
 	./marco_test test/define.c
 	cat .LONG_AND_AWARD_NAME.c
-	./marco_test abc.txt
 # marco.o: lex.marco.cpp marco.tab.cpp marco.cpp
 # 	${CXX} -g -o marco.o lex.marco.cpp marco.tab.cpp marco.cpp
 # 	@echo "CXX $< => $@"
 marco.tab.cpp: marco.ypp 
 	${BISON} -d marco.ypp
 lex.marco.cpp: marco.l
-	# flex -Pmarco marco.l 
-	flex marco.l 
-	mv lex.yy.c lex.marco.cpp
+	flex -Pmarco marco.l 
+	mv lex.marco.c lex.marco.cpp
+	# flex marco.l 
+	# mv lex.yy.c lex.marco.cpp
 	
 %.o: %.cpp AST.hpp
 	${CXX} -c ${DEFINE} ${CXXFLAGS} -g -o $@ $<
