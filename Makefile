@@ -15,6 +15,7 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 CXX = g++
 all: rcc
 marco_test: lex.marco.cpp marco.tab.cpp marco.cpp marco.hpp
+	${BISON} -d marco.ypp
 	${CXX} -D MARCO_DEBUG -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
 	./marco_test test/define.c
 	cat .LONG_AND_AWARD_NAME.c
@@ -27,14 +28,15 @@ lex.marco.cpp: marco.l
 %.o: %.cpp AST.hpp
 	${CXX} -c ${DEFINE} ${CXXFLAGS} -g -o $@ $<
 	@echo "CXX $< => $@"
-rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.cpp marco.ypp marco.o
+rcc: rcc.tab.o lex.yy.o CodeGen.o AST.o main.o lex.marco.cpp marco.ypp marco.cpp
 	mkdir tmp
-	cp marco.ypp lex.marco.cpp tmp
+	cp marco.ypp lex.marco.cpp marco.cpp tmp
 	cd tmp 
 	${BISON} -d marco.ypp
-	${CXX} -c ${DEFINE} -g -o marco.tab.o marco.tab.cpp
-	${CXX} -c ${DEFINE} -g -o lex.marco.o lex.marco.cpp
-	cp marco.tab.o lex.marco.o ../
+	${CXX} -c -g -o marco.tab.o marco.tab.cpp
+	${CXX} -c -g -o lex.marco.o lex.marco.cpp
+	${CXX} -c -g -o marco.o marco.cpp
+	cp marco.tab.o lex.marco.o marco.o ../
 	cd ..
 	rm -r tmp
 	@echo "CXX $< => $@"
