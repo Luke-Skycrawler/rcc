@@ -14,9 +14,11 @@ LIBS = `$(LLVM_CONFIG) --libs --system-libs`
 
 CXX = g++
 all: rcc
-marco_test: lex.marco.cpp marco.tab.cpp marco.cpp
+marco_test: lex.marco.cpp marco.tab.cpp marco.cpp marco.hpp
 	${CXX} -D MARCO_DEBUG -g -o $@ lex.marco.cpp marco.tab.cpp marco.cpp
 	./marco_test test/define.c
+	cat .LONG_AND_AWARD_NAME.c
+	./marco_test abc.txt
 # marco.o: lex.marco.cpp marco.tab.cpp marco.cpp
 # 	${CXX} -g -o marco.o lex.marco.cpp marco.tab.cpp marco.cpp
 # 	@echo "CXX $< => $@"

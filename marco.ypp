@@ -3,8 +3,8 @@
 %locations
 %define parser_class_name {marco}
 // %define api.parser.class {rcc}
+/* TODO: garbage colllection */
 %{
-#include <cstdio>
 #include <cctype>
 #include <string>
 // #include "AST.hpp"
@@ -12,13 +12,7 @@
 #include "marco.tab.hpp"
 using namespace std;
 extern int yylex(yy::marco::semantic_type *yylval, yy::marco::location_type *yylloc, RccGlobal &global);
-extern FILE *out;
-
-#ifdef MARCO_DEBUG
-#define LOG(format, ...) printf(format, ##__VA_ARGS__)
-#else 
-#define LOG(format, ...) 
-#endif
+#include "marco.hpp"
 %}
 
 %parse-param {RccGlobal &global}
@@ -30,10 +24,10 @@ extern FILE *out;
 	std::string *marco_name;
 }
 
-%token DEFINE IFDEF OTHER IFNDEF ELSE ENDIF
+%token DEFINE IFDEF IFNDEF ELSE ENDIF
 
-/* %type<marco_name> ; */
-%token<marco_name> IDENTIFIER
+%token<marco_name> IDENTIFIER OTHER
+%type<marco_name> token tokens
 %start program
 %%
 
@@ -54,16 +48,17 @@ atom
 	| normal_line
 	;
 normal_line
-	: tokens '\n' 
+	: tokens '\n' 	{delete $1;}
+	| '\n'
 	;
 tokens
-	: token
-	| tokens token
+	: token       	{$$=$1;}
+	| tokens token	{$$=new std::string(*$1+" "+*$2);delete $1;delete $2;}
 	;
 token
-	: IDENTIFIER	{LOG("identifier: %s\n",$1->data());}
-	| ELSE			{fprintf(out,"else");}
-	| OTHER			{LOG("other token\n");}
+	: IDENTIFIER	{LOG("identifier: %s\n",$1->data());$$=$1;REPLACE($1); }
+	| ELSE			{if(!mute)fprintf(out,"else");$$=new std::string("else");}
+	| OTHER			{LOG("other token :%s\n",$1->data());if(!mute)fprintf(out,"%s",$1->data());$$=$1;}
 	; 
 if_block
 	: IF IDENTIFIER '\n' blocks '#' ENDIF '\n'
@@ -75,7 +70,7 @@ IF
 	;
 
 define_line 
-	: '#' DEFINE IDENTIFIER tokens '\n'	{LOG("defined identifier %s\n",$3->data());}
+	: '#' DEFINE IDENTIFIER {mute=true;} tokens '\n'	{LOG("DEFINED identifier %s\n",$3->data());INSERT_MARCO($3,$5);mute=false;}
 	;
 %%
 namespace yy

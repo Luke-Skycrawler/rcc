@@ -4,14 +4,7 @@
 #include "RccGlobal.hpp"
 #include "marco.tab.hpp"
 using namespace std;
-std::map<std::string, std::string> DEFINED_MARCO;
-// inline int SKIP_SPACE(std::string str,int &index){
-//     while(isblank(str[index]))index++;
-//     return index;
-// }
-// inline std::string &GET_TOKEN(std::string str,int &index){
-    
-// }
+std::map<std::string, std::string> definedMarcos;
 FILE * out;
 void preBuild(RccGlobal &global){
     // freopen(".LONG_AND_AWARD_NAME.c","w",stdout);
