@@ -32,14 +32,10 @@ extern int yylex(yy::marco::semantic_type *yylval, yy::marco::location_type *yyl
 %%
 
 program
-	: blocks;
-blocks
-	: block
-	| blocks block
-	;
+	: block;
 block
 	: atom
-	| block atom
+	| block '\n' atom
 	;
 
 atom
@@ -48,8 +44,8 @@ atom
 	| normal_line
 	;
 normal_line
-	: tokens '\n' 	{delete $1;}
-	| '\n'
+	: tokens 	 	{delete $1;}
+	| 
 	;
 tokens
 	: token       	{$$=$1;}
@@ -61,8 +57,8 @@ token
 	| OTHER			{LOG("other token :%s\n",$1->data());if(!mute)fprintf(out,"%s",$1->data());$$=$1;}
 	; 
 if_block
-	: IF IDENTIFIER '\n' blocks '#' ENDIF '\n'
-	| IF IDENTIFIER '\n' blocks '#' ELSE '\n' blocks '#' ENDIF '\n'
+	: IF IDENTIFIER '\n' block '#' ENDIF 
+	| IF IDENTIFIER '\n' block '#' ELSE '\n' block '#' ENDIF 
 	;
 IF 
 	: IFDEF
@@ -70,7 +66,7 @@ IF
 	;
 
 define_line 
-	: '#' DEFINE IDENTIFIER {mute=true;} tokens '\n'	{LOG("DEFINED identifier %s\n",$3->data());INSERT_MARCO($3,$5);mute=false;}
+	: '#' DEFINE IDENTIFIER {mute=true;} tokens 		{LOG("DEFINED identifier %s\n",$3->data());INSERT_MARCO($3,$5);mute=false;}
 	;
 %%
 namespace yy
