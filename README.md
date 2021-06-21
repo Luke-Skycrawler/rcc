@@ -13,10 +13,16 @@
 * pre-compile MARCO not supported
 * `scanf` and `printf` are automaticly declared and linked with libc in runtime
 * calling convention of `scanf` modified. e.g. you shall use `scanf("%d",i)` to read the value into variable i and drop the `&` symbol. 
-* `for` loop snippet is switched to pascal-like `for(i: 0 to n){}`, where i is only seen within the scope of this loop 
+* `for` loop switched to pascal-like `for(i: 0 to n){}` snippet where i is only seen within the scope of this loop 
 * unary operators not supported
 
 try out the test samples to get a better understanding of the gramma. 
+
+### features
+
+- [x] advanced self-defined types (nested struct and arrays)
+- [x] MACRO support (`#define`/`#define f(X)`,`#ifdef`/`ifndef` and nested)
+- [ ] error detection and recovery (primary)
 
 ### Prerequsite
 
