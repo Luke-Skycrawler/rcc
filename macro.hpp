@@ -13,13 +13,14 @@ extern std::map<std::string, std::string> definedMacros;
 static std::map<std::string, std::vector<std::string>*> parameterizedMacros;
 
 static std::string *param=NULL,*current_macro=NULL,*tmp=NULL;
-static bool mute = false, ifdef=false;
+static bool mute = false, ifdef=false, shut=false;
+std::vector<bool> mute_restore,shut_restore;
 inline void warning(std::string s)
 {
     printf("%s\n", s.data());
 }
 inline int ECHO(const char *str){
-    if(!mute)fprintf(out,"%s",str);
+    if(!mute && !shut)fprintf(out,"%s",str);
     LOG("%s\n",str);
     return 0;
 }
@@ -28,6 +29,7 @@ inline int INSERT_PARAM_MACRO(std::string *p,std::string *_param=NULL){
     parameterizedMacros[*p]=v;
     param=_param;
     current_macro=p;
+    LOG("parameter: %s\n",param->data());
     return 0;
     // v->push_back()
 }
@@ -41,8 +43,13 @@ inline std::string * CAT(std::string *p,std::string *_constant=NULL){
 }
 inline std::string * PARAM(std::string *p,std::string *_constant=NULL){
     // extract the parameters in macros
+    if(param)
+        LOG("current macro %s,param: %s,received %s\n",current_macro->data(),param->data(),p->data());
     if(param && *param==*p){
-        if(_constant)parameterizedMacros[*current_macro]->push_back(*_constant);
+        if(_constant){
+            parameterizedMacros[*current_macro]->push_back(*_constant);
+            LOG("pushing %s\n",_constant->data());
+        }
         parameterizedMacros[*current_macro]->push_back(""); // placeholder ""
         LOG("INSERTED PARAM\n");
         return NULL;    // constant string in macro with length 0 
@@ -51,7 +58,9 @@ inline std::string * PARAM(std::string *p,std::string *_constant=NULL){
 }
 
 inline std::string * REPLACE_PARAM(std::string *p,std::string *_param){
-    LOG("identifier: %s\n",p->data());
+    LOG("macro: %s, param:%s\n",p->data(),_param?_param->data():"none");
+    shut=shut_restore.back();
+    shut_restore.pop_back();
     if(!mute && _param && parameterizedMacros.find(*p)!=parameterizedMacros.end()){
         // assemble all the parameters
         auto unfolded= new std::string("");
@@ -66,27 +75,31 @@ inline std::string * REPLACE_PARAM(std::string *p,std::string *_param){
             }
         //delete _param;
         //delete p;
+        LOG("assembling ,param= %s result = %s\n",_param->data(),unfolded->data());
         return unfolded;
     }
     if(_param){
         *p=*p+"( "+*_param+" )";
         //delete _param;
     }
-    else *p+="( )";
     return p;   // keep the similar interface
 }
 
 inline std::string* ECHO_OR_REPLACE(std::string *p)
 {
-    LOG("identifier: %s\n",p->data());
+    LOG("echo_or_replace: %s\n",p->data());
+    shut_restore.push_back(shut);
     if (!mute){
+        if(parameterizedMacros.find(*p)!=parameterizedMacros.end()){
+            shut=true;  // shut the '(' output
+            return p;   // process later
+        }
         if (definedMacros.find(*p) != definedMacros.end())
         {
-            fprintf(out, "%s", definedMacros[*p].data());
+            ECHO(definedMacros[*p].data());
             *p=definedMacros[*p];
         }
-        else
-            fprintf(out, "%s",p->data());
+        else ECHO(p->data());
     }
     return p;
 }
