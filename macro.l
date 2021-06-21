@@ -32,6 +32,6 @@ typedef yy::macro::token token;
 ")"							{ return(')');}
 "#"							{ return('#'); }
 \"(\\.|[^\\\"])*\"|\'.\'	{ yylval->macro_name = new std::string(yytext); return(token::OTHER);}
-[^#\r\t\n a-zA-Z_"']+			{ yylval->macro_name = new std::string(yytext); return(token::OTHER);}
+[^#\r\t\n a-zA-Z_"'()]+		{ yylval->macro_name = new std::string(yytext); return(token::OTHER);}
 %%
 

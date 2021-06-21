@@ -30,7 +30,7 @@ std::vector<bool> mute_restore;
 %token DEFINE IFDEF IFNDEF ELSE ENDIF 
 
 %token<macro_name> IDENTIFIER OTHER
-%type<macro_name> token tokens define_header
+%type<macro_name> token tokens define_header postfix_expr postfix_addon
 %start program
 %%
 
@@ -52,15 +52,26 @@ normal_line
 	| 
 	;
 tokens
-	: token       	{$$=$1;}
-	| tokens token	{$$=new std::string(*$1+" "+*$2);delete $1;delete $2;}
+	: token       	{$$=PARAM($1);}
+	| tokens token	{$$=PARAM($2,$1);}
+	;
+postfix_expr
+	: IDENTIFIER 	{$1=ECHO_OR_REPLACE($1);} postfix_addon {$$=REPLACE_PARAM($1,$3);}
+	;
+postfix_addon
+	: '(' ')' {ECHO("( )");$$=NULL;LOG("CRACK_no_param\n");}
+	| '(' {ECHO("(");} tokens ')' {ECHO(")");LOG("CRACK\n");}	
+	|
 	;
 token
-	: IDENTIFIER	{PARAM($1);LOG("identifier: %s\n",$1->data());$$=$1;REPLACE($1); }
-	| ELSE			{if(!mute)fprintf(out,"else");$$=new std::string("else");}
-	| OTHER			{PARAM($1);LOG("other token :%s\n",$1->data());if(!mute)fprintf(out,"%s",$1->data());$$=$1;}
-	| '('			{if(!mute)fprintf(out,"(");$$=new std::string("(");}			
-	| ')'			{if(!mute)fprintf(out,")");$$=new std::string(")");}   
+	: postfix_expr	{$$=$1;}
+	/* : IDENTIFIER	{ECHO($1->data()); } '(' ')' {ECHO("( )");$$=REPLACE_PARAM($1,NULL);LOG("CRACK_no_param\n");}
+	| IDENTIFIER	{ECHO($1->data()); } '(' {ECHO("(");} tokens ')' {ECHO(")");$$=REPLACE_PARAM($1,$5);LOG("CRACK\n");}
+	| IDENTIFIER	{$$=ECHO_OR_REPLACE($1); } */
+	| ELSE			{ECHO("else");$$=new std::string("else");}
+	| OTHER			{ECHO($1->data());$$=$1;}
+	| '('			{ECHO("(");$$=new std::string("(");}			
+	| ')'			{ECHO(")");$$=new std::string(")");}   
 	; 
 if_block
 	: if_header ENDIF		{mute=mute_restore.back();mute_restore.pop_back();}
@@ -77,9 +88,9 @@ define_header
 	: '#' DEFINE IDENTIFIER						{ $$=$3;}
 	;
 define_line 
-	: define_header {mute=true;} tokens 		{LOG("DEFINED identifier %s\n",$1->data());INSERT_MACRO($1,$3);mute=false;}
-	| define_header 							{LOG("DEFINED identifier %s\n",$1->data());INSERT_MACRO($1);}
-	| define_header {mute=true;} '(' IDENTIFIER ')'  	{LOG("MACRO with parameters\n");INSERT_PARAM_MACRO($1,$4);}	tokens
+	: define_header {mute=true;} '(' IDENTIFIER ')'  	{LOG("MACRO with parameters\n");INSERT_PARAM_MACRO($1,$4);}	tokens	{param=NULL;current_macro=NULL;}
+	| define_header {mute=true;} tokens 				{LOG("DEFINED identifier %s\n",$1->data());INSERT_MACRO($1,$3);mute=false;}
+	| define_header 									{LOG("DEFINED identifier %s\n",$1->data());INSERT_MACRO($1);}
 	;
 %%
 namespace yy

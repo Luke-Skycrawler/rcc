@@ -1,9 +1,10 @@
 #define X 100
 #define X 20
 #define gnu gnu is not unix
+#define F(K) K+K
 #ifdef gnu
 int main(){
-    printf("%d",X);
+    printf("%d",F(F(X)));
     #ifndef X
     printf("ndef\n");
     #else
