@@ -10,16 +10,37 @@
 
 extern FILE *out;
 extern std::map<std::string, std::string> definedMacros;
+static std::map<std::string, std::vector<std::string>*> parameterizedMacros;
 
-static bool mute = false;
-
+static std::string *param=NULL,*current_macro=NULL;
+static bool mute = false, ifdef=false;
 inline void warning(std::string s)
 {
     printf("%s\n", s.data());
 }
+inline int INSERT_PARAM_MACRO(std::string *p,std::string *_param=NULL){
+    auto v=new std::vector<std::string>;
+    parameterizedMacros[*p]=v;
+    param=_param;
+    current_macro=p;
+    return 0;
+    // v->push_back()
+}
+inline int PARAM(std::string *p){
+    if(param)
+        if (*param==*p){
+            parameterizedMacros[*current_macro]->push_back("");
+            LOG("INSERTED PARAM\n");
+        }
+        else {
+            parameterizedMacros[*current_macro]->push_back(*p); 
+            LOG("INSERTED CONST\n");
+        }
+    return 0;
+}
 inline int REPLACE(std::string *p)
 {
-    if (!mute)
+    if (!mute){
         if (definedMacros.find(*p) != definedMacros.end())
         {
             fprintf(out, "%s", definedMacros[*p].data());
@@ -27,6 +48,9 @@ inline int REPLACE(std::string *p)
         }
         else
             fprintf(out, p->data());
+        // if (definedMacros)
+    }
+    
     return 0;
 }
 inline int MACRO_DEFINED(std::string *p)

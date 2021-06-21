@@ -28,6 +28,8 @@ typedef yy::macro::token token;
 [a-zA-Z_][a-zA-Z0-9_]*    	{ yylval->macro_name = new std::string(yytext); return(token::IDENTIFIER); }
 [\r\t ]						{ ECHO; yylloc->step();}
 "\n"						{ ECHO; yylloc->lines(1); return('\n');}
+"("							{ return('(');}
+")"							{ return(')');}
 "#"							{ return('#'); }
 \"(\\.|[^\\\"])*\"|\'.\'	{ yylval->macro_name = new std::string(yytext); return(token::OTHER);}
 [^#\r\t\n a-zA-Z_"']+			{ yylval->macro_name = new std::string(yytext); return(token::OTHER);}

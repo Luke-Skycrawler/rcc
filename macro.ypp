@@ -15,7 +15,6 @@
 using namespace std;
 extern int yylex(yy::macro::semantic_type *yylval, yy::macro::location_type *yylloc, RccGlobal &global);
 #include "macro.hpp"
-bool ifdef=false;
 std::vector<bool> mute_restore;
 %}
 
@@ -28,10 +27,10 @@ std::vector<bool> mute_restore;
 	std::string *macro_name;
 }
 
-%token DEFINE IFDEF IFNDEF ELSE ENDIF
+%token DEFINE IFDEF IFNDEF ELSE ENDIF 
 
 %token<macro_name> IDENTIFIER OTHER
-%type<macro_name> token tokens
+%type<macro_name> token tokens define_header
 %start program
 %%
 
@@ -57,9 +56,11 @@ tokens
 	| tokens token	{$$=new std::string(*$1+" "+*$2);delete $1;delete $2;}
 	;
 token
-	: IDENTIFIER	{LOG("identifier: %s\n",$1->data());$$=$1;REPLACE($1); }
+	: IDENTIFIER	{PARAM($1);LOG("identifier: %s\n",$1->data());$$=$1;REPLACE($1); }
 	| ELSE			{if(!mute)fprintf(out,"else");$$=new std::string("else");}
-	| OTHER			{LOG("other token :%s\n",$1->data());if(!mute)fprintf(out,"%s",$1->data());$$=$1;}
+	| OTHER			{PARAM($1);LOG("other token :%s\n",$1->data());if(!mute)fprintf(out,"%s",$1->data());$$=$1;}
+	| '('			{if(!mute)fprintf(out,"(");$$=new std::string("(");}			
+	| ')'			{if(!mute)fprintf(out,")");$$=new std::string(")");}   
 	; 
 if_block
 	: if_header ENDIF		{mute=mute_restore.back();mute_restore.pop_back();}
@@ -72,10 +73,13 @@ IF
 	: '#' IFDEF			{ifdef=true;}
 	| '#' IFNDEF		{ifdef=false;}
 	;
-
+define_header
+	: '#' DEFINE IDENTIFIER						{ $$=$3;}
+	;
 define_line 
-	: '#' DEFINE IDENTIFIER {mute=true;} tokens 		{LOG("DEFINED identifier %s\n",$3->data());INSERT_MACRO($3,$5);mute=false;}
-	| '#' DEFINE IDENTIFIER {LOG("DEFINED identifier %s\n",$3->data());INSERT_MACRO($3);}
+	: define_header {mute=true;} tokens 		{LOG("DEFINED identifier %s\n",$1->data());INSERT_MACRO($1,$3);mute=false;}
+	| define_header 							{LOG("DEFINED identifier %s\n",$1->data());INSERT_MACRO($1);}
+	| define_header {mute=true;} '(' IDENTIFIER ')'  	{LOG("MACRO with parameters\n");INSERT_PARAM_MACRO($1,$4);}	tokens
 	;
 %%
 namespace yy
