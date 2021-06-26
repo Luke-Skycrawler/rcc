@@ -8,21 +8,21 @@
 
 ### Differences with C
 
-* type system: char, int, double and n-dimensional array type; Pointers and struct type is not supported in this version.
+* type system: char, int, double and n-dimensional array type; Pointer type is not supported in this version.
 * no controled jumps, gotos and labels , i.e. break, continue and switch statements are not supported.
 * pre-compile MARCO not supported
 * `scanf` and `printf` are automaticly declared and linked with libc in runtime
 * calling convention of `scanf` modified. e.g. you shall use `scanf("%d",i)` to read the value into variable i and drop the `&` symbol. 
-* `for` loop switched to pascal-like `for(i: 0 to n){}` snippet where i is only seen within the scope of this loop 
+* `for` loop switched to pascal-like `for(i: 0 to n){}` and `for(i: n downto 0){}` snippet where i is only seen within the scope of this loop 
 * unary operators not supported
 
-try out the test samples to get a better understanding of the gramma. 
+Try out the test samples to get a better understanding of the gramma. 
 
-### features
+### More Features
 
-- [x] advanced self-defined types (nested struct and arrays)
+- [x] Advanced self-defined types (nested struct and arrays)
 - [x] MACRO support (`#define`/`#define f(X)`,`#ifdef`/`ifndef` and nested)
-- [ ] error detection and recovery (primary)
+- [ ] Error detection and recovery (primary)
 
 ### Prerequsite
 
@@ -65,4 +65,4 @@ make DEFINE='-D MACOS'
 ./rcc src_file
 ./a.out
 ```
-The generated ELF object file and executable are named output.o and a.out respectively by default. 
+The generated ELF object file and executable are named `output.o` and `a.out` respectively by default. 
