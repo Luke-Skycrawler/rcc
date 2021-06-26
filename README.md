@@ -10,7 +10,6 @@
 
 * type system: char, int, double and n-dimensional array type; Pointer type is not supported in this version.
 * no controled jumps, gotos and labels , i.e. break, continue and switch statements are not supported.
-* pre-compile MARCO not supported
 * `scanf` and `printf` are automaticly declared and linked with libc in runtime
 * calling convention of `scanf` modified. e.g. you shall use `scanf("%d",i)` to read the value into variable i and drop the `&` symbol. 
 * `for` loop switched to pascal-like `for(i: 0 to n){}` and `for(i: n downto 0){}` snippet where i is only seen within the scope of this loop 
