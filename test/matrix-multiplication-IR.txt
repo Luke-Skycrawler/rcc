@@ -1,0 +1,243 @@
+declare i32 @scanf(...)
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main() {
+"entry@main":
+  %m = alloca i32, align 4
+  store i32 0, i32* %m, align 4
+  %n = alloca i32, align 4
+  store i32 0, i32* %n, align 4
+  %u = alloca i32, align 4
+  store i32 0, i32* %u, align 4
+  %v = alloca i32, align 4
+  store i32 0, i32* %v, align 4
+  %i = alloca i32, align 4
+  store i32 0, i32* %i, align 4
+  %j = alloca i32, align 4
+  store i32 0, i32* %j, align 4
+  %k = alloca i32, align 4
+  store i32 0, i32* %k, align 4
+  %a = alloca [100 x [100 x i32]], align 4
+  %tmp = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %a, i32 0
+  %b = alloca [100 x [100 x i32]], align 4
+  %tmp1 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %b, i32 0
+  %sum = alloca i32, align 4
+  store i32 0, i32* %sum, align 4
+  %str_addr = alloca [5 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 5), align 1
+  %tmp2 = getelementptr [5 x i8], [5 x i8]* %str_addr, i32 0
+  store [5 x i8] c"%d%d\00", [5 x i8]* %tmp2, align 1
+  %0 = load i32, i32* %m, align 4
+  %tmp3 = getelementptr i32, i32* %m, i32 0
+  %1 = load i32, i32* %n, align 4
+  %tmp4 = getelementptr i32, i32* %n, i32 0
+  %call = call i32 (...) @scanf([5 x i8]* %tmp2, i32* %tmp3, i32* %tmp4)
+  %2 = load i32, i32* %m, align 4
+  %3 = sub i32 %2, 1
+  %4 = icmp sgt i32 0, %3
+  %enterloop_cond = icmp eq i1 %4, false
+  br i1 %enterloop_cond, label %loop, label %afterloop
+
+loop:                                             ; preds = %afterloop8, %"entry@main"
+  %i5 = phi i32 [ 0, %"entry@main" ], [ %next_variable16, %afterloop8 ]
+  %i6 = alloca i32, align 4
+  store i32 %i5, i32* %i6, align 4
+  %5 = load i32, i32* %n, align 4
+  %6 = sub i32 %5, 1
+  %7 = icmp sgt i32 0, %6
+  %enterloop_cond9 = icmp eq i1 %7, false
+  br i1 %enterloop_cond9, label %loop7, label %afterloop8
+
+afterloop:                                        ; preds = %afterloop8, %"entry@main"
+  %str_addr18 = alloca [5 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 5), align 1
+  %tmp19 = getelementptr [5 x i8], [5 x i8]* %str_addr18, i32 0
+  store [5 x i8] c"%d%d\00", [5 x i8]* %tmp19, align 1
+  %8 = load i32, i32* %u, align 4
+  %tmp20 = getelementptr i32, i32* %u, i32 0
+  %9 = load i32, i32* %v, align 4
+  %tmp21 = getelementptr i32, i32* %v, i32 0
+  %call22 = call i32 (...) @scanf([5 x i8]* %tmp19, i32* %tmp20, i32* %tmp21)
+  %10 = load i32, i32* %u, align 4
+  %11 = sub i32 %10, 1
+  %12 = icmp sgt i32 0, %11
+  %enterloop_cond25 = icmp eq i1 %12, false
+  br i1 %enterloop_cond25, label %loop23, label %afterloop24
+
+loop7:                                            ; preds = %loop7, %loop
+  %j10 = phi i32 [ 0, %loop ], [ %next_variable, %loop7 ]
+  %j11 = alloca i32, align 4
+  store i32 %j10, i32* %j11, align 4
+  %str_addr12 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp13 = getelementptr [3 x i8], [3 x i8]* %str_addr12, i32 0
+  store [3 x i8] c"%d\00", [3 x i8]* %tmp13, align 1
+  %13 = load i32, i32* %i6, align 4
+  %14 = load i32, i32* %j11, align 4
+  %15 = load i32, i32* %i6, align 4
+  %16 = load i32, i32* %j11, align 4
+  %17 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %a, i32 0, i32 %15, i32 %16
+  %18 = load i32, i32* %17, align 4
+  %19 = load i32, i32* %i6, align 4
+  %20 = load i32, i32* %j11, align 4
+  %21 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %a, i32 0, i32 %19, i32 %20
+  %tmp14 = getelementptr i32, i32* %21, i32 0
+  %call15 = call i32 (...) @scanf([3 x i8]* %tmp13, i32* %tmp14)
+  %22 = load i32, i32* %j11, align 4
+  %next_variable = add i32 %22, 1
+  %23 = icmp sgt i32 %next_variable, %6
+  %continue_cond = icmp eq i1 %23, false
+  br i1 %continue_cond, label %loop7, label %afterloop8
+
+afterloop8:                                       ; preds = %loop7, %loop
+  %24 = load i32, i32* %i6, align 4
+  %next_variable16 = add i32 %24, 1
+  %25 = icmp sgt i32 %next_variable16, %3
+  %continue_cond17 = icmp eq i1 %25, false
+  br i1 %continue_cond17, label %loop, label %afterloop
+
+loop23:                                           ; preds = %afterloop29, %afterloop
+  %i26 = phi i32 [ 0, %afterloop ], [ %next_variable39, %afterloop29 ]
+  %i27 = alloca i32, align 4
+  store i32 %i26, i32* %i27, align 4
+  %26 = load i32, i32* %v, align 4
+  %27 = sub i32 %26, 1
+  %28 = icmp sgt i32 0, %27
+  %enterloop_cond30 = icmp eq i1 %28, false
+  br i1 %enterloop_cond30, label %loop28, label %afterloop29
+
+afterloop24:                                      ; preds = %afterloop29, %afterloop
+  %29 = load i32, i32* %n, align 4
+  %30 = load i32, i32* %u, align 4
+  %31 = icmp ne i32 %29, %30
+  %32 = zext i1 %31 to i32
+  %33 = sitofp i32 %32 to double
+  %ifcond = fcmp one double %33, 0.000000e+00
+  br i1 %ifcond, label %then, label %else
+
+loop28:                                           ; preds = %loop28, %loop23
+  %j31 = phi i32 [ 0, %loop23 ], [ %next_variable37, %loop28 ]
+  %j32 = alloca i32, align 4
+  store i32 %j31, i32* %j32, align 4
+  %str_addr33 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp34 = getelementptr [3 x i8], [3 x i8]* %str_addr33, i32 0
+  store [3 x i8] c"%d\00", [3 x i8]* %tmp34, align 1
+  %34 = load i32, i32* %i27, align 4
+  %35 = load i32, i32* %j32, align 4
+  %36 = load i32, i32* %i27, align 4
+  %37 = load i32, i32* %j32, align 4
+  %38 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %b, i32 0, i32 %36, i32 %37
+  %39 = load i32, i32* %38, align 4
+  %40 = load i32, i32* %i27, align 4
+  %41 = load i32, i32* %j32, align 4
+  %42 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %b, i32 0, i32 %40, i32 %41
+  %tmp35 = getelementptr i32, i32* %42, i32 0
+  %call36 = call i32 (...) @scanf([3 x i8]* %tmp34, i32* %tmp35)
+  %43 = load i32, i32* %j32, align 4
+  %next_variable37 = add i32 %43, 1
+  %44 = icmp sgt i32 %next_variable37, %27
+  %continue_cond38 = icmp eq i1 %44, false
+  br i1 %continue_cond38, label %loop28, label %afterloop29
+
+afterloop29:                                      ; preds = %loop28, %loop23
+  %45 = load i32, i32* %i27, align 4
+  %next_variable39 = add i32 %45, 1
+  %46 = icmp sgt i32 %next_variable39, %11
+  %continue_cond40 = icmp eq i1 %46, false
+  br i1 %continue_cond40, label %loop23, label %afterloop24
+
+then:                                             ; preds = %afterloop24
+  %str_addr41 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp42 = getelementptr [3 x i8], [3 x i8]* %str_addr41, i32 0
+  store [3 x i8] c"%s\00", [3 x i8]* %tmp42, align 1
+  %str_addr43 = alloca [25 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 25), align 1
+  %tmp44 = getelementptr [25 x i8], [25 x i8]* %str_addr43, i32 0
+  store [25 x i8] c"Incompatible Dimensions\0A\00", [25 x i8]* %tmp44, align 1
+  %call45 = call i32 (i8*, ...) @printf([3 x i8]* %tmp42, [25 x i8]* %tmp44)
+  ret i32 0
+  br label %ifcont
+
+else:                                             ; preds = %afterloop24
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %47 = load i32, i32* %m, align 4
+  %48 = sub i32 %47, 1
+  %49 = icmp sgt i32 0, %48
+  %enterloop_cond48 = icmp eq i1 %49, false
+  br i1 %enterloop_cond48, label %loop46, label %afterloop47
+
+loop46:                                           ; preds = %afterloop52, %ifcont
+  %i49 = phi i32 [ 0, %ifcont ], [ %next_variable71, %afterloop52 ]
+  %i50 = alloca i32, align 4
+  store i32 %i49, i32* %i50, align 4
+  %50 = load i32, i32* %v, align 4
+  %51 = sub i32 %50, 1
+  %52 = icmp sgt i32 0, %51
+  %enterloop_cond53 = icmp eq i1 %52, false
+  br i1 %enterloop_cond53, label %loop51, label %afterloop52
+
+afterloop47:                                      ; preds = %afterloop52, %ifcont
+  ret i32 0
+  ret void <badref>
+
+loop51:                                           ; preds = %afterloop57, %loop46
+  %j54 = phi i32 [ 0, %loop46 ], [ %next_variable66, %afterloop57 ]
+  %j55 = alloca i32, align 4
+  store i32 %j54, i32* %j55, align 4
+  %53 = load i32, i32* %sum, align 4
+  store i32 0, i32* %sum, align 4
+  %54 = load i32, i32* %n, align 4
+  %55 = sub i32 %54, 1
+  %56 = icmp sgt i32 0, %55
+  %enterloop_cond58 = icmp eq i1 %56, false
+  br i1 %enterloop_cond58, label %loop56, label %afterloop57
+
+afterloop52:                                      ; preds = %afterloop57, %loop46
+  %str_addr68 = alloca [2 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 2), align 1
+  %tmp69 = getelementptr [2 x i8], [2 x i8]* %str_addr68, i32 0
+  store [2 x i8] c"\0A\00", [2 x i8]* %tmp69, align 1
+  %call70 = call i32 (i8*, ...) @printf([2 x i8]* %tmp69)
+  %57 = load i32, i32* %i50, align 4
+  %next_variable71 = add i32 %57, 1
+  %58 = icmp sgt i32 %next_variable71, %48
+  %continue_cond72 = icmp eq i1 %58, false
+  br i1 %continue_cond72, label %loop46, label %afterloop47
+
+loop56:                                           ; preds = %loop56, %loop51
+  %k59 = phi i32 [ 0, %loop51 ], [ %next_variable61, %loop56 ]
+  %k60 = alloca i32, align 4
+  store i32 %k59, i32* %k60, align 4
+  %59 = load i32, i32* %sum, align 4
+  %60 = load i32, i32* %i50, align 4
+  %61 = load i32, i32* %k60, align 4
+  %62 = load i32, i32* %i50, align 4
+  %63 = load i32, i32* %k60, align 4
+  %64 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %a, i32 0, i32 %62, i32 %63
+  %65 = load i32, i32* %64, align 4
+  %66 = load i32, i32* %k60, align 4
+  %67 = load i32, i32* %j55, align 4
+  %68 = load i32, i32* %k60, align 4
+  %69 = load i32, i32* %j55, align 4
+  %70 = getelementptr [100 x [100 x i32]], [100 x [100 x i32]]* %b, i32 0, i32 %68, i32 %69
+  %71 = load i32, i32* %70, align 4
+  %72 = mul i32 %65, %71
+  %73 = add i32 %59, %72
+  %74 = load i32, i32* %sum, align 4
+  store i32 %73, i32* %sum, align 4
+  %75 = load i32, i32* %k60, align 4
+  %next_variable61 = add i32 %75, 1
+  %76 = icmp sgt i32 %next_variable61, %55
+  %continue_cond62 = icmp eq i1 %76, false
+  br i1 %continue_cond62, label %loop56, label %afterloop57
+
+afterloop57:                                      ; preds = %loop56, %loop51
+  %str_addr63 = alloca [5 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 5), align 1
+  %tmp64 = getelementptr [5 x i8], [5 x i8]* %str_addr63, i32 0
+  store [5 x i8] c"%10d\00", [5 x i8]* %tmp64, align 1
+  %77 = load i32, i32* %sum, align 4
+  %call65 = call i32 (i8*, ...) @printf([5 x i8]* %tmp64, i32 %77)
+  %78 = load i32, i32* %j55, align 4
+  %next_variable66 = add i32 %78, 1
+  %79 = icmp sgt i32 %next_variable66, %51
+  %continue_cond67 = icmp eq i1 %79, false
+  br i1 %continue_cond67, label %loop51, label %afterloop52
+}

@@ -1,0 +1,1083 @@
+@courses = common global [50 x [100 x i8]] 0
+@courses_len = common global [50 x i32] 0
+@course_num = global i32 0
+@tot_credit = global i32 0
+@tot_score = global i32 0
+@attempt_credit = global i32 0
+@left_credit = global i32 0
+@prerequisites = common global [50 x [5 x [5 x [100 x i8]]]] 0
+@prerequisites_size_l1 = common global [50 x i32] 0
+@prerequisites_size_l2 = common global [50 x [5 x i32]] 0
+@prerequisites_size_l3 = common global [50 x [5 x [5 x i32]]] 0
+@pass = common global [50 x i32] 0
+
+declare i32 @scanf(...)
+
+declare i32 @printf(i8*, ...)
+
+define i32 @printCourse(i32 %i) {
+"entry@printCourse":
+  %i1 = alloca i32, align 4
+  store i32 %i, i32* %i1, align 4
+  %0 = load i32, i32* %i1, align 4
+  %1 = load i32, i32* %i1, align 4
+  %2 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %1
+  %3 = load i32, i32* %2, align 4
+  %4 = icmp sgt i32 0, %3
+  %enterloop_cond = icmp eq i1 %4, false
+  br i1 %enterloop_cond, label %loop, label %afterloop
+
+loop:                                             ; preds = %loop, %"entry@printCourse"
+  %j = phi i32 [ 0, %"entry@printCourse" ], [ %next_variable, %loop ]
+  %j2 = alloca i32, align 4
+  store i32 %j, i32* %j2, align 4
+  %str_addr = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp = getelementptr [3 x i8], [3 x i8]* %str_addr, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp, align 1
+  %5 = load i32, i32* %i1, align 4
+  %6 = load i32, i32* %j2, align 4
+  %7 = load i32, i32* %i1, align 4
+  %8 = load i32, i32* %j2, align 4
+  %9 = getelementptr [50 x [100 x i8]], [50 x [100 x i8]]* @courses, i32 0, i32 %7, i32 %8
+  %10 = load i8, i8* %9, align 1
+  %call = call i32 (i8*, ...) @printf([3 x i8]* %tmp, i8 %10)
+  %11 = load i32, i32* %j2, align 4
+  %next_variable = add i32 %11, 1
+  %12 = icmp sgt i32 %next_variable, %3
+  %continue_cond = icmp eq i1 %12, false
+  br i1 %continue_cond, label %loop, label %afterloop
+
+afterloop:                                        ; preds = %loop, %"entry@printCourse"
+  %str_addr3 = alloca [2 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 2), align 1
+  %tmp4 = getelementptr [2 x i8], [2 x i8]* %str_addr3, i32 0
+  store [2 x i8] c"\0A\00", [2 x i8]* %tmp4, align 1
+  %call5 = call i32 (i8*, ...) @printf([2 x i8]* %tmp4)
+  ret i32 %call5
+}
+
+define i32 @read(i32 %cnt) {
+"entry@read":
+  %cnt1 = alloca i32, align 4
+  store i32 %cnt, i32* %cnt1, align 4
+  %i = alloca i32, align 4
+  store i32 0, i32* %i, align 4
+  %j = alloca i32, align 4
+  store i32 0, i32* %j, align 4
+  %k = alloca i32, align 4
+  store i32 0, i32* %k, align 4
+  %credit = alloca i32, align 4
+  store i32 0, i32* %credit, align 4
+  %c = alloca i8, align 1
+  store i8 0, i8* %c, align 1
+  %str_addr = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp = getelementptr [3 x i8], [3 x i8]* %str_addr, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp, align 1
+  %0 = load i8, i8* %c, align 1
+  %tmp2 = getelementptr i8, i8* %c, i32 0
+  %call = call i32 (...) @scanf([3 x i8]* %tmp, i8* %tmp2)
+  %1 = load i8, i8* %c, align 1
+  %2 = zext i8 %1 to i32
+  %3 = icmp eq i32 %2, 10
+  %4 = zext i1 %3 to i32
+  %5 = sitofp i32 %4 to double
+  %ifcond = fcmp one double %5, 0.000000e+00
+  br i1 %ifcond, label %then, label %else
+
+then:                                             ; preds = %"entry@read"
+  ret i32 0
+  br label %ifcont
+
+else:                                             ; preds = %"entry@read"
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %cond
+
+cond:                                             ; preds = %loop, %ifcont
+  %6 = load i8, i8* %c, align 1
+  %7 = zext i8 %6 to i32
+  %8 = icmp ne i32 %7, 124
+  %9 = zext i1 %8 to i32
+  %whilecond = icmp eq i32 %9, 1
+  br i1 %whilecond, label %loop, label %afterloop
+
+loop:                                             ; preds = %cond
+  %10 = load i8, i8* %c, align 1
+  %11 = load i32, i32* %cnt1, align 4
+  %12 = load i32, i32* %i, align 4
+  %13 = load i32, i32* %cnt1, align 4
+  %14 = load i32, i32* %i, align 4
+  %15 = getelementptr [50 x [100 x i8]], [50 x [100 x i8]]* @courses, i32 0, i32 %13, i32 %14
+  %16 = load i8, i8* %15, align 1
+  %17 = load i32, i32* %cnt1, align 4
+  %18 = load i32, i32* %i, align 4
+  %19 = getelementptr [50 x [100 x i8]], [50 x [100 x i8]]* @courses, i32 0, i32 %17, i32 %18
+  store i8 %10, i8* %19, align 1
+  %20 = load i32, i32* %cnt1, align 4
+  %21 = load i32, i32* %cnt1, align 4
+  %22 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %21
+  %23 = load i32, i32* %22, align 4
+  %24 = add i32 %23, 1
+  %25 = load i32, i32* %cnt1, align 4
+  %26 = load i32, i32* %cnt1, align 4
+  %27 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %26
+  %28 = load i32, i32* %27, align 4
+  %29 = load i32, i32* %cnt1, align 4
+  %30 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %29
+  store i32 %24, i32* %30, align 4
+  %31 = load i32, i32* %i, align 4
+  %32 = add i32 %31, 1
+  %33 = load i32, i32* %i, align 4
+  store i32 %32, i32* %i, align 4
+  %str_addr3 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp4 = getelementptr [3 x i8], [3 x i8]* %str_addr3, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp4, align 1
+  %34 = load i8, i8* %c, align 1
+  %tmp5 = getelementptr i8, i8* %c, i32 0
+  %call6 = call i32 (...) @scanf([3 x i8]* %tmp4, i8* %tmp5)
+  br label %cond
+
+afterloop:                                        ; preds = %cond
+  %str_addr7 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp8 = getelementptr [3 x i8], [3 x i8]* %str_addr7, i32 0
+  store [3 x i8] c"%d\00", [3 x i8]* %tmp8, align 1
+  %35 = load i32, i32* %credit, align 4
+  %tmp9 = getelementptr i32, i32* %credit, i32 0
+  %call10 = call i32 (...) @scanf([3 x i8]* %tmp8, i32* %tmp9)
+  %36 = load i32, i32* %credit, align 4
+  %37 = load i32, i32* @tot_credit, align 4
+  %38 = add i32 %36, %37
+  %39 = load i32, i32* @tot_credit, align 4
+  store i32 %38, i32* @tot_credit, align 4
+  %str_addr11 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp12 = getelementptr [3 x i8], [3 x i8]* %str_addr11, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp12, align 1
+  %40 = load i8, i8* %c, align 1
+  %tmp13 = getelementptr i8, i8* %c, i32 0
+  %call14 = call i32 (...) @scanf([3 x i8]* %tmp12, i8* %tmp13)
+  %41 = load i32, i32* %j, align 4
+  store i32 0, i32* %j, align 4
+  %42 = load i32, i32* %k, align 4
+  store i32 0, i32* %k, align 4
+  %43 = load i32, i32* %i, align 4
+  store i32 0, i32* %i, align 4
+  %str_addr15 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp16 = getelementptr [3 x i8], [3 x i8]* %str_addr15, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp16, align 1
+  %44 = load i8, i8* %c, align 1
+  %tmp17 = getelementptr i8, i8* %c, i32 0
+  %call18 = call i32 (...) @scanf([3 x i8]* %tmp16, i8* %tmp17)
+  %45 = load i8, i8* %c, align 1
+  %46 = zext i8 %45 to i32
+  %47 = icmp ne i32 %46, 124
+  %48 = zext i1 %47 to i32
+  %49 = sitofp i32 %48 to double
+  %ifcond19 = fcmp one double %49, 0.000000e+00
+  br i1 %ifcond19, label %then20, label %else37
+
+then20:                                           ; preds = %afterloop
+  br label %cond21
+
+cond21:                                           ; preds = %ifcont32, %then20
+  %50 = load i8, i8* %c, align 1
+  %51 = zext i8 %50 to i32
+  %52 = icmp ne i32 %51, 124
+  %53 = zext i1 %52 to i32
+  %whilecond22 = icmp eq i32 %53, 1
+  br i1 %whilecond22, label %loop23, label %afterloop24
+
+loop23:                                           ; preds = %cond21
+  %54 = load i8, i8* %c, align 1
+  %55 = zext i8 %54 to i32
+  %56 = icmp eq i32 %55, 59
+  %57 = zext i1 %56 to i32
+  %58 = sitofp i32 %57 to double
+  %ifcond25 = fcmp one double %58, 0.000000e+00
+  br i1 %ifcond25, label %then26, label %else27
+
+afterloop24:                                      ; preds = %cond21
+  %59 = load i32, i32* %i, align 4
+  %60 = add i32 %59, 1
+  %61 = load i32, i32* %cnt1, align 4
+  %62 = load i32, i32* %cnt1, align 4
+  %63 = getelementptr [50 x i32], [50 x i32]* @prerequisites_size_l1, i32 0, i32 %62
+  %64 = load i32, i32* %63, align 4
+  %65 = load i32, i32* %cnt1, align 4
+  %66 = getelementptr [50 x i32], [50 x i32]* @prerequisites_size_l1, i32 0, i32 %65
+  store i32 %60, i32* %66, align 4
+  %67 = load i32, i32* %j, align 4
+  %68 = add i32 %67, 1
+  %69 = load i32, i32* %cnt1, align 4
+  %70 = load i32, i32* %i, align 4
+  %71 = load i32, i32* %cnt1, align 4
+  %72 = load i32, i32* %i, align 4
+  %73 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %71, i32 %72
+  %74 = load i32, i32* %73, align 4
+  %75 = load i32, i32* %cnt1, align 4
+  %76 = load i32, i32* %i, align 4
+  %77 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %75, i32 %76
+  store i32 %68, i32* %77, align 4
+  br label %ifcont38
+
+then26:                                           ; preds = %loop23
+  %78 = load i32, i32* %j, align 4
+  %79 = add i32 %78, 1
+  %80 = load i32, i32* %cnt1, align 4
+  %81 = load i32, i32* %i, align 4
+  %82 = load i32, i32* %cnt1, align 4
+  %83 = load i32, i32* %i, align 4
+  %84 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %82, i32 %83
+  %85 = load i32, i32* %84, align 4
+  %86 = load i32, i32* %cnt1, align 4
+  %87 = load i32, i32* %i, align 4
+  %88 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %86, i32 %87
+  store i32 %79, i32* %88, align 4
+  %89 = load i32, i32* %i, align 4
+  %90 = add i32 %89, 1
+  %91 = load i32, i32* %i, align 4
+  store i32 %90, i32* %i, align 4
+  %92 = load i32, i32* %j, align 4
+  store i32 0, i32* %j, align 4
+  br label %ifcont32
+
+else27:                                           ; preds = %loop23
+  %93 = load i8, i8* %c, align 1
+  %94 = zext i8 %93 to i32
+  %95 = icmp eq i32 %94, 44
+  %96 = zext i1 %95 to i32
+  %97 = sitofp i32 %96 to double
+  %ifcond28 = fcmp one double %97, 0.000000e+00
+  br i1 %ifcond28, label %then29, label %else30
+
+then29:                                           ; preds = %else27
+  %98 = load i32, i32* %j, align 4
+  %99 = add i32 %98, 1
+  %100 = load i32, i32* %j, align 4
+  store i32 %99, i32* %j, align 4
+  %101 = load i32, i32* %k, align 4
+  store i32 0, i32* %k, align 4
+  br label %ifcont31
+
+else30:                                           ; preds = %else27
+  %102 = load i8, i8* %c, align 1
+  %103 = load i32, i32* %cnt1, align 4
+  %104 = load i32, i32* %i, align 4
+  %105 = load i32, i32* %j, align 4
+  %106 = load i32, i32* %k, align 4
+  %107 = load i32, i32* %cnt1, align 4
+  %108 = load i32, i32* %i, align 4
+  %109 = load i32, i32* %j, align 4
+  %110 = load i32, i32* %k, align 4
+  %111 = getelementptr [50 x [5 x [5 x [100 x i8]]]], [50 x [5 x [5 x [100 x i8]]]]* @prerequisites, i32 0, i32 %107, i32 %108, i32 %109, i32 %110
+  %112 = load i8, i8* %111, align 1
+  %113 = load i32, i32* %cnt1, align 4
+  %114 = load i32, i32* %i, align 4
+  %115 = load i32, i32* %j, align 4
+  %116 = load i32, i32* %k, align 4
+  %117 = getelementptr [50 x [5 x [5 x [100 x i8]]]], [50 x [5 x [5 x [100 x i8]]]]* @prerequisites, i32 0, i32 %113, i32 %114, i32 %115, i32 %116
+  store i8 %102, i8* %117, align 1
+  %118 = load i32, i32* %cnt1, align 4
+  %119 = load i32, i32* %i, align 4
+  %120 = load i32, i32* %j, align 4
+  %121 = load i32, i32* %cnt1, align 4
+  %122 = load i32, i32* %i, align 4
+  %123 = load i32, i32* %j, align 4
+  %124 = getelementptr [50 x [5 x [5 x i32]]], [50 x [5 x [5 x i32]]]* @prerequisites_size_l3, i32 0, i32 %121, i32 %122, i32 %123
+  %125 = load i32, i32* %124, align 4
+  %126 = add i32 %125, 1
+  %127 = load i32, i32* %cnt1, align 4
+  %128 = load i32, i32* %i, align 4
+  %129 = load i32, i32* %j, align 4
+  %130 = load i32, i32* %cnt1, align 4
+  %131 = load i32, i32* %i, align 4
+  %132 = load i32, i32* %j, align 4
+  %133 = getelementptr [50 x [5 x [5 x i32]]], [50 x [5 x [5 x i32]]]* @prerequisites_size_l3, i32 0, i32 %130, i32 %131, i32 %132
+  %134 = load i32, i32* %133, align 4
+  %135 = load i32, i32* %cnt1, align 4
+  %136 = load i32, i32* %i, align 4
+  %137 = load i32, i32* %j, align 4
+  %138 = getelementptr [50 x [5 x [5 x i32]]], [50 x [5 x [5 x i32]]]* @prerequisites_size_l3, i32 0, i32 %135, i32 %136, i32 %137
+  store i32 %126, i32* %138, align 4
+  %139 = load i32, i32* %k, align 4
+  %140 = add i32 %139, 1
+  %141 = load i32, i32* %k, align 4
+  store i32 %140, i32* %k, align 4
+  br label %ifcont31
+
+ifcont31:                                         ; preds = %else30, %then29
+  br label %ifcont32
+
+ifcont32:                                         ; preds = %ifcont31, %then26
+  %str_addr33 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp34 = getelementptr [3 x i8], [3 x i8]* %str_addr33, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp34, align 1
+  %142 = load i8, i8* %c, align 1
+  %tmp35 = getelementptr i8, i8* %c, i32 0
+  %call36 = call i32 (...) @scanf([3 x i8]* %tmp34, i8* %tmp35)
+  br label %cond21
+
+else37:                                           ; preds = %afterloop
+  %143 = load i32, i32* %cnt1, align 4
+  %144 = load i32, i32* %cnt1, align 4
+  %145 = getelementptr [50 x i32], [50 x i32]* @prerequisites_size_l1, i32 0, i32 %144
+  %146 = load i32, i32* %145, align 4
+  %147 = load i32, i32* %cnt1, align 4
+  %148 = getelementptr [50 x i32], [50 x i32]* @prerequisites_size_l1, i32 0, i32 %147
+  store i32 0, i32* %148, align 4
+  br label %ifcont38
+
+ifcont38:                                         ; preds = %else37, %afterloop24
+  %str_addr39 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp40 = getelementptr [3 x i8], [3 x i8]* %str_addr39, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp40, align 1
+  %149 = load i8, i8* %c, align 1
+  %tmp41 = getelementptr i8, i8* %c, i32 0
+  %call42 = call i32 (...) @scanf([3 x i8]* %tmp40, i8* %tmp41)
+  %150 = load i8, i8* %c, align 1
+  %151 = zext i8 %150 to i32
+  %152 = icmp eq i32 %151, 10
+  %153 = zext i1 %152 to i32
+  %154 = sitofp i32 %153 to double
+  %ifcond43 = fcmp one double %154, 0.000000e+00
+  br i1 %ifcond43, label %then44, label %else45
+
+then44:                                           ; preds = %ifcont38
+  %155 = load i32, i32* @left_credit, align 4
+  %156 = load i32, i32* %credit, align 4
+  %157 = add i32 %155, %156
+  %158 = load i32, i32* @left_credit, align 4
+  store i32 %157, i32* @left_credit, align 4
+  %159 = load i32, i32* %cnt1, align 4
+  %160 = load i32, i32* %cnt1, align 4
+  %161 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %160
+  %162 = load i32, i32* %161, align 4
+  %163 = load i32, i32* %cnt1, align 4
+  %164 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %163
+  store i32 0, i32* %164, align 4
+  br label %ifcont95
+
+else45:                                           ; preds = %ifcont38
+  %165 = load i8, i8* %c, align 1
+  %166 = zext i8 %165 to i32
+  %167 = icmp eq i32 %166, 65
+  %168 = zext i1 %167 to i32
+  %169 = load i8, i8* %c, align 1
+  %170 = zext i8 %169 to i32
+  %171 = icmp eq i32 %170, 66
+  %172 = zext i1 %171 to i32
+  %173 = or i32 %168, %172
+  %174 = icmp ugt i32 %173, 0
+  %175 = zext i1 %174 to i32
+  %176 = load i8, i8* %c, align 1
+  %177 = zext i8 %176 to i32
+  %178 = icmp eq i32 %177, 67
+  %179 = zext i1 %178 to i32
+  %180 = or i32 %175, %179
+  %181 = icmp ugt i32 %180, 0
+  %182 = zext i1 %181 to i32
+  %183 = load i8, i8* %c, align 1
+  %184 = zext i8 %183 to i32
+  %185 = icmp eq i32 %184, 68
+  %186 = zext i1 %185 to i32
+  %187 = or i32 %182, %186
+  %188 = icmp ugt i32 %187, 0
+  %189 = zext i1 %188 to i32
+  %190 = sitofp i32 %189 to double
+  %ifcond46 = fcmp one double %190, 0.000000e+00
+  br i1 %ifcond46, label %then47, label %else63
+
+then47:                                           ; preds = %else45
+  %191 = load i32, i32* @tot_score, align 4
+  %192 = load i32, i32* %credit, align 4
+  %193 = load i8, i8* %c, align 1
+  %194 = zext i8 %193 to i32
+  %195 = sub i32 %194, 65
+  %196 = sub i32 4, %195
+  %197 = mul i32 %192, %196
+  %198 = add i32 %191, %197
+  %199 = load i32, i32* @tot_score, align 4
+  store i32 %198, i32* @tot_score, align 4
+  %200 = load i32, i32* @attempt_credit, align 4
+  %201 = load i32, i32* %credit, align 4
+  %202 = add i32 %200, %201
+  %203 = load i32, i32* @attempt_credit, align 4
+  store i32 %202, i32* @attempt_credit, align 4
+  %204 = load i32, i32* %cnt1, align 4
+  %205 = load i32, i32* %cnt1, align 4
+  %206 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %205
+  %207 = load i32, i32* %206, align 4
+  %208 = load i32, i32* %cnt1, align 4
+  %209 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %208
+  store i32 1, i32* %209, align 4
+  %str_addr48 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp49 = getelementptr [3 x i8], [3 x i8]* %str_addr48, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp49, align 1
+  %210 = load i8, i8* %c, align 1
+  %tmp50 = getelementptr i8, i8* %c, i32 0
+  %call51 = call i32 (...) @scanf([3 x i8]* %tmp49, i8* %tmp50)
+  br label %cond52
+
+cond52:                                           ; preds = %loop54, %then47
+  %211 = load i8, i8* %c, align 1
+  %212 = zext i8 %211 to i32
+  %213 = icmp ne i32 %212, 10
+  %214 = zext i1 %213 to i32
+  %whilecond53 = icmp eq i32 %214, 1
+  br i1 %whilecond53, label %loop54, label %afterloop55
+
+loop54:                                           ; preds = %cond52
+  %str_addr56 = alloca [39 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 39), align 1
+  %tmp57 = getelementptr [39 x i8], [39 x i8]* %str_addr56, i32 0
+  store [39 x i8] c"error: invalid grade info in line %d!\0A\00", [39 x i8]* %tmp57, align 1
+  %215 = load i32, i32* %cnt1, align 4
+  %call58 = call i32 (i8*, ...) @printf([39 x i8]* %tmp57, i32 %215)
+  %str_addr59 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp60 = getelementptr [3 x i8], [3 x i8]* %str_addr59, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp60, align 1
+  %216 = load i8, i8* %c, align 1
+  %tmp61 = getelementptr i8, i8* %c, i32 0
+  %call62 = call i32 (...) @scanf([3 x i8]* %tmp60, i8* %tmp61)
+  br label %cond52
+
+afterloop55:                                      ; preds = %cond52
+  br label %ifcont94
+
+else63:                                           ; preds = %else45
+  %217 = load i8, i8* %c, align 1
+  %218 = zext i8 %217 to i32
+  %219 = icmp eq i32 %218, 70
+  %220 = zext i1 %219 to i32
+  %221 = sitofp i32 %220 to double
+  %ifcond64 = fcmp one double %221, 0.000000e+00
+  br i1 %ifcond64, label %then65, label %else81
+
+then65:                                           ; preds = %else63
+  %222 = load i32, i32* @attempt_credit, align 4
+  %223 = load i32, i32* %credit, align 4
+  %224 = add i32 %222, %223
+  %225 = load i32, i32* @attempt_credit, align 4
+  store i32 %224, i32* @attempt_credit, align 4
+  %226 = load i32, i32* @left_credit, align 4
+  %227 = load i32, i32* %credit, align 4
+  %228 = add i32 %226, %227
+  %229 = load i32, i32* @left_credit, align 4
+  store i32 %228, i32* @left_credit, align 4
+  %230 = load i32, i32* %cnt1, align 4
+  %231 = load i32, i32* %cnt1, align 4
+  %232 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %231
+  %233 = load i32, i32* %232, align 4
+  %234 = load i32, i32* %cnt1, align 4
+  %235 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %234
+  store i32 0, i32* %235, align 4
+  %str_addr66 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp67 = getelementptr [3 x i8], [3 x i8]* %str_addr66, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp67, align 1
+  %236 = load i8, i8* %c, align 1
+  %tmp68 = getelementptr i8, i8* %c, i32 0
+  %call69 = call i32 (...) @scanf([3 x i8]* %tmp67, i8* %tmp68)
+  br label %cond70
+
+cond70:                                           ; preds = %loop72, %then65
+  %237 = load i8, i8* %c, align 1
+  %238 = zext i8 %237 to i32
+  %239 = icmp ne i32 %238, 10
+  %240 = zext i1 %239 to i32
+  %whilecond71 = icmp eq i32 %240, 1
+  br i1 %whilecond71, label %loop72, label %afterloop73
+
+loop72:                                           ; preds = %cond70
+  %str_addr74 = alloca [39 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 39), align 1
+  %tmp75 = getelementptr [39 x i8], [39 x i8]* %str_addr74, i32 0
+  store [39 x i8] c"error: invalid grade info in line %d!\0A\00", [39 x i8]* %tmp75, align 1
+  %241 = load i32, i32* %cnt1, align 4
+  %call76 = call i32 (i8*, ...) @printf([39 x i8]* %tmp75, i32 %241)
+  %str_addr77 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp78 = getelementptr [3 x i8], [3 x i8]* %str_addr77, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp78, align 1
+  %242 = load i8, i8* %c, align 1
+  %tmp79 = getelementptr i8, i8* %c, i32 0
+  %call80 = call i32 (...) @scanf([3 x i8]* %tmp78, i8* %tmp79)
+  br label %cond70
+
+afterloop73:                                      ; preds = %cond70
+  br label %ifcont93
+
+else81:                                           ; preds = %else63
+  %str_addr82 = alloca [39 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 39), align 1
+  %tmp83 = getelementptr [39 x i8], [39 x i8]* %str_addr82, i32 0
+  store [39 x i8] c"error: invalid grade info in line %d!\0A\00", [39 x i8]* %tmp83, align 1
+  %243 = load i32, i32* %cnt1, align 4
+  %call84 = call i32 (i8*, ...) @printf([39 x i8]* %tmp83, i32 %243)
+  %244 = load i32, i32* @left_credit, align 4
+  %245 = load i32, i32* %credit, align 4
+  %246 = add i32 %244, %245
+  %247 = load i32, i32* @left_credit, align 4
+  store i32 %246, i32* @left_credit, align 4
+  %248 = load i32, i32* %cnt1, align 4
+  %249 = load i32, i32* %cnt1, align 4
+  %250 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %249
+  %251 = load i32, i32* %250, align 4
+  %252 = load i32, i32* %cnt1, align 4
+  %253 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %252
+  store i32 0, i32* %253, align 4
+  br label %cond85
+
+cond85:                                           ; preds = %loop87, %else81
+  %254 = load i8, i8* %c, align 1
+  %255 = zext i8 %254 to i32
+  %256 = icmp ne i32 %255, 10
+  %257 = zext i1 %256 to i32
+  %whilecond86 = icmp eq i32 %257, 1
+  br i1 %whilecond86, label %loop87, label %afterloop88
+
+loop87:                                           ; preds = %cond85
+  %str_addr89 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp90 = getelementptr [3 x i8], [3 x i8]* %str_addr89, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp90, align 1
+  %258 = load i8, i8* %c, align 1
+  %tmp91 = getelementptr i8, i8* %c, i32 0
+  %call92 = call i32 (...) @scanf([3 x i8]* %tmp90, i8* %tmp91)
+  br label %cond85
+
+afterloop88:                                      ; preds = %cond85
+  br label %ifcont93
+
+ifcont93:                                         ; preds = %afterloop88, %afterloop73
+  br label %ifcont94
+
+ifcont94:                                         ; preds = %ifcont93, %afterloop55
+  br label %ifcont95
+
+ifcont95:                                         ; preds = %ifcont94, %then44
+  ret i32 1
+  ret void <badref>
+}
+
+define i32 @main() {
+"entry@main":
+  %i = alloca i32, align 4
+  store i32 0, i32* %i, align 4
+  %j = alloca i32, align 4
+  store i32 0, i32* %j, align 4
+  %k = alloca i32, align 4
+  store i32 0, i32* %k, align 4
+  %n = alloca i32, align 4
+  store i32 0, i32* %n, align 4
+  %u = alloca i32, align 4
+  store i32 0, i32* %u, align 4
+  %recommend_flag = alloca i32, align 4
+  store i32 0, i32* %recommend_flag, align 4
+  br label %cond
+
+cond:                                             ; preds = %loop, %"entry@main"
+  %0 = load i32, i32* @course_num, align 4
+  %call = call i32 @read(i32 %0)
+  %1 = icmp eq i32 %call, 1
+  %2 = zext i1 %1 to i32
+  %whilecond = icmp eq i32 %2, 1
+  br i1 %whilecond, label %loop, label %afterloop
+
+loop:                                             ; preds = %cond
+  %3 = load i32, i32* @course_num, align 4
+  %4 = add i32 %3, 1
+  %5 = load i32, i32* @course_num, align 4
+  store i32 %4, i32* @course_num, align 4
+  br label %cond
+
+afterloop:                                        ; preds = %cond
+  %6 = load i32, i32* @tot_credit, align 4
+  %7 = load i32, i32* @left_credit, align 4
+  %8 = sub i32 %6, %7
+  %9 = icmp eq i32 %8, 0
+  %10 = zext i1 %9 to i32
+  %11 = sitofp i32 %10 to double
+  %ifcond = fcmp one double %11, 0.000000e+00
+  br i1 %ifcond, label %then, label %else
+
+then:                                             ; preds = %afterloop
+  %str_addr = alloca [10 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 10), align 1
+  %tmp = getelementptr [10 x i8], [10 x i8]* %str_addr, i32 0
+  store [10 x i8] c"GPA: 0.0\0A\00", [10 x i8]* %tmp, align 1
+  %call1 = call i32 (i8*, ...) @printf([10 x i8]* %tmp)
+  br label %ifcont
+
+else:                                             ; preds = %afterloop
+  %12 = load i32, i32* @tot_credit, align 4
+  %13 = load i32, i32* @left_credit, align 4
+  %14 = sub i32 %12, %13
+  %15 = sitofp i32 %14 to double
+  %add = fadd double %15, 0.000000e+00
+  %dtmp = alloca double, align 8
+  store double %add, double* %dtmp, align 8
+  %str_addr2 = alloca [11 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 11), align 1
+  %tmp3 = getelementptr [11 x i8], [11 x i8]* %str_addr2, i32 0
+  store [11 x i8] c"GPA: %.1f\0A\00", [11 x i8]* %tmp3, align 1
+  %16 = load i32, i32* @tot_score, align 4
+  %17 = load double, double* %dtmp, align 8
+  %18 = sitofp i32 %16 to double
+  %div = fdiv double %18, %17
+  %call4 = call i32 (i8*, ...) @printf([11 x i8]* %tmp3, double %div)
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %str_addr5 = alloca [21 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 21), align 1
+  %tmp6 = getelementptr [21 x i8], [21 x i8]* %str_addr5, i32 0
+  store [21 x i8] c"Hours Attempted: %d\0A\00", [21 x i8]* %tmp6, align 1
+  %19 = load i32, i32* @attempt_credit, align 4
+  %call7 = call i32 (i8*, ...) @printf([21 x i8]* %tmp6, i32 %19)
+  %str_addr8 = alloca [21 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 21), align 1
+  %tmp9 = getelementptr [21 x i8], [21 x i8]* %str_addr8, i32 0
+  store [21 x i8] c"Hours Completed: %d\0A\00", [21 x i8]* %tmp9, align 1
+  %20 = load i32, i32* @tot_credit, align 4
+  %21 = load i32, i32* @left_credit, align 4
+  %22 = sub i32 %20, %21
+  %call10 = call i32 (i8*, ...) @printf([21 x i8]* %tmp9, i32 %22)
+  %str_addr11 = alloca [24 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 24), align 1
+  %tmp12 = getelementptr [24 x i8], [24 x i8]* %str_addr11, i32 0
+  store [24 x i8] c"Credits Remaining: %d\0A\0A\00", [24 x i8]* %tmp12, align 1
+  %23 = load i32, i32* @left_credit, align 4
+  %call13 = call i32 (i8*, ...) @printf([24 x i8]* %tmp12, i32 %23)
+  %str_addr14 = alloca [31 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 31), align 1
+  %tmp15 = getelementptr [31 x i8], [31 x i8]* %str_addr14, i32 0
+  store [31 x i8] c"Possible Courses to Take Next\0A\00", [31 x i8]* %tmp15, align 1
+  %call16 = call i32 (i8*, ...) @printf([31 x i8]* %tmp15)
+  %24 = load i32, i32* @left_credit, align 4
+  %25 = icmp eq i32 %24, 0
+  %26 = zext i1 %25 to i32
+  %27 = sitofp i32 %26 to double
+  %ifcond17 = fcmp one double %27, 0.000000e+00
+  br i1 %ifcond17, label %then18, label %else22
+
+then18:                                           ; preds = %ifcont
+  %str_addr19 = alloca [27 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 27), align 1
+  %tmp20 = getelementptr [27 x i8], [27 x i8]* %str_addr19, i32 0
+  store [27 x i8] c"  None - Congratulations!\0A\00", [27 x i8]* %tmp20, align 1
+  %call21 = call i32 (i8*, ...) @printf([27 x i8]* %tmp20)
+  ret i32 0
+  br label %ifcont23
+
+else22:                                           ; preds = %ifcont
+  br label %ifcont23
+
+ifcont23:                                         ; preds = %else22, %then18
+  %28 = load i32, i32* @course_num, align 4
+  %29 = sub i32 %28, 1
+  %30 = icmp sgt i32 0, %29
+  %enterloop_cond = icmp eq i1 %30, false
+  br i1 %enterloop_cond, label %loop24, label %afterloop25
+
+loop24:                                           ; preds = %ifcont111, %ifcont23
+  %i26 = phi i32 [ 0, %ifcont23 ], [ %next_variable112, %ifcont111 ]
+  %i27 = alloca i32, align 4
+  store i32 %i26, i32* %i27, align 4
+  %31 = load i32, i32* %i27, align 4
+  %32 = load i32, i32* %i27, align 4
+  %33 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %32
+  %34 = load i32, i32* %33, align 4
+  %35 = icmp eq i32 %34, 0
+  %36 = zext i1 %35 to i32
+  %37 = sitofp i32 %36 to double
+  %ifcond28 = fcmp one double %37, 0.000000e+00
+  br i1 %ifcond28, label %then29, label %else110
+
+afterloop25:                                      ; preds = %ifcont111, %ifcont23
+  ret i32 0
+  ret void <badref>
+
+then29:                                           ; preds = %loop24
+  %38 = load i32, i32* %recommend_flag, align 4
+  store i32 0, i32* %recommend_flag, align 4
+  %39 = load i32, i32* %i27, align 4
+  %40 = load i32, i32* %i27, align 4
+  %41 = getelementptr [50 x i32], [50 x i32]* @prerequisites_size_l1, i32 0, i32 %40
+  %42 = load i32, i32* %41, align 4
+  %43 = load i32, i32* %n, align 4
+  store i32 %42, i32* %n, align 4
+  %44 = load i32, i32* %n, align 4
+  %45 = icmp eq i32 %44, 0
+  %46 = zext i1 %45 to i32
+  %47 = sitofp i32 %46 to double
+  %ifcond30 = fcmp one double %47, 0.000000e+00
+  br i1 %ifcond30, label %then31, label %else46
+
+then31:                                           ; preds = %then29
+  %tmp32 = alloca i32, align 4
+  store i32 0, i32* %tmp32, align 4
+  %str_addr33 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp34 = getelementptr [3 x i8], [3 x i8]* %str_addr33, i32 0
+  store [3 x i8] c"  \00", [3 x i8]* %tmp34, align 1
+  %call35 = call i32 (i8*, ...) @printf([3 x i8]* %tmp34)
+  br label %cond36
+
+cond36:                                           ; preds = %loop38, %then31
+  %48 = load i32, i32* %tmp32, align 4
+  %49 = load i32, i32* %i27, align 4
+  %50 = load i32, i32* %i27, align 4
+  %51 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %50
+  %52 = load i32, i32* %51, align 4
+  %53 = icmp slt i32 %48, %52
+  %54 = zext i1 %53 to i32
+  %whilecond37 = icmp eq i32 %54, 1
+  br i1 %whilecond37, label %loop38, label %afterloop39
+
+loop38:                                           ; preds = %cond36
+  %str_addr40 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp41 = getelementptr [3 x i8], [3 x i8]* %str_addr40, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp41, align 1
+  %55 = load i32, i32* %i27, align 4
+  %56 = load i32, i32* %tmp32, align 4
+  %57 = load i32, i32* %i27, align 4
+  %58 = load i32, i32* %tmp32, align 4
+  %59 = getelementptr [50 x [100 x i8]], [50 x [100 x i8]]* @courses, i32 0, i32 %57, i32 %58
+  %60 = load i8, i8* %59, align 1
+  %call42 = call i32 (i8*, ...) @printf([3 x i8]* %tmp41, i8 %60)
+  %61 = load i32, i32* %tmp32, align 4
+  %62 = add i32 %61, 1
+  %63 = load i32, i32* %tmp32, align 4
+  store i32 %62, i32* %tmp32, align 4
+  br label %cond36
+
+afterloop39:                                      ; preds = %cond36
+  %str_addr43 = alloca [2 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 2), align 1
+  %tmp44 = getelementptr [2 x i8], [2 x i8]* %str_addr43, i32 0
+  store [2 x i8] c"\0A\00", [2 x i8]* %tmp44, align 1
+  %call45 = call i32 (i8*, ...) @printf([2 x i8]* %tmp44)
+  %64 = load i32, i32* %n, align 4
+  %65 = add i32 %64, 1
+  %66 = load i32, i32* %j, align 4
+  store i32 %65, i32* %j, align 4
+  br label %ifcont47
+
+else46:                                           ; preds = %then29
+  br label %ifcont47
+
+ifcont47:                                         ; preds = %else46, %afterloop39
+  %67 = load i32, i32* %n, align 4
+  %68 = sub i32 %67, 1
+  %69 = icmp sgt i32 0, %68
+  %enterloop_cond50 = icmp eq i1 %69, false
+  br i1 %enterloop_cond50, label %loop48, label %afterloop49
+
+loop48:                                           ; preds = %ifcont107, %ifcont47
+  %j51 = phi i32 [ 0, %ifcont47 ], [ %next_variable108, %ifcont107 ]
+  %j52 = alloca i32, align 4
+  store i32 %j51, i32* %j52, align 4
+  %70 = load i32, i32* %recommend_flag, align 4
+  store i32 1, i32* %recommend_flag, align 4
+  %71 = load i32, i32* %i27, align 4
+  %72 = load i32, i32* %j52, align 4
+  %73 = load i32, i32* %i27, align 4
+  %74 = load i32, i32* %j52, align 4
+  %75 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %73, i32 %74
+  %76 = load i32, i32* %75, align 4
+  %77 = icmp sgt i32 %76, 0
+  %78 = zext i1 %77 to i32
+  %79 = sitofp i32 %78 to double
+  %ifcond53 = fcmp one double %79, 0.000000e+00
+  br i1 %ifcond53, label %then54, label %else88
+
+afterloop49:                                      ; preds = %ifcont107, %ifcont47
+  br label %ifcont111
+
+then54:                                           ; preds = %loop48
+  %80 = load i32, i32* %i27, align 4
+  %81 = load i32, i32* %j52, align 4
+  %82 = load i32, i32* %i27, align 4
+  %83 = load i32, i32* %j52, align 4
+  %84 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %82, i32 %83
+  %85 = load i32, i32* %84, align 4
+  %86 = sub i32 %85, 1
+  %87 = icmp sgt i32 0, %86
+  %enterloop_cond57 = icmp eq i1 %87, false
+  br i1 %enterloop_cond57, label %loop55, label %afterloop56
+
+loop55:                                           ; preds = %ifcont87, %then54
+  %k58 = phi i32 [ 0, %then54 ], [ %next_variable, %ifcont87 ]
+  %k59 = alloca i32, align 4
+  store i32 %k58, i32* %k59, align 4
+  %match_flag = alloca i32, align 4
+  store i32 0, i32* %match_flag, align 4
+  %match_index = alloca i32, align 4
+  store i32 0, i32* %match_index, align 4
+  %count = alloca i32, align 4
+  store i32 0, i32* %count, align 4
+  br label %cond60
+
+afterloop56:                                      ; preds = %ifcont87, %then54
+  br label %ifcont89
+
+cond60:                                           ; preds = %ifcont79, %loop55
+  %88 = load i32, i32* %match_index, align 4
+  %89 = load i32, i32* @course_num, align 4
+  %90 = icmp slt i32 %88, %89
+  %91 = zext i1 %90 to i32
+  %92 = load i32, i32* %match_flag, align 4
+  %93 = icmp eq i32 %92, 0
+  %94 = zext i1 %93 to i32
+  %95 = and i32 %91, %94
+  %96 = icmp ugt i32 %95, 0
+  %97 = zext i1 %96 to i32
+  %whilecond61 = icmp eq i32 %97, 1
+  br i1 %whilecond61, label %loop62, label %afterloop63
+
+loop62:                                           ; preds = %cond60
+  %98 = load i32, i32* %match_flag, align 4
+  store i32 1, i32* %match_flag, align 4
+  %99 = load i32, i32* %count, align 4
+  store i32 0, i32* %count, align 4
+  %100 = load i32, i32* %i27, align 4
+  %101 = load i32, i32* %j52, align 4
+  %102 = load i32, i32* %k59, align 4
+  %103 = load i32, i32* %i27, align 4
+  %104 = load i32, i32* %j52, align 4
+  %105 = load i32, i32* %k59, align 4
+  %106 = getelementptr [50 x [5 x [5 x i32]]], [50 x [5 x [5 x i32]]]* @prerequisites_size_l3, i32 0, i32 %103, i32 %104, i32 %105
+  %107 = load i32, i32* %106, align 4
+  %108 = load i32, i32* %match_index, align 4
+  %109 = load i32, i32* %match_index, align 4
+  %110 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %109
+  %111 = load i32, i32* %110, align 4
+  %112 = icmp ne i32 %107, %111
+  %113 = zext i1 %112 to i32
+  %114 = sitofp i32 %113 to double
+  %ifcond64 = fcmp one double %114, 0.000000e+00
+  br i1 %ifcond64, label %then65, label %else66
+
+afterloop63:                                      ; preds = %cond60
+  %115 = load i32, i32* %match_flag, align 4
+  %116 = icmp eq i32 %115, 0
+  %117 = zext i1 %116 to i32
+  %118 = sitofp i32 %117 to double
+  %ifcond80 = fcmp one double %118, 0.000000e+00
+  br i1 %ifcond80, label %then81, label %else82
+
+then65:                                           ; preds = %loop62
+  %119 = load i32, i32* %match_flag, align 4
+  store i32 0, i32* %match_flag, align 4
+  %120 = load i32, i32* %match_index, align 4
+  %121 = add i32 %120, 1
+  %122 = load i32, i32* %match_index, align 4
+  store i32 %121, i32* %match_index, align 4
+  br label %ifcont79
+
+else66:                                           ; preds = %loop62
+  br label %cond67
+
+cond67:                                           ; preds = %ifcont78, %else66
+  %123 = load i32, i32* %count, align 4
+  %124 = load i32, i32* %match_index, align 4
+  %125 = load i32, i32* %match_index, align 4
+  %126 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %125
+  %127 = load i32, i32* %126, align 4
+  %128 = icmp slt i32 %123, %127
+  %129 = zext i1 %128 to i32
+  %whilecond68 = icmp eq i32 %129, 1
+  br i1 %whilecond68, label %loop69, label %afterloop70
+
+loop69:                                           ; preds = %cond67
+  %130 = load i32, i32* %match_index, align 4
+  %131 = load i32, i32* %count, align 4
+  %132 = load i32, i32* %match_index, align 4
+  %133 = load i32, i32* %count, align 4
+  %134 = getelementptr [50 x [100 x i8]], [50 x [100 x i8]]* @courses, i32 0, i32 %132, i32 %133
+  %135 = load i8, i8* %134, align 1
+  %136 = load i32, i32* %i27, align 4
+  %137 = load i32, i32* %j52, align 4
+  %138 = load i32, i32* %k59, align 4
+  %139 = load i32, i32* %count, align 4
+  %140 = load i32, i32* %i27, align 4
+  %141 = load i32, i32* %j52, align 4
+  %142 = load i32, i32* %k59, align 4
+  %143 = load i32, i32* %count, align 4
+  %144 = getelementptr [50 x [5 x [5 x [100 x i8]]]], [50 x [5 x [5 x [100 x i8]]]]* @prerequisites, i32 0, i32 %140, i32 %141, i32 %142, i32 %143
+  %145 = load i8, i8* %144, align 1
+  %146 = zext i8 %135 to i32
+  %147 = zext i8 %145 to i32
+  %148 = icmp ne i32 %146, %147
+  %149 = zext i1 %148 to i32
+  %150 = sitofp i32 %149 to double
+  %ifcond71 = fcmp one double %150, 0.000000e+00
+  br i1 %ifcond71, label %then72, label %else73
+
+afterloop70:                                      ; preds = %cond67
+  br label %ifcont79
+
+then72:                                           ; preds = %loop69
+  %151 = load i32, i32* %match_index, align 4
+  %152 = load i32, i32* %match_index, align 4
+  %153 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %152
+  %154 = load i32, i32* %153, align 4
+  %155 = add i32 %154, 1
+  %156 = load i32, i32* %count, align 4
+  store i32 %155, i32* %count, align 4
+  %157 = load i32, i32* %match_flag, align 4
+  store i32 0, i32* %match_flag, align 4
+  %158 = load i32, i32* %match_index, align 4
+  %159 = add i32 %158, 1
+  %160 = load i32, i32* %match_index, align 4
+  store i32 %159, i32* %match_index, align 4
+  br label %ifcont78
+
+else73:                                           ; preds = %loop69
+  %161 = load i32, i32* %count, align 4
+  %162 = add i32 %161, 1
+  %163 = load i32, i32* %count, align 4
+  store i32 %162, i32* %count, align 4
+  %164 = load i32, i32* %count, align 4
+  %165 = load i32, i32* %match_index, align 4
+  %166 = load i32, i32* %match_index, align 4
+  %167 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %166
+  %168 = load i32, i32* %167, align 4
+  %169 = sub i32 %168, 1
+  %170 = icmp eq i32 %164, %169
+  %171 = zext i1 %170 to i32
+  %172 = sitofp i32 %171 to double
+  %ifcond74 = fcmp one double %172, 0.000000e+00
+  br i1 %ifcond74, label %then75, label %else76
+
+then75:                                           ; preds = %else73
+  %173 = load i32, i32* %match_flag, align 4
+  store i32 1, i32* %match_flag, align 4
+  br label %ifcont77
+
+else76:                                           ; preds = %else73
+  br label %ifcont77
+
+ifcont77:                                         ; preds = %else76, %then75
+  br label %ifcont78
+
+ifcont78:                                         ; preds = %ifcont77, %then72
+  br label %cond67
+
+ifcont79:                                         ; preds = %afterloop70, %then65
+  br label %cond60
+
+then81:                                           ; preds = %afterloop63
+  %174 = load i32, i32* %i27, align 4
+  %175 = load i32, i32* %j52, align 4
+  %176 = load i32, i32* %i27, align 4
+  %177 = load i32, i32* %j52, align 4
+  %178 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %176, i32 %177
+  %179 = load i32, i32* %178, align 4
+  %180 = add i32 %179, 1
+  %181 = load i32, i32* %k59, align 4
+  store i32 %180, i32* %k59, align 4
+  br label %ifcont83
+
+else82:                                           ; preds = %afterloop63
+  br label %ifcont83
+
+ifcont83:                                         ; preds = %else82, %then81
+  %182 = load i32, i32* %match_index, align 4
+  %183 = load i32, i32* %match_index, align 4
+  %184 = getelementptr [50 x i32], [50 x i32]* @pass, i32 0, i32 %183
+  %185 = load i32, i32* %184, align 4
+  %186 = icmp eq i32 %185, 0
+  %187 = zext i1 %186 to i32
+  %188 = sitofp i32 %187 to double
+  %ifcond84 = fcmp one double %188, 0.000000e+00
+  br i1 %ifcond84, label %then85, label %else86
+
+then85:                                           ; preds = %ifcont83
+  %189 = load i32, i32* %recommend_flag, align 4
+  store i32 0, i32* %recommend_flag, align 4
+  %190 = load i32, i32* %i27, align 4
+  %191 = load i32, i32* %j52, align 4
+  %192 = load i32, i32* %i27, align 4
+  %193 = load i32, i32* %j52, align 4
+  %194 = getelementptr [50 x [5 x i32]], [50 x [5 x i32]]* @prerequisites_size_l2, i32 0, i32 %192, i32 %193
+  %195 = load i32, i32* %194, align 4
+  %196 = add i32 %195, 1
+  %197 = load i32, i32* %k59, align 4
+  store i32 %196, i32* %k59, align 4
+  br label %ifcont87
+
+else86:                                           ; preds = %ifcont83
+  br label %ifcont87
+
+ifcont87:                                         ; preds = %else86, %then85
+  %198 = load i32, i32* %k59, align 4
+  %next_variable = add i32 %198, 1
+  %199 = icmp sgt i32 %next_variable, %86
+  %continue_cond = icmp eq i1 %199, false
+  br i1 %continue_cond, label %loop55, label %afterloop56
+
+else88:                                           ; preds = %loop48
+  br label %ifcont89
+
+ifcont89:                                         ; preds = %else88, %afterloop56
+  %200 = load i32, i32* %recommend_flag, align 4
+  %201 = icmp eq i32 %200, 1
+  %202 = zext i1 %201 to i32
+  %203 = sitofp i32 %202 to double
+  %ifcond90 = fcmp one double %203, 0.000000e+00
+  br i1 %ifcond90, label %then91, label %else106
+
+then91:                                           ; preds = %ifcont89
+  %tmp92 = alloca i32, align 4
+  store i32 0, i32* %tmp92, align 4
+  %str_addr93 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp94 = getelementptr [3 x i8], [3 x i8]* %str_addr93, i32 0
+  store [3 x i8] c"  \00", [3 x i8]* %tmp94, align 1
+  %call95 = call i32 (i8*, ...) @printf([3 x i8]* %tmp94)
+  br label %cond96
+
+cond96:                                           ; preds = %loop98, %then91
+  %204 = load i32, i32* %tmp92, align 4
+  %205 = load i32, i32* %i27, align 4
+  %206 = load i32, i32* %i27, align 4
+  %207 = getelementptr [50 x i32], [50 x i32]* @courses_len, i32 0, i32 %206
+  %208 = load i32, i32* %207, align 4
+  %209 = icmp slt i32 %204, %208
+  %210 = zext i1 %209 to i32
+  %whilecond97 = icmp eq i32 %210, 1
+  br i1 %whilecond97, label %loop98, label %afterloop99
+
+loop98:                                           ; preds = %cond96
+  %str_addr100 = alloca [3 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 3), align 1
+  %tmp101 = getelementptr [3 x i8], [3 x i8]* %str_addr100, i32 0
+  store [3 x i8] c"%c\00", [3 x i8]* %tmp101, align 1
+  %211 = load i32, i32* %i27, align 4
+  %212 = load i32, i32* %tmp92, align 4
+  %213 = load i32, i32* %i27, align 4
+  %214 = load i32, i32* %tmp92, align 4
+  %215 = getelementptr [50 x [100 x i8]], [50 x [100 x i8]]* @courses, i32 0, i32 %213, i32 %214
+  %216 = load i8, i8* %215, align 1
+  %call102 = call i32 (i8*, ...) @printf([3 x i8]* %tmp101, i8 %216)
+  %217 = load i32, i32* %tmp92, align 4
+  %218 = add i32 %217, 1
+  %219 = load i32, i32* %tmp92, align 4
+  store i32 %218, i32* %tmp92, align 4
+  br label %cond96
+
+afterloop99:                                      ; preds = %cond96
+  %str_addr103 = alloca [2 x i8], i64 mul nuw (i64 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i64), i64 2), align 1
+  %tmp104 = getelementptr [2 x i8], [2 x i8]* %str_addr103, i32 0
+  store [2 x i8] c"\0A\00", [2 x i8]* %tmp104, align 1
+  %call105 = call i32 (i8*, ...) @printf([2 x i8]* %tmp104)
+  %220 = load i32, i32* %n, align 4
+  %221 = add i32 %220, 1
+  %222 = load i32, i32* %j52, align 4
+  store i32 %221, i32* %j52, align 4
+  br label %ifcont107
+
+else106:                                          ; preds = %ifcont89
+  br label %ifcont107
+
+ifcont107:                                        ; preds = %else106, %afterloop99
+  %223 = load i32, i32* %j52, align 4
+  %next_variable108 = add i32 %223, 1
+  %224 = icmp sgt i32 %next_variable108, %68
+  %continue_cond109 = icmp eq i1 %224, false
+  br i1 %continue_cond109, label %loop48, label %afterloop49
+
+else110:                                          ; preds = %loop24
+  br label %ifcont111
+
+ifcont111:                                        ; preds = %else110, %afterloop49
+  %225 = load i32, i32* %i27, align 4
+  %next_variable112 = add i32 %225, 1
+  %226 = icmp sgt i32 %next_variable112, %29
+  %continue_cond113 = icmp eq i1 %226, false
+  br i1 %continue_cond113, label %loop24, label %afterloop25
+}
