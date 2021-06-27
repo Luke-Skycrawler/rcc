@@ -58,6 +58,7 @@ lex.yy.cpp: rcc.l
 clean:
 	-rm -f rcc
 	-rm -f *.o
+	-rm -f a.out
 	-rm -f rcc.tab.cpp
 	-rm -f rcc.tab.hpp
 	-rm -f lex.*
@@ -67,4 +68,6 @@ clean:
 	-rm -f stack.hh
 	-rm -f macro_test
 	-rm -rf macro_test.dSYM
+	-rm -f macro.tab.hpp
+	-rm -f macro.tab.cpp
 	-rm -f .LONG_AND_AWARD_NAME.c
