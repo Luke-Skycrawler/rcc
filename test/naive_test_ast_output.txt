@@ -5,54 +5,63 @@ int main(int argc, char argv)
     double z = 0.1415;
     x + z;
 }
+; ModuleID = 'retarded'
+source_filename = "retarded"
+
+declare i32 @scanf(...)
+
+declare i32 @printf(i8*, ...)
+
+define i32 @main(i32 %argc, i8 %argv) {
+"entry@main":
+  %argc1 = alloca i32, align 4
+  store i32 %argc, i32* %argc1, align 4
+  %argv2 = alloca i8, align 1
+  store i8 %argv, i8* %argv2, align 1
+  %x = alloca i32, align 4
+  store i32 3, i32* %x, align 4
+  %y = alloca i8, align 1
+  store i8 0, i8* %y, align 1
+  %z = alloca double, align 8
+  store double 1.415000e-01, double* %z, align 8
+  %0 = load i32, i32* %x, align 4
+  %1 = load double, double* %z, align 8
+  %2 = sitofp i32 %0 to double
+  %add = fadd double %2, %1
+  ret double %add
+}
+
+//--------------------visual-------------------
 Nprogram
 |___NfunctionDefinition
-	|___NdeclarationSpecifiers
-		|___NtypeSpecifier(int)
-	|___Ndeclarator
-		|___NdirectDeclarator
-			|___NdirectDeclarator
-				|___Nidentifier(main)
-			|___NparameterDeclaration
-				|___NdeclarationSpecifiers
-					|___NtypeSpecifier(int)
-				|___Ndeclarator
-					|___NdirectDeclarator
-						|___Nidentifier(argc)
-			|___NparameterDeclaration
-				|___NdeclarationSpecifiers
-					|___NtypeSpecifier(char)
-				|___Ndeclarator
-					|___NdirectDeclarator
-						|___Nidentifier(argv)
-	|___NcompoundStatement
-		|___Ndeclaration
-			|___NdeclarationSpecifiers
-				|___NtypeSpecifier(int)
-			|___NinitDeclarator
-				|___Ndeclarator
-					|___NdirectDeclarator
-						|___Nidentifier(x)
-				|___Ninitializer
-					|___NprimaryExpr
-						|___Nconstant(int: 3)
-		|___Ndeclaration
-			|___NdeclarationSpecifiers
-				|___NtypeSpecifier(char)
-			|___NinitDeclarator
-				|___Ndeclarator
-					|___NdirectDeclarator
-						|___Nidentifier(y)
-		|___Ndeclaration
-			|___NdeclarationSpecifiers
-				|___NtypeSpecifier(double)
-			|___NinitDeclarator
-				|___Ndeclarator
-					|___NdirectDeclarator
-						|___Nidentifier(z)
-				|___Ninitializer
-					|___NprimaryExpr
-						|___Nconstant(double: 0.1415)
-		|___NexprStatement
-			|___Nexpr
-				|___NadditiveExpr
+        |___NtypeSpecifier(int)
+                |___Nidentifier('main')
+        |___NdirectDeclarator(PARENTHESES_PARAMETER_LIST)
+                |___NparameterDeclaration
+                        |___NtypeSpecifier(int)
+                        |___NdirectDeclarator(IDENTIFIER)
+                                |___Nidentifier('argc')
+                |___NparameterDeclaration
+                        |___NtypeSpecifier(char)
+                        |___NdirectDeclarator(IDENTIFIER)
+                                |___Nidentifier('argv')
+        |___NcompoundStatement
+                |___Ndeclaration
+                        |___NtypeSpecifier(int)
+                        |___NdirectDeclarator(IDENTIFIER)
+                                |___Nidentifier('x')
+                |___Ndeclaration
+                        |___NtypeSpecifier(char)
+                        |___NdirectDeclarator(IDENTIFIER)
+                                |___Nidentifier('y')
+                |___Ndeclaration
+                        |___NtypeSpecifier(double)
+                        |___NdirectDeclarator(IDENTIFIER)
+                                |___Nidentifier('z')
+                |___NexprStatement
+                        |___NbinaryExpr(op: +, type: double)
+                                |___NpostfixExpr('x', type: int)
+                                |___NpostfixExpr('z', type: double)
+
+//--------------------visual-------------------
+Wrote output.o
