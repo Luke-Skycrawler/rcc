@@ -10,3 +10,7 @@ build/
 ~
 rcc.dSYM
 rcc
+.LONG_AND_AWARD_NAME.c
+macro_test
+Info.plist
+macro_test
