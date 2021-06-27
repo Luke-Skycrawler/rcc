@@ -1,6 +1,3 @@
-<h1 style='text-align: center'>编译原理设计报告</h1>
-<p style='text-align: center'>谢廷浩 3180101944<br/>石昊洋 3180102686</p>
-
 
 
 [toc]
