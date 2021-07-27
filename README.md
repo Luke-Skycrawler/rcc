@@ -1,6 +1,6 @@
 # RCC (C-like Compiler, R for either remarkable or retarded)
 
----
+![visitors](https://visitor-badge.laobi.icu/badge?page_id=Luke-Skycrawler.rcc)
 
 > Authors: [Haoyang Shi](https://github.com/Luke-Skycrawler), [Tinghao Xie](http://vtu.life)
 
